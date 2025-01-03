@@ -1,0 +1,15 @@
+# Linquebot RS
+
+Rust-rewritten Linquebot
+
+WIP
+
+## Run
+
+```powershell
+$env:TELOXIDE_TOKEN="1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" && cargo run
+```
+
+```bash
+TELOXIDE_TOKEN="1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" cargo run
+```
