@@ -11,16 +11,15 @@ use teloxide_core::{
     RequestError,
 };
 
-static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] = &[mods::rong::on_message];
+static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] =
+    &[mods::rand::on_message, mods::rong::on_message];
 
 fn module_resolver(bot: &Bot, message: &Message) -> () {
     println!("text: {:?}", message.text());
 
     for handle in MODULE_HANDLES {
-        if let Some(consumed) = handle(bot, message) {
-            if let ComsumedType::Stop = consumed {
-                break;
-            }
+        if let Some(ComsumedType::Stop) = handle(bot, message) {
+            break;
         }
     }
 }
@@ -45,17 +44,16 @@ async fn main_loop() -> Result<(), RequestError> {
     let me = bot.get_me().await?;
     println!("user id: {}", me.id);
     println!("user name: {}", me.username.as_ref().unwrap());
-    let mut offset: Option<i32> = None;
+    let mut offset: i32 = 0;
 
     loop {
-        let mut update = bot.get_updates();
-        update.timeout = Some(30000);
-        update.offset = offset.clone();
-        println!("getting updates");
-
-        match update.send().await {
+        match bot.get_updates().offset(offset).timeout(10).send().await {
             Ok(updates) => {
-                offset = updates.last().and_then(|u| Some(u.id.0 as i32 + 1));
+                offset = updates
+                    .last()
+                    .and_then(|u| Some(u.id.0 as i32 + 1))
+                    .unwrap_or(offset);
+
                 for update in updates {
                     println!("got update: {}", update.id.0);
                     update_resolver(&bot, update).await;
