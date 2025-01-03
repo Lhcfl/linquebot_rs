@@ -12,6 +12,10 @@ pub fn escape_html(str: &str) -> String {
     ret
 }
 
+pub fn has_command(str: &str, cmd: &str) -> bool {
+    str == format!("/{cmd}") || str.starts_with(&format!("/{cmd} "))
+}
+
 pub mod telegram {
     pub mod prelude {
         use teloxide_core::types::User;

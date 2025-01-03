@@ -11,8 +11,11 @@ use teloxide_core::{
     RequestError,
 };
 
-static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] =
-    &[mods::rand::on_message, mods::rong::on_message];
+static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] = &[
+    mods::rand::on_message,
+    mods::set_title::on_message,
+    mods::rong::on_message,
+];
 
 fn module_resolver(bot: &Bot, message: &Message) -> () {
     println!("text: {:?}", message.text());
