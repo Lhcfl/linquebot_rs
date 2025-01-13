@@ -1,3 +1,6 @@
+#![feature(str_split_remainder)]
+#![feature(duration_constructors)]
+
 mod linquebot;
 mod mods;
 mod utils;
@@ -15,6 +18,7 @@ static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] = &[
     mods::rand::on_message,
     mods::set_title::on_message,
     mods::rong::on_message,
+    mods::todo::on_message,
 ];
 
 fn module_resolver(bot: &Bot, message: &Message) -> () {

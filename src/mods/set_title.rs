@@ -1,13 +1,9 @@
 use colored::Colorize;
-use futures::FutureExt;
-use rand::seq::IteratorRandom;
-use rand::Rng;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 use teloxide_core::ApiError;
 use teloxide_core::RequestError;
 
-use crate::utils::telegram::prelude::*;
 use crate::utils::*;
 use crate::ComsumedType;
 

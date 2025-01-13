@@ -16,6 +16,14 @@ pub fn has_command(str: &str, cmd: &str) -> bool {
     str == format!("/{cmd}") || str.starts_with(&format!("/{cmd} "))
 }
 
+pub fn split_n<const N: usize>(src: &str) -> (Vec<&str>, Option<&str>) {
+    let mut it = src.split(|c: char| c.is_whitespace());
+    let pre = (1..N)
+        .map_while(|_| it.find(|s| !s.is_empty()))
+        .collect::<Vec<_>>();
+    (pre, it.remainder().and_then(|str| Some(str.trim())))
+}
+
 pub mod telegram {
     pub mod prelude {
         use teloxide_core::types::User;

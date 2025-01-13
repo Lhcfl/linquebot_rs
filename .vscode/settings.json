@@ -1,6 +1,7 @@
 {
-  "editor.formatOnSave": true,
-  "prettier.tabWidth": 4,
-  "editor.indentSize": "tabSize",
-  "clangd.fallbackFlags": ["--std=c++23"]
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4,
+    "editor.indentSize": "tabSize",
+    "editor.insertSpaces": true,
+    "clangd.fallbackFlags": ["--std=c++23"]
 }

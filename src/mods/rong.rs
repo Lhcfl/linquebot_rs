@@ -42,9 +42,10 @@ async fn send_rong(
 pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
     let text = message.text()?;
 
-    let message = message.clone();
-    let mut actee = message.reply_to_message()?.from.clone()?;
-    let mut actor = message.from?.clone();
+    // let message = message;
+    let chat_id = message.chat.id;
+    let mut actee = message.reply_to_message().as_ref()?.from.clone()?;
+    let mut actor = message.from.as_ref()?.clone();
 
     if text.starts_with('\\') {
         (actee, actor) = (actor, actee);
@@ -58,9 +59,7 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
     let addition = iter.next().and_then(|str| Some(str.to_string()));
     let bot = bot.clone();
 
-    tokio::spawn(
-        async move { send_rong(bot, message.chat.id, actor, actee, action, addition).await },
-    );
+    tokio::spawn(async move { send_rong(bot, chat_id, actor, actee, action, addition).await });
 
     Some(ComsumedType::Next)
 }
