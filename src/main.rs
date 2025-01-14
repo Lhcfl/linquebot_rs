@@ -18,6 +18,7 @@ static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] = &[
     mods::rand::on_message,
     mods::set_title::on_message,
     mods::todo::on_message,
+    mods::hitokoto::on_message,
     mods::rong::on_message,
 ];
 

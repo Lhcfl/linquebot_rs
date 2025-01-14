@@ -58,14 +58,9 @@ async fn send_selective_rand(
 }
 
 pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
-    let text = message.text()?;
-    if !text.starts_with("/rand") {
-        return None;
-    }
-
+    let text = parse_command(message.text()?, "rand")?.to_string();
     let bot = bot.clone();
     let message = message.clone();
-    let text = String::from(&text[5..]);
 
     if text.contains("还是") {
         tokio::spawn(async move { send_selective_rand(bot, message, text, "还是").await });

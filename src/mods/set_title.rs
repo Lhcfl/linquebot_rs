@@ -83,15 +83,10 @@ async fn set_title(
 }
 
 pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
-    let text = message.text()?;
-    if !has_command(text, "t") {
-        return None;
-    }
-
+    let text = parse_command(message.text()?, "t")?.to_string();
     let bot = bot.clone();
     let message = message.clone();
-    let user = message.clone().from?;
-    let text = String::from(&text[2..]);
+    let user = message.from.as_ref()?.clone();
 
     if !message.chat.is_group() && !message.chat.is_supergroup() {
         tokio::spawn(async move {

@@ -1,3 +1,9 @@
+//! todo command  
+//! ```
+//! /todo time thing
+//! ```
+//! Remind the user to do <thing> after <time> minutes. If the message is a reply, set the user as the repliee.
+
 use std::time::Duration;
 
 use colored::Colorize;
@@ -21,10 +27,7 @@ async fn send_reply(bot: &Bot, message: &Message, text: &str) {
 }
 
 pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
-    let text = message.text()?;
-    if !has_command(text, "todo") {
-        return None;
-    }
+    let args = parse_command(message.text()?, "todo")?;
 
     let bot = bot.clone();
 
@@ -36,7 +39,7 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
 
     let message = message.clone();
 
-    let (pre, Some(thing)) = split_n::<3>(text) else {
+    let (pre, Some(thing)) = split_n::<2>(args) else {
         tokio::spawn(async move {
             send_reply(
                 &bot,
@@ -48,7 +51,7 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
         return Some(ComsumedType::Stop);
     };
 
-    let [_, time] = pre[..] else {
+    let [time] = pre[..] else {
         unreachable!(
             "split_n should return None for second result if pre have less than N elements"
         );
