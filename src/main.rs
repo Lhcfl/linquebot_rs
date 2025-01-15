@@ -2,6 +2,7 @@
 #![feature(duration_constructors)]
 #![feature(try_blocks)]
 
+mod assets;
 mod linquebot;
 mod mods;
 mod utils;
@@ -20,6 +21,7 @@ static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] = &[
     mods::set_title::on_message,
     mods::todo::on_message,
     mods::hitokoto::on_message,
+    mods::answer_book::on_message,
     mods::rong::on_message,
 ];
 

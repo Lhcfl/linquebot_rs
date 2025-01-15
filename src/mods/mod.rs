@@ -1,3 +1,4 @@
+pub mod answer_book;
 pub mod hitokoto;
 pub mod rand;
 pub mod rong;
