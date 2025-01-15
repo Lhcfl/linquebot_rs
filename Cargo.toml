@@ -10,4 +10,5 @@ teloxide-core = "0.10.1"
 chrono = "0.4.39"
 colored = "2.2.0"
 rand = "0.8.5"
-reqwest = "0.12.12"
+reqwest = { version = "0.12.12", features = ["json"] }
+serde = "1.0.217"

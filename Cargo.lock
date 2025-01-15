@@ -846,6 +846,7 @@ dependencies = [
  "futures",
  "rand",
  "reqwest 0.12.12",
+ "serde",
  "teloxide-core",
  "tokio",
 ]

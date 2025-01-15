@@ -1,5 +1,6 @@
 #![feature(str_split_remainder)]
 #![feature(duration_constructors)]
+#![feature(try_blocks)]
 
 mod linquebot;
 mod mods;
@@ -48,7 +49,9 @@ async fn update_resolver(bot: &Bot, update: Update) {
 }
 
 async fn main_loop() -> Result<(), RequestError> {
+    println!("Initializing Bot...");
     let bot = Bot::from_env();
+    println!("Checking Network...");
     let me = bot.get_me().await?;
     println!("user id: {}", me.id);
     println!("user name: {}", me.username.as_ref().unwrap());

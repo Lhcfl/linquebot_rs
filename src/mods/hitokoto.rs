@@ -6,25 +6,30 @@
 //! ```
 
 use colored::Colorize;
+use serde::Deserialize;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
 use crate::utils::*;
 use crate::ComsumedType;
 
-const API_ADDRESS: &str = "https://v1.hitokoto.cn/?c=";
-
+#[derive(Deserialize)]
 struct Hitokoto {
     hitokoto: String,
     from: String,
 }
 
 async fn get_hitokoto(args: &str) -> Hitokoto {
-    // todo
-    Hitokoto {
+    let res: Result<_, reqwest::Error> = try {
+        reqwest::get(format!("https://v1.hitokoto.cn/?c={}", args))
+            .await?
+            .json::<Hitokoto>()
+            .await?
+    };
+    res.unwrap_or_else(|_| Hitokoto {
         hitokoto: "网络错误".to_string(),
         from: "琳酱".to_string(),
-    }
+    })
 }
 
 async fn hitokoto(bot: &Bot, chat_id: ChatId, message_id: MessageId, args: String) {
