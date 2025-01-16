@@ -3,15 +3,17 @@
 #![feature(try_blocks)]
 
 mod assets;
+mod globals;
 mod linquebot;
 mod mods;
+mod test_utils;
 mod utils;
 
 use crate::linquebot::types::*;
 use chrono::Utc;
+use globals::BOT_USERNAME;
 use log::{error, info, trace, warn};
 use simple_logger::SimpleLogger;
-use std::sync::OnceLock;
 use teloxide_core::{
     prelude::*,
     types::{Message, Update, UpdateKind},
@@ -21,6 +23,7 @@ use teloxide_core::{
 /// Module Handles 的顺序很重要
 /// 请确保这些函数是拓扑排序的
 static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] = &[
+    mods::skip_other_bot::on_message,
     mods::bot_on_off::on_message,
     mods::rand::on_message,
     mods::set_title::on_message,
@@ -29,8 +32,6 @@ static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] = &[
     mods::answer_book::on_message,
     mods::rong::on_message,
 ];
-
-pub static BOT_USERNAME: OnceLock<String> = OnceLock::new();
 
 fn module_resolver(bot: &Bot, message: &Message) -> () {
     trace!(target: "main-loop", "get message: {:?}", message.text());
