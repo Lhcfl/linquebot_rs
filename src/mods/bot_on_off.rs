@@ -1,7 +1,9 @@
 //! 这还是个雏形
 
 use colored::Colorize;
-use std::sync::atomic::AtomicBool;
+use std::collections::HashMap;
+use std::sync::LazyLock;
+use std::sync::RwLock;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
@@ -9,14 +11,14 @@ use crate::ComsumedType;
 
 use crate::utils::parse_command;
 
-static BOT_ON: AtomicBool = AtomicBool::new(true);
+static BOT_ON: LazyLock<RwLock<HashMap<ChatId, bool>>> = LazyLock::new(Default::default);
 
 pub fn on_bot_on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
     let _ = parse_command(message.text()?, "bot_on")?;
-    BOT_ON.store(true, std::sync::atomic::Ordering::Relaxed);
+    let chat_id = message.chat.id;
+    BOT_ON.write().unwrap().insert(chat_id, true);
 
     let bot = bot.clone();
-    let chat_id = message.chat.id;
     tokio::spawn(async move {
         let res = bot.send_message(chat_id, "琳酱已开机").send().await;
         if let Err(err) = res {
@@ -28,7 +30,8 @@ pub fn on_bot_on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
 }
 pub fn on_bot_off_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
     let _ = parse_command(message.text()?, "bot_off")?;
-    BOT_ON.store(false, std::sync::atomic::Ordering::Relaxed);
+    let chat_id = message.chat.id;
+    BOT_ON.write().unwrap().insert(chat_id, false);
 
     let bot = bot.clone();
     let chat_id = message.chat.id;
@@ -43,7 +46,13 @@ pub fn on_bot_off_message(bot: &Bot, message: &Message) -> Option<ComsumedType> 
 }
 
 pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
-    if BOT_ON.load(std::sync::atomic::Ordering::Relaxed) {
+    if BOT_ON
+        .read()
+        .unwrap()
+        .get(&message.chat.id)
+        .unwrap_or(&true)
+        .clone()
+    {
         on_bot_off_message(bot, message).or(on_bot_on_message(bot, message))
     } else {
         let _ = on_bot_off_message(bot, message);
