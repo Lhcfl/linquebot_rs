@@ -15,7 +15,7 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
     tokio::spawn(async move {
         let chosen = answer_book::ANSWERS
             .choose(&mut rand::thread_rng())
-            .unwrap_or(&"做你所想");
+            .expect("not empty");
         let res = bot
             .send_message(message.chat.id, *chosen)
             .reply_parameters(ReplyParameters::new(message.id))

@@ -16,7 +16,10 @@ use teloxide_core::{
     RequestError,
 };
 
+/// Module Handles 的顺序很重要
+/// 请确保这些函数是拓扑排序的
 static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] = &[
+    mods::bot_on_off::on_message,
     mods::rand::on_message,
     mods::set_title::on_message,
     mods::todo::on_message,
