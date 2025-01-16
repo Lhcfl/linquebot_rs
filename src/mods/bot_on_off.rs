@@ -50,8 +50,8 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
         .read()
         .unwrap()
         .get(&message.chat.id)
-        .unwrap_or(&true)
-        .clone()
+        .cloned()
+        .unwrap_or(true)
     {
         on_bot_off_message(bot, message).or(on_bot_on_message(bot, message))
     } else {
