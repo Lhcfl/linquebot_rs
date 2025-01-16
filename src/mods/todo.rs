@@ -4,9 +4,8 @@
 //! ```
 //! Remind the user to do <thing> after <time> minutes. If the message is a reply, set the user as the repliee.
 
+use log::warn;
 use std::time::Duration;
-
-use colored::Colorize;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
@@ -22,7 +21,7 @@ async fn send_reply(bot: &Bot, message: &Message, text: &str) {
         .send()
         .await;
     if let Err(err) = res {
-        println!("{}: RequestError: {}", "warn".yellow(), err.to_string());
+        warn!("Failed to send reply: {}", err.to_string());
     }
 }
 

@@ -1,6 +1,5 @@
 //! 这还是个雏形
-
-use colored::Colorize;
+use log::warn;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 use std::sync::RwLock;
@@ -13,7 +12,7 @@ use crate::utils::parse_command;
 
 static BOT_ON: LazyLock<RwLock<HashMap<ChatId, bool>>> = LazyLock::new(Default::default);
 
-pub fn on_bot_on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
+fn on_bot_on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
     let _ = parse_command(message.text()?, "bot_on")?;
     let chat_id = message.chat.id;
     BOT_ON.write().unwrap().insert(chat_id, true);
@@ -22,13 +21,13 @@ pub fn on_bot_on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
     tokio::spawn(async move {
         let res = bot.send_message(chat_id, "琳酱已开机").send().await;
         if let Err(err) = res {
-            println!("{}: RequestError: {}", "warn".yellow(), err.to_string());
+            warn!("Failed to send reply: {}", err.to_string());
         }
     });
 
     Some(ComsumedType::Stop)
 }
-pub fn on_bot_off_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
+fn on_bot_off_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
     let _ = parse_command(message.text()?, "bot_off")?;
     let chat_id = message.chat.id;
     BOT_ON.write().unwrap().insert(chat_id, false);
@@ -38,7 +37,7 @@ pub fn on_bot_off_message(bot: &Bot, message: &Message) -> Option<ComsumedType> 
     tokio::spawn(async move {
         let res = bot.send_message(chat_id, "琳酱已关机").send().await;
         if let Err(err) = res {
-            println!("{}: RequestError: {}", "warn".yellow(), err.to_string());
+            warn!("Failed to send reply: {}", err.to_string());
         }
     });
 

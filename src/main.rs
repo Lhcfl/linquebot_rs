@@ -6,10 +6,12 @@ mod assets;
 mod linquebot;
 mod mods;
 mod utils;
-use crate::linquebot::types::*;
 
+use crate::linquebot::types::*;
 use chrono::Utc;
-use colored::Colorize;
+use log::{error, info, trace, warn};
+use simple_logger::SimpleLogger;
+use std::sync::OnceLock;
 use teloxide_core::{
     prelude::*,
     types::{Message, Update, UpdateKind},
@@ -28,8 +30,10 @@ static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] = &[
     mods::rong::on_message,
 ];
 
+pub static BOT_USERNAME: OnceLock<String> = OnceLock::new();
+
 fn module_resolver(bot: &Bot, message: &Message) -> () {
-    println!("text: {:?}", message.text());
+    trace!(target: "main-loop", "get message: {:?}", message.text());
 
     for handle in MODULE_HANDLES {
         if let Some(ComsumedType::Stop) = handle(bot, message) {
@@ -42,10 +46,11 @@ async fn update_resolver(bot: &Bot, update: Update) {
     let now = Utc::now();
     if let UpdateKind::Message(message) = update.kind {
         if now.signed_duration_since(&message.date).num_seconds() > 30 {
-            println!(
-                "{}: skipped a message {:?} ago",
-                "warning".yellow(),
-                now.signed_duration_since(&message.date)
+            warn!(
+                target: "main-loop",
+                "skipped message {}s ago: {:?}",
+                now.signed_duration_since(&message.date).num_seconds(),
+                message.text()
             );
             return;
         }
@@ -53,13 +58,23 @@ async fn update_resolver(bot: &Bot, update: Update) {
     }
 }
 
-async fn main_loop() -> Result<(), RequestError> {
-    println!("Initializing Bot...");
+async fn init_bot() -> Result<Bot, RequestError> {
+    info!(target: "main", "Initializing Bot...");
     let bot = Bot::from_env();
-    println!("Checking Network...");
+    info!(target: "main", "Checking Network...");
     let me = bot.get_me().await?;
-    println!("user id: {}", me.id);
-    println!("user name: {}", me.username.as_ref().unwrap());
+    info!(target: "main", "user id: {}", me.id);
+    BOT_USERNAME
+        .set(me.username().to_string())
+        .expect("set bot username");
+    info!(target: "main", "user name: {}", BOT_USERNAME.get().expect("has username"));
+
+    Ok(bot)
+}
+
+async fn main_loop() -> Result<(), RequestError> {
+    let bot = init_bot().await?;
+
     let mut offset: i32 = 0;
 
     loop {
@@ -71,12 +86,11 @@ async fn main_loop() -> Result<(), RequestError> {
                     .unwrap_or(offset);
 
                 for update in updates {
-                    println!("got update: {}", update.id.0);
                     update_resolver(&bot, update).await;
                 }
             }
             Err(err) => {
-                println!("request error: {}", err.to_string());
+                warn!(target: "main-loop", "GetUpdate Error: {}", err.to_string());
             }
         }
     }
@@ -84,8 +98,10 @@ async fn main_loop() -> Result<(), RequestError> {
 
 #[tokio::main]
 async fn main() -> () {
+    SimpleLogger::new().init().unwrap();
     if let Err(err) = main_loop().await {
-        panic!("Oops! main loop error: {}", err.to_string());
+        error!("main-loop panicked: {}", err.to_string());
+        panic!("main-loop panicked: {}", err.to_string());
     }
     println!("bye bye");
 }

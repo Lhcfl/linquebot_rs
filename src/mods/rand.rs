@@ -1,4 +1,4 @@
-use colored::Colorize;
+use log::warn;
 use rand::seq::IteratorRandom;
 use rand::Rng;
 use teloxide_core::prelude::*;
@@ -12,7 +12,7 @@ async fn send_raw_rand(bot: Bot, message: Message, text_body: String) {
     let result = rand::thread_rng().gen_range(0..=100);
 
     let Some(from) = message.from.clone() else {
-        println!("{}: Rand: No reply target", "warn".yellow());
+        warn!("no reply target");
         return;
     };
 
@@ -32,7 +32,7 @@ async fn send_raw_rand(bot: Bot, message: Message, text_body: String) {
         .send()
         .await
     {
-        println!("{}: RequestError: {}", "warn".yellow(), err.to_string());
+        warn!("Failed to send reply: {}", err.to_string());
     }
 }
 
@@ -51,7 +51,7 @@ async fn send_selective_rand(
         .send()
         .await
     {
-        println!("{}: RequestError: {}", "warn".yellow(), err.to_string());
+        warn!("Failed to send reply: {}", err.to_string());
     }
 
     Some(())

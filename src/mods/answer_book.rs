@@ -1,4 +1,4 @@
-use colored::Colorize;
+use log::warn;
 use rand::seq::SliceRandom;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
@@ -22,7 +22,7 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
             .send()
             .await;
         if let Err(err) = res {
-            println!("{}: RequestError: {}", "warn".yellow(), err.to_string());
+            warn!("Failed to send reply: {}", err.to_string());
         }
     });
 

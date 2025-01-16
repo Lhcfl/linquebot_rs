@@ -1,4 +1,4 @@
-use colored::Colorize;
+use log::warn;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 use teloxide_core::ApiError;
@@ -14,12 +14,12 @@ async fn reply_info(bot: Bot, message: Message, info: &str) {
         .send()
         .await
     {
-        println!("{}: RequestError: {}", "warn".yellow(), err.to_string());
+        warn!("Failed to send reply: {}", err.to_string());
     }
 }
 
 async fn handle_err(err: RequestError, bot: Bot, message: Message) {
-    println!("Err: {:?}", err);
+    warn!("{err:?}");
     match err {
         RequestError::Api(ApiError::CantDemoteChatCreator) => {
             reply_info(bot, message, "不能给群主设置头衔哦").await
@@ -36,6 +36,7 @@ async fn handle_err(err: RequestError, bot: Bot, message: Message) {
         _ => reply_info(bot, message, "因为未知错误而失败……").await,
     }
 }
+
 async fn clear_title(bot: Bot, message: Message, user: User) {
     if let Err(err) = bot
         .promote_chat_member(message.chat.id, user.id)

@@ -1,4 +1,4 @@
-use colored::Colorize;
+use log::warn;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
@@ -31,11 +31,9 @@ async fn send_rong(
         .send_message(chat_id, text)
         .send()
         .await;
-    match result {
-        Ok(_) => {}
-        Err(err) => {
-            println!("{}: RequestError: {}", "warn".yellow(), err.to_string());
-        }
+
+    if let Err(err) = result {
+        warn!("Failed to send reply: {}", err.to_string());
     }
 }
 

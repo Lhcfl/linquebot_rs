@@ -5,7 +5,8 @@
 //! /hitokoto
 //! ```
 
-use colored::Colorize;
+use log::trace;
+use log::warn;
 use serde::Deserialize;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
@@ -13,7 +14,7 @@ use teloxide_core::types::*;
 use crate::utils::*;
 use crate::ComsumedType;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct Hitokoto {
     hitokoto: String,
     from: String,
@@ -26,10 +27,20 @@ async fn get_hitokoto(args: &str) -> Hitokoto {
             .json::<Hitokoto>()
             .await?
     };
-    res.unwrap_or_else(|_| Hitokoto {
-        hitokoto: "网络错误".to_string(),
-        from: "琳酱".to_string(),
-    })
+
+    match res {
+        Ok(res) => {
+            trace!("Successfully fetched hitokoto: {res:?}");
+            res
+        }
+        Err(err) => {
+            warn!("Failed to fetch hitokoto: {}", err.to_string());
+            Hitokoto {
+                hitokoto: "网络错误".to_string(),
+                from: "琳酱".to_string(),
+            }
+        }
+    }
 }
 
 async fn hitokoto(bot: &Bot, chat_id: ChatId, message_id: MessageId, args: String) {
@@ -42,7 +53,7 @@ async fn hitokoto(bot: &Bot, chat_id: ChatId, message_id: MessageId, args: Strin
         .await;
 
     if let Err(err) = res {
-        println!("{}: RequestError: {}", "warn".yellow(), err.to_string());
+        warn!("Failed to send reply: {}", err.to_string());
     }
 }
 
