@@ -62,13 +62,12 @@ pub mod telegram {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_utils::*;
     #[test]
     fn parse_command_tests() {
-        use crate::globals::BOT_USERNAME;
         use crate::utils::parse_command;
-        BOT_USERNAME
-            .set(String::from("testbot"))
-            .expect("should able to set");
+
+        let _bot = TEST_BOT.api_url();
 
         assert_eq!(parse_command("你好", "some"), None);
         assert_eq!(parse_command("some", "some"), None);

@@ -1,6 +1,23 @@
+#[cfg(test)]
+use crate::globals::BOT_USERNAME;
+#[cfg(test)]
 use chrono::{DateTime, Utc};
+#[cfg(test)]
+use std::sync::LazyLock;
+#[cfg(test)]
 use teloxide_core::types::*;
+#[cfg(test)]
+use teloxide_core::Bot;
 
+#[cfg(test)]
+pub static TEST_BOT: LazyLock<Bot> = LazyLock::new(|| {
+    BOT_USERNAME
+        .set(String::from("testbot"))
+        .expect("should able to set");
+    Bot::new("AAAAA:ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ")
+});
+
+#[cfg(test)]
 pub fn fake_chat() -> Chat {
     Chat {
         id: ChatId(5678),
@@ -29,6 +46,7 @@ pub fn fake_chat() -> Chat {
     }
 }
 
+#[cfg(test)]
 pub fn fake_text_message(text: &str) -> Message {
     Message {
         id: MessageId(1234),
