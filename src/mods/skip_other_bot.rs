@@ -29,19 +29,13 @@ pub fn on_message(_bot: &Bot, message: &Message) -> Option<ComsumedType> {
 mod tests {
     use crate::test_utils::*;
     use regex::Regex;
-    use teloxide_core::Bot;
 
     #[test]
     fn skip_message_tests() {
-        use crate::globals::BOT_USERNAME;
         use crate::mods::skip_other_bot::on_message;
         use crate::ComsumedType;
 
-        BOT_USERNAME
-            .set(String::from("testbot"))
-            .expect("should able to set");
-
-        let bot = Bot::new("AAAAA:ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ");
+        let bot = &TEST_BOT;
 
         let re = Regex::new(r"^/[\S]+?@(\w+)").unwrap();
         let res = re.captures("/hello@otherbot 123").unwrap();
