@@ -27,7 +27,7 @@ pub fn on_message(_bot: &Bot, message: &Message) -> Option<ComsumedType> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use crate::test_utils::fabricator::*;
     use regex::Regex;
 
     #[test]
@@ -41,15 +41,15 @@ mod tests {
         let res = re.captures("/hello@otherbot 123").unwrap();
         assert_eq!(&res[1], "otherbot");
 
-        assert_eq!(on_message(&bot, &fake_text_message("hello")), None);
-        assert_eq!(on_message(&bot, &fake_text_message("/hello")), None);
-        assert_eq!(on_message(&bot, &fake_text_message(" /hello")), None);
+        assert_eq!(on_message(&bot, &fab_text_message("hello")), None);
+        assert_eq!(on_message(&bot, &fab_text_message("/hello")), None);
+        assert_eq!(on_message(&bot, &fab_text_message(" /hello")), None);
         assert_eq!(
-            on_message(&bot, &fake_text_message("/hello@testbot 321")),
+            on_message(&bot, &fab_text_message("/hello@testbot 321")),
             None
         );
         assert_eq!(
-            on_message(&bot, &fake_text_message("/hello@otherbot 123")),
+            on_message(&bot, &fab_text_message("/hello@otherbot 123")),
             Some(ComsumedType::Stop)
         );
     }

@@ -62,7 +62,8 @@ pub mod telegram {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use crate::test_utils::fabricator::*;
+
     #[test]
     fn parse_command_tests() {
         use crate::utils::parse_command;
