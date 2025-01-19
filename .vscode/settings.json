@@ -3,5 +3,5 @@
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize",
     "editor.insertSpaces": true,
-    "clangd.fallbackFlags": ["--std=c++23"]
+    "rust-analyzer.cargo.features": "all",
 }
