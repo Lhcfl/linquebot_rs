@@ -1,5 +1,12 @@
 use crate::globals::BOT_USERNAME;
 
+mod msg_context;
+pub mod pattern;
+
+pub use msg_context::*;
+use pattern::EofPat;
+pub use pattern::Pattern;
+
 pub fn escape_html(str: &str) -> String {
     let mut ret = String::new();
     ret.reserve(str.len() * 2);
@@ -14,26 +21,24 @@ pub fn escape_html(str: &str) -> String {
     ret
 }
 
-/// Parse command  
-/// matchs if the str is `/cmd` or `/cmd <rest>`  
+/// Parse command
+/// matchs if the str is `/cmd` or `/cmd <rest>`
 /// returns rest trimmed
 pub fn parse_command<'a>(str: &'a str, cmd: &str) -> Option<&'a str> {
-    if str == format!("/{cmd}") {
+    if ('/', cmd, EofPat).check_pattern(str).is_some() {
         return Some("");
     }
-    let bot_username = BOT_USERNAME.get().expect("should has bot username");
-    if str == format!("/{cmd}@{bot_username}") {
+    let bot_username = &**BOT_USERNAME.get().expect("should has bot username");
+    if ('/', cmd, '@', bot_username, EofPat).check_pattern(str).is_some() {
         return Some("");
     }
-    let t = format!("/{cmd} ");
-    if str.starts_with(&t) {
-        return Some(&str[t.len()..].trim());
+    if let Some((res, _)) = ('/', cmd, ' ').check_pattern(str) {
+        return Some(res.trim());
     }
-    let t = format!("/{cmd}@{bot_username} ");
-    if str.starts_with(&t) {
-        return Some(&str[t.len()..].trim());
+    if let Some((res, _)) = ('/', cmd, '@', bot_username, ' ').check_pattern(str) {
+        return Some(res.trim());
     }
-    return None;
+    None
 }
 
 pub fn split_n<const N: usize>(src: &str) -> (Vec<&str>, Option<&str>) {
@@ -64,8 +69,7 @@ pub mod telegram {
 mod tests {
     #[test]
     fn parse_command_tests() {
-        use crate::globals::BOT_USERNAME;
-        use crate::utils::parse_command;
+        use crate::{globals::BOT_USERNAME, utils::parse_command};
         BOT_USERNAME
             .set(String::from("testbot"))
             .expect("should able to set");
