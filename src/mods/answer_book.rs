@@ -5,9 +5,9 @@ use teloxide_core::types::*;
 
 use crate::assets::answer_book;
 use crate::utils::*;
-use crate::ComsumedType;
+use crate::Consumption;
 
-pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
+pub fn on_message(bot: &Bot, message: &Message) -> Consumption {
     let _ = parse_command(message.text()?, "answer")?.to_string();
     let bot = bot.clone();
     let message = message.clone();
@@ -26,5 +26,5 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
         }
     });
 
-    Some(ComsumedType::Stop)
+    Consumption::Stop
 }

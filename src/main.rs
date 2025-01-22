@@ -1,6 +1,7 @@
 #![feature(str_split_remainder)]
 #![feature(duration_constructors)]
 #![feature(try_blocks)]
+#![feature(try_trait_v2)]
 
 mod assets;
 mod globals;
@@ -9,9 +10,11 @@ mod mods;
 mod test_utils;
 mod utils;
 
+use std::sync::OnceLock;
+
 use crate::linquebot::types::*;
 use chrono::Utc;
-use globals::BOT_USERNAME;
+use linquebot::*;
 use log::{error, info, trace, warn};
 use simple_logger::SimpleLogger;
 use teloxide_core::{
@@ -22,28 +25,38 @@ use teloxide_core::{
 
 /// Module Handles 的顺序很重要
 /// 请确保这些函数是拓扑排序的
-static MODULE_HANDLES: &[fn(&Bot, &Message) -> Option<ComsumedType>] = &[
-    mods::skip_other_bot::on_message,
-    mods::bot_on_off::on_message,
-    mods::rand::on_message,
-    mods::set_title::on_message,
-    mods::todo::on_message,
-    mods::hitokoto::on_message,
-    mods::answer_book::on_message,
-    mods::rong::on_message,
-];
+// static MODULE_HANDLES: &[fn(&Bot, &Message) -> Consumption] = &[
+//     mods::skip_other_bot::on_message,
+//     mods::bot_on_off::on_message,
+//     mods::rand::on_message,
+//     mods::set_title::on_message,
+//     mods::todo::on_message,
+//     mods::hitokoto::on_message,
+//     mods::answer_book::on_message,
+//     mods::rong::on_message,
+// ];
+static APP: OnceLock<App> = OnceLock::new();
 
-fn module_resolver(bot: &Bot, message: &Message) -> () {
+fn module_resolver(app: &'static App, message: Message) -> () {
     trace!(target: "main-loop", "get message: {:?}", message.text());
-
-    for handle in MODULE_HANDLES {
-        if let Some(ComsumedType::Stop) = handle(bot, message) {
-            break;
+    for module in app.modules {
+        let task_result = (module.task)(app, &message);
+        match task_result {
+            Consumption::Next => {}
+            Consumption::Stop => {
+                break;
+            }
+            Consumption::StopWith(task) => {
+                tokio::spawn(async move {
+                    task.await;
+                });
+                break;
+            }
         }
     }
 }
 
-async fn update_resolver(bot: &Bot, update: Update) {
+async fn update_resolver(app: &'static App, update: Update) {
     let now = Utc::now();
     if let UpdateKind::Message(message) = update.kind {
         if now.signed_duration_since(&message.date).num_seconds() > 30 {
@@ -55,26 +68,30 @@ async fn update_resolver(bot: &Bot, update: Update) {
             );
             return;
         }
-        module_resolver(bot, &message);
+        module_resolver(app, message);
     }
 }
 
-async fn init_bot() -> Result<Bot, RequestError> {
+async fn init_app() -> Result<&'static linquebot::App, RequestError> {
     info!(target: "main", "Initializing Bot...");
     let bot = Bot::from_env();
     info!(target: "main", "Checking Network...");
     let me = bot.get_me().await?;
     info!(target: "main", "user id: {}", me.id);
-    BOT_USERNAME
-        .set(me.username().to_string())
-        .expect("set bot username");
-    info!(target: "main", "user name: {}", BOT_USERNAME.get().expect("has username"));
-
-    Ok(bot)
+    let _ = APP.set(linquebot::App {
+        name: "琳酱".to_string(),
+        username: me.username().to_string(),
+        bot,
+        modules: mods::MODULES,
+    });
+    let app = APP.get().expect("should initialized app");
+    info!(target: "main", "user name: {}", app.username);
+    Ok(app)
 }
 
 async fn main_loop() -> Result<(), RequestError> {
-    let bot = init_bot().await?;
+    let app = init_app().await?;
+    let bot = &app.bot;
 
     let mut offset: i32 = 0;
 
@@ -87,7 +104,7 @@ async fn main_loop() -> Result<(), RequestError> {
                     .unwrap_or(offset);
 
                 for update in updates {
-                    update_resolver(&bot, update).await;
+                    update_resolver(&app, update).await;
                 }
             }
             Err(err) => {
