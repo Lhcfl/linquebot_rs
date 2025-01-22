@@ -12,7 +12,7 @@ use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
 use crate::utils::*;
-use crate::ComsumedType;
+use crate::Consumption;
 
 #[derive(Deserialize, Debug)]
 struct Hitokoto {
@@ -57,7 +57,7 @@ async fn hitokoto(bot: &Bot, chat_id: ChatId, message_id: MessageId, args: Strin
     }
 }
 
-pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
+pub fn on_message(bot: &Bot, message: &Message) -> Consumption {
     let args = parse_command(message.text()?, "hitokoto")?;
     let args = args.split_whitespace().collect::<Vec<_>>().join("&c=");
     let bot = bot.clone();
@@ -68,5 +68,5 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
         hitokoto(&bot, chat_id, message_id, args).await;
     });
 
-    Some(ComsumedType::Stop)
+    Consumption::Stop
 }

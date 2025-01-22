@@ -11,7 +11,7 @@ use teloxide_core::types::*;
 
 use crate::utils::telegram::prelude::*;
 use crate::utils::*;
-use crate::ComsumedType;
+use crate::Consumption;
 
 async fn send_reply(bot: &Bot, message: &Message, text: &str) {
     let res = bot
@@ -25,7 +25,7 @@ async fn send_reply(bot: &Bot, message: &Message, text: &str) {
     }
 }
 
-pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
+pub fn on_message(bot: &Bot, message: &Message) -> Consumption {
     let args = parse_command(message.text()?, "todo")?;
 
     let bot = bot.clone();
@@ -47,7 +47,7 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
             )
             .await
         });
-        return Some(ComsumedType::Stop);
+        return Consumption::Stop;
     };
 
     let [time] = pre[..] else {
@@ -60,7 +60,7 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
         tokio::spawn(async move {
             send_reply(&bot, &message, "没法解析出要几分钟后提醒呢").await;
         });
-        return Some(ComsumedType::Stop);
+        return Consumption::Stop;
     };
 
     if time < 0.0 {
@@ -72,14 +72,14 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
             )
             .await;
         });
-        return Some(ComsumedType::Stop);
+        return Consumption::Stop;
     }
 
     if time > (365 * 24 * 60) as f64 {
         tokio::spawn(async move {
             send_reply(&bot, &message, "太久远啦！").await;
         });
-        return Some(ComsumedType::Stop);
+        return Consumption::Stop;
     }
 
     let thing = String::from(thing);
@@ -110,5 +110,5 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
         .await;
     });
 
-    Some(ComsumedType::Stop)
+    Consumption::Stop
 }

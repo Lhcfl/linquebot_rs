@@ -6,13 +6,13 @@ use std::sync::RwLock;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
-use crate::ComsumedType;
+use crate::Consumption;
 
 use crate::utils::parse_command;
 
 static BOT_ON: LazyLock<RwLock<HashMap<ChatId, bool>>> = LazyLock::new(Default::default);
 
-fn on_bot_on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
+fn on_bot_on_message(bot: &Bot, message: &Message) -> Consumption {
     let _ = parse_command(message.text()?, "bot_on")?;
     let chat_id = message.chat.id;
     BOT_ON.write().unwrap().insert(chat_id, true);
@@ -25,9 +25,9 @@ fn on_bot_on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
         }
     });
 
-    Some(ComsumedType::Stop)
+    Consumption::Stop
 }
-fn on_bot_off_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
+fn on_bot_off_message(bot: &Bot, message: &Message) -> Consumption {
     let _ = parse_command(message.text()?, "bot_off")?;
     let chat_id = message.chat.id;
     BOT_ON.write().unwrap().insert(chat_id, false);
@@ -41,21 +41,21 @@ fn on_bot_off_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
         }
     });
 
-    Some(ComsumedType::Stop)
+    Consumption::Stop
 }
 
-pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
-    if BOT_ON
-        .read()
-        .unwrap()
-        .get(&message.chat.id)
-        .cloned()
-        .unwrap_or(true)
-    {
-        on_bot_off_message(bot, message).or(on_bot_on_message(bot, message))
-    } else {
-        let _ = on_bot_off_message(bot, message);
-        let _ = on_bot_on_message(bot, message);
-        Some(ComsumedType::Stop)
-    }
-}
+// pub fn on_message(bot: &Bot, message: &Message) -> Consumption {
+//     if BOT_ON
+//         .read()
+//         .unwrap()
+//         .get(&message.chat.id)
+//         .cloned()
+//         .unwrap_or(true)
+//     {
+//         on_bot_off_message(bot, message).or(on_bot_on_message(bot, message))
+//     } else {
+//         let _ = on_bot_off_message(bot, message);
+//         let _ = on_bot_on_message(bot, message);
+//         Consumption::Stop
+//     }
+// }

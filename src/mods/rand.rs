@@ -6,7 +6,7 @@ use teloxide_core::types::*;
 
 use crate::utils::telegram::prelude::*;
 use crate::utils::*;
-use crate::ComsumedType;
+use crate::Consumption;
 
 async fn send_raw_rand(bot: Bot, message: Message, text_body: String) {
     let result = rand::thread_rng().gen_range(0..=100);
@@ -57,7 +57,7 @@ async fn send_selective_rand(
     Some(())
 }
 
-pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
+pub fn on_message(bot: &Bot, message: &Message) -> Consumption {
     let text = parse_command(message.text()?, "rand")?.to_string();
     let bot = bot.clone();
     let message = message.clone();
@@ -68,5 +68,5 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
         tokio::spawn(async move { send_raw_rand(bot, message, text).await });
     }
 
-    Some(ComsumedType::Stop)
+    Consumption::Stop
 }

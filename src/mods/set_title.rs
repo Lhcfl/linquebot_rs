@@ -5,7 +5,7 @@ use teloxide_core::ApiError;
 use teloxide_core::RequestError;
 
 use crate::utils::*;
-use crate::ComsumedType;
+use crate::Consumption;
 
 async fn reply_info(bot: Bot, message: Message, info: &str) {
     if let Err(err) = bot
@@ -83,7 +83,7 @@ async fn set_title(
     Ok(())
 }
 
-pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
+pub fn on_message(bot: &Bot, message: &Message) -> Consumption {
     let text = parse_command(message.text()?, "t")?.to_string();
     let bot = bot.clone();
     let message = message.clone();
@@ -99,5 +99,5 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
         tokio::spawn(async move { set_title(bot, message, user, text).await });
     }
 
-    Some(ComsumedType::Stop)
+    Consumption::Stop
 }

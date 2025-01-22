@@ -4,7 +4,11 @@ use teloxide_core::types::*;
 
 use crate::utils::telegram::prelude::*;
 use crate::utils::*;
-use crate::ComsumedType;
+use crate::App;
+use crate::Consumption;
+use crate::Module;
+use crate::ModuleDesctiption;
+use crate::ModuleKind;
 
 async fn send_rong(
     bot: Bot,
@@ -37,7 +41,7 @@ async fn send_rong(
     }
 }
 
-pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
+pub fn on_message(app: &App, message: &Message) -> Consumption {
     let text = message.text()?;
 
     // let message = message;
@@ -48,16 +52,25 @@ pub fn on_message(bot: &Bot, message: &Message) -> Option<ComsumedType> {
     if text.starts_with('\\') {
         (actee, actor) = (actor, actee);
     } else if !text.starts_with('/') {
-        return None;
+        return Consumption::Next;
     }
 
     let text = String::from(text);
     let mut iter = text[1..].split_whitespace();
     let action = iter.next()?.to_string();
     let addition = iter.next().and_then(|str| Some(str.to_string()));
-    let bot = bot.clone();
+    let bot = app.bot.clone();
 
     tokio::spawn(async move { send_rong(bot, chat_id, actor, actee, action, addition).await });
 
-    Some(ComsumedType::Next)
+    Consumption::Stop
 }
+
+pub static MODULE: Module = Module {
+    kind: ModuleKind::General(Some(ModuleDesctiption {
+        name: "rong",
+        description: "Rong一下人",
+        description_detailed: None,
+    })),
+    task: on_message,
+};
