@@ -2,7 +2,7 @@ use log::warn;
 use teloxide_core::prelude::*;
 use teloxide_core::types::{ChatId, Message, MessageId, ParseMode, ReplyParameters};
 
-use crate::{utils::parse_command, App, Consumption, Module, ModuleDesctiption, ModuleKind};
+use crate::{App, Consumption, Module, ModuleDesctiption, ModuleKind};
 
 async fn send_help(app: &App, chat_id: ChatId, message_id: MessageId) {
     let mut command_texts = Vec::<String>::new();
@@ -45,7 +45,7 @@ async fn send_help(app: &App, chat_id: ChatId, message_id: MessageId) {
 }
 
 fn on_message(app: &'static App, msg: &Message) -> Consumption {
-    let _ = parse_command(msg.text()?, "help")?.to_string();
+    let _ = app.parse_command(msg.text()?, "help")?.to_string();
     let chat_id = msg.chat.id;
     let message_id = msg.id;
 
