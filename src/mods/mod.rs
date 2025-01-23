@@ -10,4 +10,9 @@ pub mod set_title;
 pub mod skip_other_bot;
 pub mod todo;
 
-pub static MODULES: &[&'static Module] = &[&rong::MODULE, &help::MODULE, &todo::MODULE];
+pub static MODULES: &[&'static Module] = &[
+    &rong::MODULE,
+    &help::MODULE,
+    &todo::MODULE,
+    &answer_book::MODULE,
+];
