@@ -19,10 +19,9 @@ mod mods;
 mod test_utils;
 mod utils;
 
-use crate::linquebot::types::*;
 use chrono::Utc;
 use globals::BOT_USERNAME;
-use linquebot::BotRegistry;
+use linquebot::{types::*, BotRegistry, ContextStorage};
 use log::{error, info, trace, warn};
 use simple_logger::SimpleLogger;
 use teloxide_core::{
@@ -30,7 +29,6 @@ use teloxide_core::{
     types::{Update, UpdateKind},
     RequestError,
 };
-use utils::ContextStorage;
 
 /// Module Handles 的顺序很重要
 /// 请确保这些函数是拓扑排序的
@@ -65,34 +63,36 @@ async fn init_bot() -> Result<Bot, RequestError> {
     Ok(bot)
 }
 
-async fn main_loop() -> Result<(), RequestError> {
-    let bot = init_bot().await?;
-    let storage = ContextStorage::new();
+async fn main_loop<'a>() -> Result<(), RequestError> {
+    let storage = ContextStorage::new(init_bot().await?);
+    let ContextStorage { ref bot, .. } = storage;
 
-    let resolve_update = |update: &Update| {
+    let resolve_update = |update: Update| {
         let now = Utc::now();
-        let UpdateKind::Message(message) = &update.kind else {
+        let UpdateKind::Message(msg) = update.kind else {
             return;
         };
-        if now.signed_duration_since(&message.date).num_seconds() > 30 {
+        if now.signed_duration_since(&msg.date).num_seconds() > 30 {
             warn!(
                 target: "main-loop",
                 "skipped message {}s ago: {:?}",
-                now.signed_duration_since(&message.date).num_seconds(),
-                message.text()
+                now.signed_duration_since(&msg.date).num_seconds(),
+                msg.text()
             );
             return;
         }
-        trace!(target: "main-loop", "get message: {:?}", message.text());
+        trace!(target: "main-loop", "get message: {:?}", msg.text());
 
-        let mut data = storage.clone().make_context(&message);
+        let ctx = storage.make_context(msg);
         for reg in MODULE_HANDLES {
-            match reg.match_message(&bot, &message, &mut data) {
+            match reg.match_message(ctx.clone()) {
                 ConsumeKind::Decline => {}
-                ConsumeKind::Action(fut) => {
-                    tokio::spawn(fut);
+                ConsumeKind::Consume(fut) => {
+                    if let Some(fut) = fut {
+                        tokio::spawn(fut);
+                    }
+                    break;
                 }
-                ConsumeKind::Consume => break,
             }
         }
     };
@@ -105,7 +105,7 @@ async fn main_loop() -> Result<(), RequestError> {
                 updates.last().map(|u| offset = u.id.0 as i32 + 1);
 
                 for update in updates {
-                    resolve_update(&update);
+                    resolve_update(update);
                 }
             }
             Err(err) => {

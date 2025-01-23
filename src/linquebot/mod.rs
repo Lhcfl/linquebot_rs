@@ -1,9 +1,6 @@
-use std::{future::Future, pin::Pin};
+use std::sync::Arc;
 
-use teloxide_core::{types::Message, Bot};
 use types::ConsumeKind;
-
-use crate::utils::MsgContext;
 
 pub mod types {
     use std::{
@@ -16,23 +13,24 @@ pub mod types {
 
     pub enum ConsumeKind {
         Decline,
-        Action(Pin<Box<dyn Future<Output = ()> + Send>>),
-        Consume,
+        Consume(Option<Pin<Box<dyn Future<Output = ()> + Send>>>),
     }
 
     impl Debug for ConsumeKind {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
                 Self::Decline => write!(f, "Decline"),
-                Self::Action(_) => f.debug_tuple("Action").finish(),
-                Self::Consume => write!(f, "Consume"),
+                Self::Consume(act) => f
+                    .debug_tuple("Consume")
+                    .field(if act.is_some() { &"Some" } else { &"None" })
+                    .finish(),
             }
         }
     }
 
     impl<T: Future<Output = ()> + Send + 'static> From<T> for ConsumeKind {
         fn from(fut: T) -> Self {
-            Self::Action(Box::pin(fut))
+            Self::Consume(Some(Box::pin(fut)))
         }
     }
 
@@ -40,17 +38,13 @@ pub mod types {
         type Output = Option<Pin<Box<dyn Future<Output = ()> + Send>>>;
         type Residual = Self;
         fn from_output(opt: Self::Output) -> Self {
-            match opt {
-                Some(fut) => fut.into(),
-                None => Self::Consume,
-            }
+            Self::Consume(opt)
         }
 
         fn branch(self) -> std::ops::ControlFlow<Self::Residual, Self::Output> {
             match self {
                 ConsumeKind::Decline => std::ops::ControlFlow::Break(self),
-                ConsumeKind::Action(fut) => std::ops::ControlFlow::Continue(Some(fut)),
-                ConsumeKind::Consume => std::ops::ControlFlow::Continue(None),
+                ConsumeKind::Consume(fut) => std::ops::ControlFlow::Continue(fut),
             }
         }
     }
@@ -72,10 +66,13 @@ pub mod types {
     }
 }
 
+mod msg_context;
+pub use msg_context::*;
+
 pub struct CommandInfo {
     name: &'static str,
     description: &'static str,
-    handler: fn(&Bot, &Message, &mut MsgContext),
+    handler: fn(&MsgContext) -> ConsumeKind,
 }
 
 pub trait BotRegistry: Sync {
@@ -89,22 +86,19 @@ pub trait BotRegistry: Sync {
     /// Long help message in dedicated help page
     fn help_info(&self) -> String;
     /// Handlers for messages
-    fn match_message(&self, bot: &Bot, msg: &Message, ctx: &mut MsgContext) -> ConsumeKind;
+    fn match_message(&self, ctx: Arc<MsgContext>) -> ConsumeKind;
 }
 
 pub trait BotRegistryExt {
-    fn dispatch_command(&self, bot: &Bot, msg: &Message, ctx: &mut MsgContext);
+    fn dispatch_command(&self, ctx: &MsgContext) -> ConsumeKind;
 }
 impl<T: BotRegistry> BotRegistryExt for T {
-    fn dispatch_command(&self, bot: &Bot, msg: &Message, ctx: &mut MsgContext) {
-        let Some(cmd) = ctx.command() else {
-            return;
-        };
+    fn dispatch_command(&self, ctx: &MsgContext) -> ConsumeKind {
         for info in self.commands() {
-            if info.name == cmd.name {
-                (info.handler)(bot, msg, ctx);
-                break;
+            if let res @ ConsumeKind::Consume(_) = (info.handler)(ctx) {
+                return res;
             }
         }
+        ConsumeKind::Decline
     }
 }

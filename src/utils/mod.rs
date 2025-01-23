@@ -1,9 +1,7 @@
 use crate::globals::BOT_USERNAME;
 
-mod msg_context;
 pub mod pattern;
 
-pub use msg_context::*;
 use pattern::EofPat;
 pub use pattern::Pattern;
 

@@ -1,10 +1,13 @@
-use std::{cell::LazyCell, sync::Arc};
+use std::{cell::LazyCell, mem::MaybeUninit, sync::Arc};
 
 use teloxide_core::types::{ChatId, Message, UserId};
 
-use crate::utils::{
-    pattern::{maybe, of_pred},
-    Pattern,
+use crate::{
+    utils::{
+        pattern::{maybe, of_pred},
+        Pattern,
+    },
+    Bot,
 };
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -14,18 +17,25 @@ pub enum DataScope {
     ChatUser(ChatId, UserId),
 }
 
-pub struct ContextStorage {}
+pub struct ContextStorage {
+    pub bot: Bot,
+}
 
 impl ContextStorage {
-    pub fn new() -> Arc<Self> {
-        Arc::new(Self {})
+    pub fn new(bot: Bot) -> Self {
+        Self { bot }
     }
 
-    pub fn make_context(self: Arc<Self>, msg: &Message) -> MsgContext {
-        MsgContext {
-            storage: self,
-            cmd_parts: LazyCell::new(CmdParser(msg.text())),
-        }
+    pub fn make_context<'a>(&'a self, msg: Message) -> Arc<MsgContext> {
+        let res = Box::leak(Box::new(MsgContext {
+            // Safety: Promised by the function
+            bot: unsafe { std::mem::transmute::<&Bot, &'static Bot>(&self.bot) },
+            msg,
+            cmd_parts: MaybeUninit::uninit(),
+        }));
+        res.cmd_parts
+            .write(LazyCell::new(CmdParser(res.msg.text())));
+        unsafe { Arc::from_raw(res) }
     }
 }
 
@@ -68,15 +78,15 @@ pub struct CmdParts<'a> {
     pub ctnt: &'a str,
 }
 
-/// Additional data for the message
-pub struct MsgContext<'a> {
-    storage: Arc<ContextStorage>,
-    cmd_parts: LazyCell<Option<CmdParts<'a>>, CmdParser<'a>>,
+pub struct MsgContext {
+    bot: &'static Bot,
+    msg: Message,
+    cmd_parts: MaybeUninit<LazyCell<Option<CmdParts<'static>>, CmdParser<'static>>>,
 }
 
-impl MsgContext<'_> {
+impl MsgContext {
     /// Retrieve the corresponding command part of the message
-    pub fn command(&self) -> Option<CmdParts<'_>> {
-        *self.cmd_parts
+    pub fn command<'a>(&'a self) -> Option<CmdParts<'a>> {
+        unsafe { **self.cmd_parts.assume_init_ref() }
     }
 }
