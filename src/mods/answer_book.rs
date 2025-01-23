@@ -8,8 +8,9 @@ use crate::linquebot::*;
 use crate::Consumption;
 
 fn on_message(app: &'static App, message: &Message) -> Consumption {
-    let _ = app.parse_command(message.text()?, "answer")?.to_string();
-    let message = message.clone();
+    let _ = app.parse_command(message.text()?, "answer")?;
+    let chat_id = message.chat.id;
+    let message_id = message.id;
 
     Consumption::StopWith(Box::pin(async move {
         let chosen = answer_book::ANSWERS
@@ -17,8 +18,8 @@ fn on_message(app: &'static App, message: &Message) -> Consumption {
             .expect("not empty");
         let res = app
             .bot
-            .send_message(message.chat.id, *chosen)
-            .reply_parameters(ReplyParameters::new(message.id))
+            .send_message(chat_id, *chosen)
+            .reply_parameters(ReplyParameters::new(message_id))
             .send()
             .await;
         if let Err(err) = res {
