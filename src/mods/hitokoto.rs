@@ -11,6 +11,7 @@ use serde::Deserialize;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::linquebot::*;
 use crate::utils::*;
 use crate::Consumption;
 
@@ -57,16 +58,20 @@ async fn hitokoto(bot: &Bot, chat_id: ChatId, message_id: MessageId, args: Strin
     }
 }
 
-pub fn on_message(bot: &Bot, message: &Message) -> Consumption {
+fn on_message(app: &'static App, message: &Message) -> Consumption {
     let args = parse_command(message.text()?, "hitokoto")?;
     let args = args.split_whitespace().collect::<Vec<_>>().join("&c=");
-    let bot = bot.clone();
     let chat_id = message.chat.id;
     let message_id = message.id;
 
-    tokio::spawn(async move {
-        hitokoto(&bot, chat_id, message_id, args).await;
-    });
-
-    Consumption::Stop
+    Consumption::StopWith(Box::pin(hitokoto(&app.bot, chat_id, message_id, args)))
 }
+
+pub static MODULE: Module = Module {
+    kind: ModuleKind::Command(ModuleDesctiption {
+        name: "hitokoto",
+        description: "获取一言",
+        description_detailed: None,
+    }),
+    task: on_message,
+};

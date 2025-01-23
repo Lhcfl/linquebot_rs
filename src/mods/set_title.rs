@@ -4,10 +4,11 @@ use teloxide_core::types::*;
 use teloxide_core::ApiError;
 use teloxide_core::RequestError;
 
+use crate::linquebot::*;
 use crate::utils::*;
 use crate::Consumption;
 
-async fn reply_info(bot: Bot, message: Message, info: &str) {
+async fn reply_info(bot: &Bot, message: Message, info: &str) {
     if let Err(err) = bot
         .send_message(message.chat.id, info)
         .reply_parameters(ReplyParameters::new(message.id))
@@ -18,7 +19,7 @@ async fn reply_info(bot: Bot, message: Message, info: &str) {
     }
 }
 
-async fn handle_err(err: RequestError, bot: Bot, message: Message) {
+async fn handle_err(err: RequestError, bot: &Bot, message: Message) {
     warn!("{err:?}");
     match err {
         RequestError::Api(ApiError::CantDemoteChatCreator) => {
@@ -37,7 +38,7 @@ async fn handle_err(err: RequestError, bot: Bot, message: Message) {
     }
 }
 
-async fn clear_title(bot: Bot, message: Message, user: User) {
+async fn clear_title(bot: &Bot, message: Message, user: User) {
     if let Err(err) = bot
         .promote_chat_member(message.chat.id, user.id)
         .send()
@@ -49,15 +50,10 @@ async fn clear_title(bot: Bot, message: Message, user: User) {
     }
 }
 
-async fn set_title(
-    bot: Bot,
-    message: Message,
-    user: User,
-    title: String,
-) -> Result<(), &'static str> {
+async fn set_title(bot: &Bot, message: Message, user: User, title: String) {
     if title.chars().count() >= 16 {
         reply_info(bot, message, "你想要的头衔太长了哦").await;
-        return Err("TITLE_TOO_LONG");
+        return;
     }
 
     if let Err(err) = bot
@@ -67,7 +63,7 @@ async fn set_title(
         .await
     {
         handle_err(err, bot, message).await;
-        return Err("REQUEST_ERR");
+        return;
     }
 
     if let Err(err) = bot
@@ -76,28 +72,35 @@ async fn set_title(
         .await
     {
         handle_err(err, bot, message).await;
-        return Err("REQUEST_ERR");
+        return;
     }
 
     reply_info(bot, message, &format!("设置成功，现在你是 {title} 了")).await;
-    Ok(())
 }
 
-pub fn on_message(bot: &Bot, message: &Message) -> Consumption {
+pub fn on_message(app: &'static App, message: &Message) -> Consumption {
     let text = parse_command(message.text()?, "t")?.to_string();
-    let bot = bot.clone();
     let message = message.clone();
     let user = message.from.as_ref()?.clone();
 
     if !message.chat.is_group() && !message.chat.is_supergroup() {
-        tokio::spawn(async move {
-            reply_info(bot, message, "需要在群里才能设置头衔哦").await;
-        });
+        Consumption::StopWith(Box::pin(reply_info(
+            &app.bot,
+            message,
+            "需要在群里才能设置头衔哦",
+        )))
     } else if text.trim().is_empty() {
-        tokio::spawn(async move { clear_title(bot, message, user).await });
+        Consumption::StopWith(Box::pin(clear_title(&app.bot, message, user)))
     } else {
-        tokio::spawn(async move { set_title(bot, message, user, text).await });
+        Consumption::StopWith(Box::pin(set_title(&app.bot, message, user, text)))
     }
-
-    Consumption::Stop
 }
+
+pub static MODULE: Module = Module {
+    kind: ModuleKind::Command(ModuleDesctiption {
+        name: "t",
+        description: "设置头衔",
+        description_detailed: Some("`/t` 清除头衔，`/t xxx` 设置头衔。bot必须具有管理员权限。"),
+    }),
+    task: on_message,
+};
