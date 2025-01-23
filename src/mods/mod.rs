@@ -11,8 +11,11 @@ pub mod skip_other_bot;
 pub mod todo;
 
 pub static MODULES: &[&'static Module] = &[
-    &rong::MODULE,
     &help::MODULE,
     &todo::MODULE,
+    &hitokoto::MODULE,
     &answer_book::MODULE,
+    &rand::MODULE,
+    &set_title::MODULE,
+    &rong::MODULE,
 ];

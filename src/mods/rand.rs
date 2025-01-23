@@ -4,11 +4,12 @@ use rand::Rng;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::linquebot::*;
 use crate::utils::telegram::prelude::*;
 use crate::utils::*;
 use crate::Consumption;
 
-async fn send_raw_rand(bot: Bot, message: Message, text_body: String) {
+async fn send_raw_rand(bot: &Bot, message: Message, text_body: String) {
     let result = rand::thread_rng().gen_range(0..=100);
 
     let Some(from) = message.from.clone() else {
@@ -36,13 +37,11 @@ async fn send_raw_rand(bot: Bot, message: Message, text_body: String) {
     }
 }
 
-async fn send_selective_rand(
-    bot: Bot,
-    message: Message,
-    text_body: String,
-    spliter: &str,
-) -> Option<()> {
-    let result = text_body.split(&spliter).choose(&mut rand::thread_rng())?;
+async fn send_selective_rand(bot: &Bot, message: Message, text_body: String, spliter: &str) {
+    let result = text_body
+        .split(&spliter)
+        .choose(&mut rand::thread_rng())
+        .unwrap_or("undefined");
 
     if let Err(err) = bot
         .send_message(message.chat.id, format!("{}!", escape_html(result)))
@@ -53,20 +52,26 @@ async fn send_selective_rand(
     {
         warn!("Failed to send reply: {}", err.to_string());
     }
-
-    Some(())
 }
 
-pub fn on_message(bot: &Bot, message: &Message) -> Consumption {
+pub fn on_message(app: &'static App, message: &Message) -> Consumption {
     let text = parse_command(message.text()?, "rand")?.to_string();
-    let bot = bot.clone();
     let message = message.clone();
 
     if text.contains("还是") {
-        tokio::spawn(async move { send_selective_rand(bot, message, text, "还是").await });
+        Consumption::StopWith(Box::pin(send_selective_rand(
+            &app.bot, message, text, "还是",
+        )))
     } else {
-        tokio::spawn(async move { send_raw_rand(bot, message, text).await });
+        Consumption::StopWith(Box::pin(send_raw_rand(&app.bot, message, text)))
     }
-
-    Consumption::Stop
 }
+
+pub static MODULE: Module = Module {
+    kind: ModuleKind::Command(ModuleDesctiption {
+        name: "rand",
+        description: "抛抛骰子",
+        description_detailed: None,
+    }),
+    task: on_message,
+};
