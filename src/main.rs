@@ -29,6 +29,10 @@ use teloxide_core::{
     types::{Update, UpdateKind},
     RequestError,
 };
+#[cfg(not(test))]
+pub(crate) use teloxide_core::Bot;
+#[cfg(test)]
+pub(crate) use test_utils::BotMock as Bot;
 
 /// Module Handles 的顺序很重要
 /// 请确保这些函数是拓扑排序的

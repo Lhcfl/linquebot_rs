@@ -1,5 +1,36 @@
+use std::ops::Deref;
+
 use chrono::{DateTime, Utc};
-use teloxide_core::types::*;
+use teloxide_core::{types::*, Bot};
+
+use crate::linquebot::BotRegistry;
+
+pub struct BotMock {
+    bot: Bot,
+}
+impl Deref for BotMock {
+    type Target = Bot;
+    fn deref(&self) -> &Self::Target {
+        &self.bot
+    }
+}
+impl BotMock {
+    pub fn from_env() -> Self {
+        Self {
+            bot: Bot::new("114514"),
+        }
+    }
+}
+
+pub struct Mock<'a> {
+    mods: &'a [&'a dyn BotRegistry],
+}
+
+impl<'a> Mock<'a> {
+    pub fn new(mods: &'a [&'a dyn BotRegistry]) -> Self {
+        Self { mods }
+    }
+}
 
 pub fn fake_chat() -> Chat {
     Chat {
