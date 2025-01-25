@@ -1,4 +1,5 @@
 use crate::globals::BOT_USERNAME;
+pub mod pattern;
 
 pub fn escape_html(str: &str) -> String {
     let mut ret = String::new();

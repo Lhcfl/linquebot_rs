@@ -1,5 +1,6 @@
 pub mod msg_context;
 
+use msg_context::{CmdParts, Context};
 use std::{future::Future, pin::Pin};
 use teloxide_core::{prelude::*, types::Message};
 
@@ -109,7 +110,7 @@ pub enum ModuleKind {
 
 pub struct Module {
     pub kind: ModuleKind,
-    pub task: fn(app: &'static App, message: &Message) -> types::Consumption,
+    pub task: fn(ctx: &mut Context, message: &Message) -> types::Consumption,
 }
 
 pub struct App {
@@ -138,6 +139,15 @@ impl App {
             return Some(&str[t.len()..].trim());
         }
         return None;
+    }
+
+    pub fn create_message_context<'a>(&'static self, message: &'a Message) -> Context<'a> {
+        Context {
+            cmd: CmdParts::parse_from(message),
+            message_id: message.id,
+            chat_id: message.chat.id,
+            app: self,
+        }
     }
 }
 

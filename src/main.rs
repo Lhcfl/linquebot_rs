@@ -2,6 +2,8 @@
 #![feature(duration_constructors)]
 #![feature(try_blocks)]
 #![feature(try_trait_v2)]
+#![feature(associated_type_defaults)]
+#![feature(macro_metavar_expr)]
 
 mod assets;
 mod db;
@@ -27,10 +29,16 @@ use teloxide_core::{
 
 static APP: OnceLock<App> = OnceLock::new();
 
-fn module_resolver(app: &'static App, message: Message) -> () {
+fn module_resolver(app: &'static App, message: Message) {
     trace!(target: "main-loop", "get message: {:?}", message.text());
+    let mut context = app.create_message_context(&message);
     for module in app.modules {
-        let task_result = (module.task)(app, &message);
+        if let ModuleKind::Command(desc) = &module.kind {
+            if !context.matches_command(desc) {
+                break;
+            }
+        }
+        let task_result = (module.task)(&mut context, &message);
         match task_result {
             Consumption::Next => {}
             Consumption::Stop => {
