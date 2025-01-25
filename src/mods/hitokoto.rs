@@ -67,7 +67,22 @@ pub static MODULE: Module = Module {
     kind: ModuleKind::Command(ModuleDesctiption {
         name: "hitokoto",
         description: "获取一言",
-        description_detailed: None,
+        description_detailed: Some(concat!(
+            "可选参数：用空格分割的 hitokoto API 类别列表\n",
+            "a	动画\n",
+            "b	漫画\n",
+            "c	游戏\n",
+            "d	文学\n",
+            "e	原创\n",
+            "f	来自网络\n",
+            "g	其他\n",
+            "h	影视\n",
+            "i	诗词\n",
+            "j	网易云\n",
+            "k	哲学\n",
+            "l	抖机灵\n",
+            "其他	作为 动画 类型处理"
+        )),
     }),
     task: send_hitokoto,
 };

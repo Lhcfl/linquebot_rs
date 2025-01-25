@@ -77,8 +77,12 @@ pub fn dice(ctx: &mut Context, message: &Message) -> Consumption {
 pub static MODULE: Module = Module {
     kind: ModuleKind::Command(ModuleDesctiption {
         name: "dice",
-        description: "抛抛骰子",
-        description_detailed: Some("`/dice xdy` 的格式，抛掷 x 个 y 面的骰子。"),
+        description: "`xdy` 抛掷 x 个 y 面的骰子",
+        description_detailed: Some(concat!(
+            "使用 `/dice xdy` 的格式，抛掷 x 个 y 面的骰子。\n",
+            "结果返回 `骰子总和: [每个骰子点数...]`\n",
+            "注意 x 最大不能超过 500，y 最大不能超过 4294967295"
+        )),
     }),
     task: dice,
 };

@@ -25,7 +25,10 @@ pub static MODULE: Module = Module {
     kind: ModuleKind::Command(ModuleDesctiption {
         name: "answer",
         description: "答案之书",
-        description_detailed: None,
+        description_detailed: Some(concat!(
+            "该命令不需要参数。\n",
+            "调用《答案之书》给出~显然一点用也没有的~回答。"
+        )),
     }),
     task: on_message,
 };

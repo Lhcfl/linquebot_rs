@@ -58,8 +58,13 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
 pub static MODULE: Module = Module {
     kind: ModuleKind::Command(ModuleDesctiption {
         name: "rand",
-        description: "抛抛骰子",
-        description_detailed: None,
+        description: "随机一下",
+        description_detailed: Some(concat!(
+            "可选参数：事件\n",
+            "当发送 `/rand 事件` 的时候，会回复“事件 的概率是 `[rand]`%”\n",
+            "如果事件被省略，则会回复“掷出了 `[rand]`”\n\n",
+            "特殊关键字：当发送 `/rand A还是B` 的时候，会在这些“还是”中选择一个发送回来\n",
+        )),
     }),
     task: on_message,
 };

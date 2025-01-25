@@ -31,7 +31,7 @@ fn gen_help_message(app: &App) -> (String, InlineKeyboardMarkup) {
                 }
             }
             ModuleKind::General(Some(cmd)) => {
-                general_texts.push(format!("**{}**: {}", cmd.name, cmd.description,));
+                general_texts.push(format!("*{}*: {}", cmd.name, cmd.description,));
                 if let Some(_) = cmd.description_detailed {
                     detailed_modules.push(cmd.name);
                 }
@@ -106,7 +106,7 @@ fn on_help_callback(app: &'static App, cq: &CallbackQuery) -> Consumption {
                         chat_id,
                         message.id(),
                         format!(
-                            "{HELP_HEAD}\n\n**{}**: {}\n\n{}",
+                            "{HELP_HEAD}\n\n*{}*: {}\n\n{}",
                             desc.name,
                             desc.description,
                             desc.description_detailed.expect("上面检查了 is_some")

@@ -115,8 +115,11 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
 pub static MODULE: Module = Module {
     kind: ModuleKind::Command(ModuleDesctiption {
         name: "todo",
-        description: "使用 `/todo [n] [事情]` 在 n 分钟后提醒你做事",
-        description_detailed: None,
+        description: "定时提醒",
+        description_detailed: Some(concat!(
+            "必须有两个参数。使用 `/todo n [事情]` 在 n 分钟后提醒你做 [事情]。\n",
+            "n 必须是数字。如果 n 太大的话，琳酱会拒绝提醒的"
+        )),
     }),
     task: on_message,
 };
