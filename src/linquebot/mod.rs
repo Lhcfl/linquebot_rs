@@ -1,5 +1,9 @@
+pub mod msg_context;
+
 use std::{future::Future, pin::Pin};
 use teloxide_core::{prelude::*, types::Message};
+
+use crate::db::DataStorage;
 type TaskResult = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 pub mod types {
@@ -112,6 +116,7 @@ pub struct App {
     pub name: String,
     pub username: String,
     pub bot: Bot,
+    pub db: DataStorage,
     pub modules: &'static [&'static Module],
 }
 
@@ -140,13 +145,14 @@ impl App {
 mod tests {
     use teloxide_core::Bot;
 
-    use crate::App;
+    use crate::{db::DataStorage, App};
 
     fn fake_app() -> App {
         App {
             name: "琳酱".to_string(),
             username: "testbot".to_string(),
             bot: Bot::new("fake:token"),
+            db: DataStorage {},
             modules: &[],
         }
     }
