@@ -1,4 +1,4 @@
-use crate::linquebot::Module;
+use crate::{linquebot::Module, MicroTask};
 
 pub mod answer_book;
 pub mod bot_on_off;
@@ -22,3 +22,5 @@ pub static MODULES: &[&'static Module] = &[
     &set_title::MODULE,
     &rong::MODULE,
 ];
+
+pub static MICRO_TASKS: &[&'static MicroTask] = &[&help::HELP_CALLBACK];

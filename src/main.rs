@@ -5,71 +5,27 @@
 #![feature(associated_type_defaults)]
 #![feature(macro_metavar_expr)]
 #![feature(str_split_whitespace_remainder)]
+#![feature(iter_array_chunks)]
 
 mod assets;
 mod db;
 mod globals;
 mod linquebot;
 mod mods;
+mod resolvers;
 mod test_utils;
 mod utils;
 
 use std::sync::OnceLock;
 
 use crate::linquebot::types::*;
-use chrono::Utc;
 use db::DataStorage;
 use linquebot::*;
-use log::{error, info, trace, warn};
+use log::{error, info, warn};
 use simple_logger::SimpleLogger;
-use teloxide_core::{
-    prelude::*,
-    types::{Message, Update, UpdateKind},
-    RequestError,
-};
+use teloxide_core::{prelude::*, RequestError};
 
 static APP: OnceLock<App> = OnceLock::new();
-
-fn module_resolver(app: &'static App, message: Message) {
-    trace!(target: "main-loop", "get message: {:?}", message.text());
-    let mut context = app.create_message_context(&message);
-    for module in app.modules {
-        if let ModuleKind::Command(desc) = &module.kind {
-            if !context.matches_command(desc) {
-                continue;
-            }
-        }
-        let task_result = (module.task)(&mut context, &message);
-        match task_result {
-            Consumption::Next => {}
-            Consumption::Stop => {
-                break;
-            }
-            Consumption::StopWith(task) => {
-                tokio::spawn(async move {
-                    task.await;
-                });
-                break;
-            }
-        }
-    }
-}
-
-async fn update_resolver(app: &'static App, update: Update) {
-    let now = Utc::now();
-    if let UpdateKind::Message(message) = update.kind {
-        if now.signed_duration_since(&message.date).num_seconds() > 30 {
-            warn!(
-                target: "main-loop",
-                "skipped message {}s ago: {:?}",
-                now.signed_duration_since(&message.date).num_seconds(),
-                message.text()
-            );
-            return;
-        }
-        module_resolver(app, message);
-    }
-}
 
 async fn init_app() -> Result<&'static linquebot::App, RequestError> {
     info!(target: "main", "Initializing Bot...");
@@ -83,6 +39,7 @@ async fn init_app() -> Result<&'static linquebot::App, RequestError> {
         bot,
         db: DataStorage {},
         modules: mods::MODULES,
+        micro_tasks: mods::MICRO_TASKS,
     });
     let app = APP.get().expect("should initialized app");
     info!(target: "main", "user name: {}", app.username);
@@ -104,7 +61,7 @@ async fn main_loop() -> Result<(), RequestError> {
                     .unwrap_or(offset);
 
                 for update in updates {
-                    update_resolver(&app, update).await;
+                    resolvers::update::resolve(&app, update).await;
                 }
             }
             Err(err) => {

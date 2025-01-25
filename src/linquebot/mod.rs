@@ -2,7 +2,10 @@ pub mod msg_context;
 
 use msg_context::{CmdParts, Context};
 use std::{future::Future, pin::Pin};
-use teloxide_core::{prelude::*, types::Message};
+use teloxide_core::{
+    prelude::*,
+    types::{CallbackQuery, ChatMemberUpdated, Message},
+};
 
 use crate::db::DataStorage;
 type TaskResult = Pin<Box<dyn Future<Output = ()> + Send>>;
@@ -108,6 +111,11 @@ pub enum ModuleKind {
     General(Option<ModuleDesctiption>),
 }
 
+pub enum MicroTask {
+    OnCallbackQuery(fn(app: &'static App, query: &CallbackQuery) -> types::Consumption),
+    OnChatMember(fn(app: &'static App, data: &ChatMemberUpdated) -> types::Consumption),
+}
+
 pub struct Module {
     pub kind: ModuleKind,
     pub task: fn(ctx: &mut Context, message: &Message) -> types::Consumption,
@@ -119,6 +127,7 @@ pub struct App {
     pub bot: Bot,
     pub db: DataStorage,
     pub modules: &'static [&'static Module],
+    pub micro_tasks: &'static [&'static MicroTask],
 }
 
 impl App {
@@ -128,23 +137,6 @@ impl App {
             message_id: message.id,
             chat_id: message.chat.id,
             app: self,
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use teloxide_core::Bot;
-
-    use crate::{db::DataStorage, App};
-
-    fn fab_app() -> App {
-        App {
-            name: "琳酱".to_string(),
-            username: "testbot".to_string(),
-            bot: Bot::new("fake:token"),
-            db: DataStorage {},
-            modules: &[],
         }
     }
 }
