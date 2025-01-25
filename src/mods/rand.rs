@@ -33,7 +33,7 @@ async fn send_selective_rand(ctx: TaskContext, text_body: String, spliter: &str)
         .map(|str| str.trim())
         .filter(|str| !str.is_empty())
         .choose(&mut rand::thread_rng())
-        .unwrap_or("undefined");
+        .unwrap_or(spliter);
 
     if let Err(err) = ctx
         .reply_html(&format!("{}!", escape_html(result)))
