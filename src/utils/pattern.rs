@@ -20,10 +20,8 @@ impl Pattern for &str {
 impl Pattern for char {
     type Output<'a> = char;
     fn check_pattern<'a>(&mut self, input: &'a str) -> Option<(&'a str, Self::Output<'a>)> {
-        input
-            .char_indices()
-            .next()
-            .and_then(|(i, c)| (c == *self).then(|| (input.split_at(i).1, c)))
+        let mut it = input.chars();
+        (it.next()? == *self).then(|| (it.as_str(), *self))
     }
 }
 
