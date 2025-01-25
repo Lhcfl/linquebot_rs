@@ -1,4 +1,6 @@
 use log::warn;
+use msg_context::Context;
+use msg_context::TaskContext;
 use rand::seq::IteratorRandom;
 use rand::Rng;
 use teloxide_core::prelude::*;
@@ -9,14 +11,8 @@ use crate::utils::telegram::prelude::*;
 use crate::utils::*;
 use crate::Consumption;
 
-async fn send_raw_rand(bot: &Bot, message: Message, text_body: String) {
+async fn send_raw_rand(ctx: TaskContext, from: User, text_body: String) {
     let result = rand::thread_rng().gen_range(0..=100);
-
-    let Some(from) = message.from.clone() else {
-        warn!("no reply target");
-        return;
-    };
-
     let msg = format!(
         "{} {}",
         from.html_link(),
@@ -26,27 +22,19 @@ async fn send_raw_rand(bot: &Bot, message: Message, text_body: String) {
             format!("{} 的概率是: {result}%", escape_html(text_body.trim()))
         }
     );
-
-    if let Err(err) = bot
-        .send_message(message.chat.id, msg)
-        .parse_mode(ParseMode::Html)
-        .send()
-        .await
-    {
+    if let Err(err) = ctx.reply_html(&msg).send().await {
         warn!("Failed to send reply: {}", err.to_string());
     }
 }
 
-async fn send_selective_rand(bot: &Bot, message: Message, text_body: String, spliter: &str) {
+async fn send_selective_rand(ctx: TaskContext, text_body: String, spliter: &str) {
     let result = text_body
         .split(&spliter)
         .choose(&mut rand::thread_rng())
         .unwrap_or("undefined");
 
-    if let Err(err) = bot
-        .send_message(message.chat.id, format!("{}!", escape_html(result)))
-        .parse_mode(ParseMode::Html)
-        .reply_parameters(ReplyParameters::new(message.id))
+    if let Err(err) = ctx
+        .reply_html(&format!("{}!", escape_html(result)))
         .send()
         .await
     {
@@ -54,16 +42,16 @@ async fn send_selective_rand(bot: &Bot, message: Message, text_body: String, spl
     }
 }
 
-pub fn on_message(app: &'static App, message: &Message) -> Consumption {
-    let text = parse_command(message.text()?, "rand")?.to_string();
-    let message = message.clone();
-
+pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
+    let text = ctx.cmd?.content.to_string();
+    let Some(from) = message.from.clone() else {
+        warn!("No reply target.");
+        return Consumption::Stop;
+    };
     if text.contains("还是") {
-        Consumption::StopWith(Box::pin(send_selective_rand(
-            &app.bot, message, text, "还是",
-        )))
+        Consumption::StopWith(Box::pin(send_selective_rand(ctx.task(), text, "还是")))
     } else {
-        Consumption::StopWith(Box::pin(send_raw_rand(&app.bot, message, text)))
+        Consumption::StopWith(Box::pin(send_raw_rand(ctx.task(), from, text)))
     }
 }
 

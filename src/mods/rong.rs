@@ -2,9 +2,9 @@ use log::warn;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::msg_context::Context;
 use crate::utils::telegram::prelude::*;
 use crate::utils::*;
-use crate::App;
 use crate::Consumption;
 use crate::Module;
 use crate::ModuleDesctiption;
@@ -41,7 +41,7 @@ async fn send_rong(
     }
 }
 
-pub fn on_message(app: &App, message: &Message) -> Consumption {
+pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
     let text = message.text()?;
 
     // let message = message;
@@ -59,7 +59,7 @@ pub fn on_message(app: &App, message: &Message) -> Consumption {
     let mut iter = text[1..].split_whitespace();
     let action = iter.next()?.to_string();
     let addition = iter.next().and_then(|str| Some(str.to_string()));
-    let bot = app.bot.clone();
+    let bot = ctx.app.bot.clone();
 
     tokio::spawn(async move { send_rong(bot, chat_id, actor, actee, action, addition).await });
 

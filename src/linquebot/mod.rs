@@ -13,7 +13,6 @@ pub mod types {
         fmt::Debug,
         future::Future,
         ops::{FromResidual, Try},
-        pin::Pin,
     };
 
     use super::TaskResult;
@@ -97,6 +96,7 @@ pub mod types {
     }
 }
 
+#[derive(Debug)]
 pub struct ModuleDesctiption {
     pub name: &'static str,
     pub description: &'static str,
@@ -122,25 +122,6 @@ pub struct App {
 }
 
 impl App {
-    pub fn parse_command<'a>(&self, str: &'a str, cmd: &str) -> Option<&'a str> {
-        if str == format!("/{cmd}") {
-            return Some("");
-        }
-        let bot_username = &self.username;
-        if str == format!("/{cmd}@{bot_username}") {
-            return Some("");
-        }
-        let t = format!("/{cmd} ");
-        if str.starts_with(&t) {
-            return Some(&str[t.len()..].trim());
-        }
-        let t = format!("/{cmd}@{bot_username} ");
-        if str.starts_with(&t) {
-            return Some(&str[t.len()..].trim());
-        }
-        return None;
-    }
-
     pub fn create_message_context<'a>(&'static self, message: &'a Message) -> Context<'a> {
         Context {
             cmd: CmdParts::parse_from(message),
@@ -157,7 +138,7 @@ mod tests {
 
     use crate::{db::DataStorage, App};
 
-    fn fake_app() -> App {
+    fn fab_app() -> App {
         App {
             name: "琳酱".to_string(),
             username: "testbot".to_string(),
@@ -165,49 +146,5 @@ mod tests {
             db: DataStorage {},
             modules: &[],
         }
-    }
-
-    #[test]
-    fn parse_command_tests() {
-        let app = fake_app();
-
-        assert_eq!(app.parse_command("你好", "some"), None);
-        assert_eq!(app.parse_command("some", "some"), None);
-        assert_eq!(app.parse_command(" /some test 123", "some"), None);
-
-        assert_eq!(app.parse_command("/some", "some"), Some(""));
-        assert_eq!(app.parse_command("/some ", "some"), Some(""));
-        assert_eq!(app.parse_command("/some   ", "some"), Some(""));
-        assert_eq!(app.parse_command("/some   123", "some"), Some("123"));
-        assert_eq!(
-            app.parse_command("/some test 123  ", "some"),
-            Some("test 123")
-        );
-        assert_eq!(
-            app.parse_command("/some test  123", "some"),
-            Some("test  123")
-        );
-
-        assert_eq!(app.parse_command("你好@testbot", "some"), None);
-        assert_eq!(app.parse_command("some@testbot", "some"), None);
-        assert_eq!(app.parse_command(" /some test 123", "some"), None);
-        assert_eq!(app.parse_command("/some@otherbot", "some"), None);
-        assert_eq!(app.parse_command("/some@otherbot 1 2 3", "some"), None);
-
-        assert_eq!(app.parse_command("/some@testbot", "some"), Some(""));
-        assert_eq!(app.parse_command("/some@testbot ", "some"), Some(""));
-        assert_eq!(app.parse_command("/some@testbot   ", "some"), Some(""));
-        assert_eq!(
-            app.parse_command("/some@testbot   123", "some"),
-            Some("123")
-        );
-        assert_eq!(
-            app.parse_command("/some@testbot test 123  ", "some"),
-            Some("test 123")
-        );
-        assert_eq!(
-            app.parse_command("/some@testbot test  123", "some"),
-            Some("test  123")
-        );
     }
 }

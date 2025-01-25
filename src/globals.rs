@@ -1,3 +1,3 @@
-use std::sync::OnceLock;
+// use std::sync::OnceLock;
 
-pub static BOT_USERNAME: OnceLock<String> = OnceLock::new();
+// pub static BOT_USERNAME: OnceLock<String> = OnceLock::new();

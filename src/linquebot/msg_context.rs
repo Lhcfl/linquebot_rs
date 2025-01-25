@@ -7,11 +7,11 @@ use teloxide_core::{
 
 use super::{App, ModuleDesctiption};
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub struct CmdParts<'a> {
-    cmd: &'a str,
-    username: Option<&'a str>,
-    content: &'a str,
+    pub cmd: &'a str,
+    pub username: Option<&'a str>,
+    pub content: &'a str,
 }
 
 impl<'a> CmdParts<'a> {
@@ -55,6 +55,11 @@ impl<'a> Context<'a> {
         let Some(cmd) = &self.cmd else {
             return false;
         };
+        if let Some(username) = cmd.username {
+            if username != self.app.username {
+                return false;
+            }
+        }
         cmd.cmd == desc.name
     }
 }
@@ -62,7 +67,7 @@ impl<'a> Context<'a> {
 pub struct TaskContext {
     chat_id: ChatId,
     message_id: MessageId,
-    app: &'static App,
+    pub app: &'static App,
 }
 
 impl TaskContext {
