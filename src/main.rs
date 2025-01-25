@@ -35,7 +35,7 @@ fn module_resolver(app: &'static App, message: Message) {
     for module in app.modules {
         if let ModuleKind::Command(desc) = &module.kind {
             if !context.matches_command(desc) {
-                break;
+                continue;
             }
         }
         let task_result = (module.task)(&mut context, &message);

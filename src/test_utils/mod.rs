@@ -1,17 +1,7 @@
 #[cfg(test)]
 pub mod fabricator {
-    use crate::globals::BOT_USERNAME;
     use chrono::{DateTime, Utc};
-    use std::sync::LazyLock;
     use teloxide_core::types::*;
-    use teloxide_core::Bot;
-
-    pub static TEST_BOT: LazyLock<Bot> = LazyLock::new(|| {
-        BOT_USERNAME
-            .set(String::from("testbot"))
-            .expect("should able to set");
-        Bot::new("AAAAA:ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ")
-    });
 
     pub fn fab_chat() -> Chat {
         Chat {

@@ -5,8 +5,8 @@ use teloxide_core::ApiError;
 use teloxide_core::RequestError;
 
 use crate::linquebot::*;
-use crate::utils::*;
 use crate::Consumption;
+use msg_context::Context;
 
 async fn reply_info(bot: &Bot, message: Message, info: &str) {
     if let Err(err) = bot
@@ -78,21 +78,26 @@ async fn set_title(bot: &Bot, message: Message, user: User, title: String) {
     reply_info(bot, message, &format!("设置成功，现在你是 {title} 了")).await;
 }
 
-pub fn on_message(app: &'static App, message: &Message) -> Consumption {
-    let text = parse_command(message.text()?, "t")?.to_string();
+pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
+    let title = ctx.cmd?.content;
     let message = message.clone();
     let user = message.from.as_ref()?.clone();
 
     if !message.chat.is_group() && !message.chat.is_supergroup() {
         Consumption::StopWith(Box::pin(reply_info(
-            &app.bot,
+            &ctx.app.bot,
             message,
             "需要在群里才能设置头衔哦",
         )))
-    } else if text.trim().is_empty() {
-        Consumption::StopWith(Box::pin(clear_title(&app.bot, message, user)))
+    } else if title.is_empty() {
+        Consumption::StopWith(Box::pin(clear_title(&ctx.app.bot, message, user)))
     } else {
-        Consumption::StopWith(Box::pin(set_title(&app.bot, message, user, text)))
+        Consumption::StopWith(Box::pin(set_title(
+            &ctx.app.bot,
+            message,
+            user,
+            title.to_string(),
+        )))
     }
 }
 

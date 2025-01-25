@@ -1,4 +1,3 @@
-use crate::globals::BOT_USERNAME;
 pub mod pattern;
 
 pub fn escape_html(str: &str) -> String {
@@ -13,28 +12,6 @@ pub fn escape_html(str: &str) -> String {
         }
     }
     ret
-}
-
-/// Parse command  
-/// matchs if the str is `/cmd` or `/cmd <rest>`  
-/// returns rest trimmed
-pub fn parse_command<'a>(str: &'a str, cmd: &str) -> Option<&'a str> {
-    if str == format!("/{cmd}") {
-        return Some("");
-    }
-    let bot_username = BOT_USERNAME.get().expect("should has bot username");
-    if str == format!("/{cmd}@{bot_username}") {
-        return Some("");
-    }
-    let t = format!("/{cmd} ");
-    if str.starts_with(&t) {
-        return Some(&str[t.len()..].trim());
-    }
-    let t = format!("/{cmd}@{bot_username} ");
-    if str.starts_with(&t) {
-        return Some(&str[t.len()..].trim());
-    }
-    return None;
 }
 
 pub fn split_n<const N: usize>(src: &str) -> (Vec<&str>, Option<&str>) {
@@ -63,45 +40,6 @@ pub mod telegram {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::fabricator::*;
-
-    #[test]
-    fn parse_command_tests() {
-        use crate::utils::parse_command;
-
-        let _bot = TEST_BOT.api_url();
-
-        assert_eq!(parse_command("你好", "some"), None);
-        assert_eq!(parse_command("some", "some"), None);
-        assert_eq!(parse_command(" /some test 123", "some"), None);
-
-        assert_eq!(parse_command("/some", "some"), Some(""));
-        assert_eq!(parse_command("/some ", "some"), Some(""));
-        assert_eq!(parse_command("/some   ", "some"), Some(""));
-        assert_eq!(parse_command("/some   123", "some"), Some("123"));
-        assert_eq!(parse_command("/some test 123  ", "some"), Some("test 123"));
-        assert_eq!(parse_command("/some test  123", "some"), Some("test  123"));
-
-        assert_eq!(parse_command("你好@testbot", "some"), None);
-        assert_eq!(parse_command("some@testbot", "some"), None);
-        assert_eq!(parse_command(" /some test 123", "some"), None);
-        assert_eq!(parse_command("/some@otherbot", "some"), None);
-        assert_eq!(parse_command("/some@otherbot 1 2 3", "some"), None);
-
-        assert_eq!(parse_command("/some@testbot", "some"), Some(""));
-        assert_eq!(parse_command("/some@testbot ", "some"), Some(""));
-        assert_eq!(parse_command("/some@testbot   ", "some"), Some(""));
-        assert_eq!(parse_command("/some@testbot   123", "some"), Some("123"));
-        assert_eq!(
-            parse_command("/some@testbot test 123  ", "some"),
-            Some("test 123")
-        );
-        assert_eq!(
-            parse_command("/some@testbot test  123", "some"),
-            Some("test  123")
-        );
-    }
-
     #[test]
     fn split_n_tests() {
         use crate::utils::split_n;

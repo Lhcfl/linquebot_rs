@@ -7,12 +7,12 @@
 
 use log::trace;
 use log::warn;
+use msg_context::Context;
 use serde::Deserialize;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
 use crate::linquebot::*;
-use crate::utils::*;
 use crate::Consumption;
 
 #[derive(Deserialize, Debug)]
@@ -44,27 +44,23 @@ async fn get_hitokoto(args: &str) -> Hitokoto {
     }
 }
 
-async fn hitokoto(bot: &Bot, chat_id: ChatId, message_id: MessageId, args: String) {
-    let res = get_hitokoto(&args).await;
-
-    let res = bot
-        .send_message(chat_id, format!("{} ——{}", res.hitokoto, res.from))
-        .reply_parameters(ReplyParameters::new(message_id))
-        .send()
-        .await;
-
-    if let Err(err) = res {
-        warn!("Failed to send reply: {}", err.to_string());
-    }
-}
-
-fn on_message(app: &'static App, message: &Message) -> Consumption {
-    let args = parse_command(message.text()?, "hitokoto")?;
+fn send_hitokoto(ctx: &mut Context, _message: &Message) -> Consumption {
+    let args = ctx.cmd?.content;
     let args = args.split_whitespace().collect::<Vec<_>>().join("&c=");
-    let chat_id = message.chat.id;
-    let message_id = message.id;
+    let ctx = ctx.task();
 
-    Consumption::StopWith(Box::pin(hitokoto(&app.bot, chat_id, message_id, args)))
+    Consumption::StopWith(Box::pin(async move {
+        let res = get_hitokoto(&args).await;
+
+        let res = ctx
+            .reply(&format!("{} ——{}", res.hitokoto, res.from))
+            .send()
+            .await;
+
+        if let Err(err) = res {
+            warn!("Failed to send reply: {}", err.to_string());
+        }
+    }))
 }
 
 pub static MODULE: Module = Module {
@@ -73,5 +69,5 @@ pub static MODULE: Module = Module {
         description: "获取一言",
         description_detailed: None,
     }),
-    task: on_message,
+    task: send_hitokoto,
 };
