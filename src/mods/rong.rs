@@ -10,42 +10,14 @@ use crate::Module;
 use crate::ModuleDesctiption;
 use crate::ModuleKind;
 
-async fn send_rong(
-    bot: Bot,
-    chat_id: ChatId,
-    actor_user: User,
-    actee_user: User,
-    action: String,
-    addition: Option<String>,
-) {
-    let mut text = format!(
-        "{} {} {}",
-        actor_user.html_link(),
-        escape_html(&action),
-        actee_user.html_link(),
-    );
-    if let Some(addition) = addition {
-        text.push(' ');
-        text.push_str(&escape_html(&addition));
-    }
-    text.push('!');
-
-    let result = bot
-        .parse_mode(ParseMode::Html)
-        .send_message(chat_id, text)
-        .send()
-        .await;
-
-    if let Err(err) = result {
-        warn!("Failed to send reply: {}", err.to_string());
-    }
-}
-
-pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
+pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     let text = message.text()?;
+    if let Some(username) = ctx.cmd.and_then(|cmd| cmd.username) {
+        if username != ctx.app.username {
+            return Consumption::Next;
+        }
+    }
 
-    // let message = message;
-    let chat_id = message.chat.id;
     let mut actee = message.reply_to_message().as_ref()?.from.clone()?;
     let mut actor = message.from.as_ref()?.clone();
 
@@ -58,12 +30,43 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
     let text = String::from(text);
     let mut iter = text[1..].split_whitespace();
     let action = iter.next()?.to_string();
-    let addition = iter.next().and_then(|str| Some(str.to_string()));
-    let bot = ctx.app.bot.clone();
+    let addition = iter
+        .remainder()
+        .and_then(|str| Some(str.trim().to_string()));
+    let ctx = ctx.task();
 
-    tokio::spawn(async move { send_rong(bot, chat_id, actor, actee, action, addition).await });
+    Consumption::StopWith(Box::pin(async move {
+        let mut text = format!(
+            "{} {} {}",
+            actor.html_link(),
+            escape_html(&action),
+            if actor.id == actee.id {
+                format!("<a href=\"{}\">自己</a>", actee.preferably_tme_url())
+            } else {
+                actee.html_link()
+            }
+        );
+        if let Some(addition) = addition {
+            text.push(' ');
+            text.push_str(&escape_html(&addition));
+        }
+        text.push('!');
 
-    Consumption::Stop
+        let result = ctx
+            .reply_html(&text)
+            .link_preview_options(LinkPreviewOptions {
+                is_disabled: true,
+                url: None,
+                prefer_large_media: false,
+                prefer_small_media: false,
+                show_above_text: false,
+            })
+            .send()
+            .await;
+        if let Err(err) = result {
+            warn!("Failed to send reply: {}", err.to_string());
+        }
+    }))
 }
 
 pub static MODULE: Module = Module {
@@ -72,5 +75,5 @@ pub static MODULE: Module = Module {
         description: "Rong一下人",
         description_detailed: None,
     })),
-    task: on_message,
+    task: rong,
 };

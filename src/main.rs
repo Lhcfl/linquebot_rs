@@ -4,6 +4,7 @@
 #![feature(try_trait_v2)]
 #![feature(associated_type_defaults)]
 #![feature(macro_metavar_expr)]
+#![feature(str_split_whitespace_remainder)]
 
 mod assets;
 mod db;
