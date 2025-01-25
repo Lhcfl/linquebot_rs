@@ -6,7 +6,6 @@ use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
 use crate::linquebot::*;
-use crate::utils::telegram::prelude::*;
 use crate::Consumption;
 
 async fn reply(ctx: TaskContext, text: &str) {

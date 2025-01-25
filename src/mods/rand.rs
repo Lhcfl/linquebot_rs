@@ -30,6 +30,8 @@ async fn send_raw_rand(ctx: TaskContext, from: User, text_body: String) {
 async fn send_selective_rand(ctx: TaskContext, text_body: String, spliter: &str) {
     let result = text_body
         .split(&spliter)
+        .map(|str| str.trim())
+        .filter(|str| !str.is_empty())
         .choose(&mut rand::thread_rng())
         .unwrap_or("undefined");
 
