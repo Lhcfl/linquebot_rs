@@ -4,6 +4,7 @@
 #![feature(try_trait_v2)]
 
 mod assets;
+mod db;
 mod globals;
 mod linquebot;
 mod mods;
@@ -14,6 +15,7 @@ use std::sync::OnceLock;
 
 use crate::linquebot::types::*;
 use chrono::Utc;
+use db::DataStorage;
 use linquebot::*;
 use log::{error, info, trace, warn};
 use simple_logger::SimpleLogger;
@@ -23,18 +25,6 @@ use teloxide_core::{
     RequestError,
 };
 
-/// Module Handles 的顺序很重要
-/// 请确保这些函数是拓扑排序的
-// static MODULE_HANDLES: &[fn(&Bot, &Message) -> Consumption] = &[
-//     mods::skip_other_bot::on_message,
-//     mods::bot_on_off::on_message,
-//     mods::rand::on_message,
-//     mods::set_title::on_message,
-//     mods::todo::on_message,
-//     mods::hitokoto::on_message,
-//     mods::answer_book::on_message,
-//     mods::rong::on_message,
-// ];
 static APP: OnceLock<App> = OnceLock::new();
 
 fn module_resolver(app: &'static App, message: Message) -> () {
@@ -82,6 +72,7 @@ async fn init_app() -> Result<&'static linquebot::App, RequestError> {
         name: "琳酱".to_string(),
         username: me.username().to_string(),
         bot,
+        db: DataStorage {},
         modules: mods::MODULES,
     });
     let app = APP.get().expect("should initialized app");

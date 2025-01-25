@@ -10,6 +10,8 @@ pub mod set_title;
 pub mod skip_other_bot;
 pub mod todo;
 
+/// Module Handles 的顺序很重要
+/// 请确保这些函数是拓扑排序的
 pub static MODULES: &[&'static Module] = &[
     &help::MODULE,
     &todo::MODULE,
