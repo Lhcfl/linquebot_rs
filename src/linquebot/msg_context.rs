@@ -65,8 +65,8 @@ impl<'a> Context<'a> {
 }
 
 pub struct TaskContext {
-    chat_id: ChatId,
-    message_id: MessageId,
+    pub chat_id: ChatId,
+    pub message_id: MessageId,
     pub app: &'static App,
 }
 

@@ -106,8 +106,8 @@ pub static MODULE: Module = Module {
         name: "t",
         description: "设置头衔",
         description_detailed: Some(concat!(
-            "不加参数的 `/t` 会清除头衔。\n",
-            "加参数的 `/t xxx` 设置头衔为 xxx。\n",
+            "不加参数的 /t 会清除头衔。\n",
+            "加参数的 /t xxx 设置头衔为 xxx。\n",
             "琳酱必须具有管理员权限，琳酱没办法对非琳酱设置的管理员设置头衔"
         )),
     }),

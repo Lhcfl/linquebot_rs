@@ -61,9 +61,9 @@ pub static MODULE: Module = Module {
         description: "随机一下",
         description_detailed: Some(concat!(
             "可选参数：事件\n",
-            "当发送 `/rand 事件` 的时候，会回复“事件 的概率是 `[rand]`%”\n",
-            "如果事件被省略，则会回复“掷出了 `[rand]`”\n\n",
-            "特殊关键字：当发送 `/rand A还是B` 的时候，会在这些“还是”中选择一个发送回来\n",
+            "当发送 <code>/rand 事件</code> 的时候，会回复“事件 的概率是 {rand}%”\n",
+            "如果事件被省略，则会回复“掷出了 {rand}”\n\n",
+            "特殊关键字：当发送 <code>/rand A还是B</code> 的时候，会在这些“还是”中选择一个发送回来\n",
         )),
     }),
     task: on_message,

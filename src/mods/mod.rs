@@ -14,6 +14,9 @@ pub mod todo;
 /// 请确保这些函数是拓扑排序的
 pub static MODULES: &[&'static Module] = &[
     &help::MODULE,
+    &bot_on_off::BOT_ON_MODULE,
+    &bot_on_off::BOT_OFF_MODULE,
+    &bot_on_off::STOP_WHEN_BOT_OFF,
     &todo::MODULE,
     &hitokoto::MODULE,
     &answer_book::MODULE,

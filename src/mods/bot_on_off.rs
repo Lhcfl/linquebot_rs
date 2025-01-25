@@ -1,59 +1,89 @@
 //! 这还是个雏形
-// use log::warn;
-// use std::collections::HashMap;
-// use std::sync::LazyLock;
-// use std::sync::RwLock;
-// use teloxide_core::prelude::*;
-// use teloxide_core::types::*;
+use log::error;
+use log::warn;
+use std::collections::HashMap;
+use std::sync::LazyLock;
+use std::sync::RwLock;
+use teloxide_core::prelude::*;
+use teloxide_core::types::*;
 
-// use crate::Consumption;
+use crate::msg_context::Context;
+use crate::Consumption;
+use crate::Module;
+use crate::ModuleDesctiption;
+use crate::ModuleKind;
 
-// static BOT_ON: LazyLock<RwLock<HashMap<ChatId, bool>>> = LazyLock::new(Default::default);
+static BOT_ON: LazyLock<RwLock<HashMap<ChatId, bool>>> = LazyLock::new(Default::default);
 
-// fn on_bot_on_message(bot: &Bot, message: &Message) -> Consumption {
-//     let _ = parse_command(message.text()?, "bot_on")?;
-//     let chat_id = message.chat.id;
-//     BOT_ON.write().unwrap().insert(chat_id, true);
+fn on_bot_on_message(ctx: &mut Context, _: &Message) -> Consumption {
+    let Ok(mut record) = BOT_ON.write() else {
+        error!("Failed to get bot on status!");
+        return Consumption::Stop;
+    };
 
-//     let bot = bot.clone();
-//     tokio::spawn(async move {
-//         let res = bot.send_message(chat_id, "琳酱已开机").send().await;
-//         if let Err(err) = res {
-//             warn!("Failed to send reply: {}", err.to_string());
-//         }
-//     });
+    let ctx = ctx.task();
+    if let Some(_) = record.remove(&ctx.chat_id) {
+        Consumption::StopWith(Box::pin(async move {
+            if let Err(err) = ctx.reply("琳酱已开机").send().await {
+                warn!("Failed to send reply: {}", err.to_string());
+            }
+        }))
+    } else {
+        Consumption::StopWith(Box::pin(async move {
+            if let Err(err) = ctx.reply("琳酱处于开机状态").send().await {
+                warn!("Failed to send reply: {}", err.to_string());
+            }
+        }))
+    }
+}
+fn on_bot_off_message(ctx: &mut Context, _: &Message) -> Consumption {
+    let Ok(mut record) = BOT_ON.write() else {
+        error!("Failed to get bot on status!");
+        return Consumption::Stop;
+    };
 
-//     Consumption::Stop
-// }
-// fn on_bot_off_message(bot: &Bot, message: &Message) -> Consumption {
-//     let _ = parse_command(message.text()?, "bot_off")?;
-//     let chat_id = message.chat.id;
-//     BOT_ON.write().unwrap().insert(chat_id, false);
+    let ctx = ctx.task();
+    if let Some(false) = record.insert(ctx.chat_id, false) {
+        Consumption::StopWith(Box::pin(async move {
+            if let Err(err) = ctx.reply("琳酱处于关机状态").send().await {
+                warn!("Failed to send reply: {}", err.to_string());
+            }
+        }))
+    } else {
+        Consumption::StopWith(Box::pin(async move {
+            if let Err(err) = ctx.reply("琳酱已关机").send().await {
+                warn!("Failed to send reply: {}", err.to_string());
+            }
+        }))
+    }
+}
 
-//     let bot = bot.clone();
-//     let chat_id = message.chat.id;
-//     tokio::spawn(async move {
-//         let res = bot.send_message(chat_id, "琳酱已关机").send().await;
-//         if let Err(err) = res {
-//             warn!("Failed to send reply: {}", err.to_string());
-//         }
-//     });
+fn stop_when_bot_off(ctx: &mut Context, _: &Message) -> Consumption {
+    if let Ok(record) = BOT_ON.read() {
+        if let Some(false) = record.get(&ctx.chat_id) {
+            return Consumption::Stop;
+        }
+    }
+    Consumption::Next
+}
 
-//     Consumption::Stop
-// }
-
-// pub fn on_message(bot: &Bot, message: &Message) -> Consumption {
-//     if BOT_ON
-//         .read()
-//         .unwrap()
-//         .get(&message.chat.id)
-//         .cloned()
-//         .unwrap_or(true)
-//     {
-//         on_bot_off_message(bot, message).or(on_bot_on_message(bot, message))
-//     } else {
-//         let _ = on_bot_off_message(bot, message);
-//         let _ = on_bot_on_message(bot, message);
-//         Consumption::Stop
-//     }
-// }
+pub static BOT_ON_MODULE: Module = Module {
+    kind: ModuleKind::Command(ModuleDesctiption {
+        name: "bot_on",
+        description: "打开 bot",
+        description_detailed: None,
+    }),
+    task: on_bot_on_message,
+};
+pub static BOT_OFF_MODULE: Module = Module {
+    kind: ModuleKind::Command(ModuleDesctiption {
+        name: "bot_off",
+        description: "关闭 bot",
+        description_detailed: None,
+    }),
+    task: on_bot_off_message,
+};
+pub static STOP_WHEN_BOT_OFF: Module = Module {
+    kind: ModuleKind::General(None),
+    task: stop_when_bot_off,
+};

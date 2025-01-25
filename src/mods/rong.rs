@@ -74,7 +74,7 @@ pub static MODULE: Module = Module {
         name: "rong",
         description: "Rong一下人",
         description_detailed: Some(concat!(
-            "对于没有在模块记录内的命令，如果你对某个人回复 `/动作 短语`，会回复“你 动作 某个人 短语！”"
+            "对于没有在模块记录内的命令，如果你对某个人回复 <code>/动作 短语</code>，会回复“你 动作 某个人 短语！”"
         )),
     })),
     task: rong,

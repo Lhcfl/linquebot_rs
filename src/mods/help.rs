@@ -31,7 +31,7 @@ fn gen_help_message(app: &App) -> (String, InlineKeyboardMarkup) {
                 }
             }
             ModuleKind::General(Some(cmd)) => {
-                general_texts.push(format!("*{}*: {}", cmd.name, cmd.description,));
+                general_texts.push(format!("<b>{}</b>: {}", cmd.name, cmd.description,));
                 if let Some(_) = cmd.description_detailed {
                     detailed_modules.push(cmd.name);
                 }
@@ -75,7 +75,7 @@ fn send_help(ctx: &mut Context, _msg: &Message) -> Consumption {
         let (message, reply_markup) = gen_help_message(ctx.app);
 
         let res = ctx
-            .reply_markdown(&message)
+            .reply_html(&message)
             .reply_markup(reply_markup)
             .send()
             .await;
@@ -106,13 +106,13 @@ fn on_help_callback(app: &'static App, cq: &CallbackQuery) -> Consumption {
                         chat_id,
                         message.id(),
                         format!(
-                            "{HELP_HEAD}\n\n*{}*: {}\n\n{}",
+                            "{HELP_HEAD}\n\n<b>{}</b>: {}\n\n{}",
                             desc.name,
                             desc.description,
                             desc.description_detailed.expect("上面检查了 is_some")
                         ),
                     )
-                    .parse_mode(ParseMode::MarkdownV2)
+                    .parse_mode(ParseMode::Html)
                     .reply_markup(InlineKeyboardMarkup::new(vec![vec![
                         InlineKeyboardButton::callback("返回", "help {default}"),
                     ]]))
@@ -132,7 +132,7 @@ fn on_help_callback(app: &'static App, cq: &CallbackQuery) -> Consumption {
         let res = app
             .bot
             .edit_message_text(chat_id, message.id(), text)
-            .parse_mode(ParseMode::MarkdownV2)
+            .parse_mode(ParseMode::Html)
             .reply_markup(reply_markup)
             .send()
             .await;
