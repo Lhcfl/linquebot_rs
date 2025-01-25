@@ -2,6 +2,7 @@ use crate::linquebot::Module;
 
 pub mod answer_book;
 pub mod bot_on_off;
+pub mod dice;
 pub mod help;
 pub mod hitokoto;
 pub mod rand;
@@ -17,6 +18,7 @@ pub static MODULES: &[&'static Module] = &[
     &hitokoto::MODULE,
     &answer_book::MODULE,
     &rand::MODULE,
+    &dice::MODULE,
     &set_title::MODULE,
     &rong::MODULE,
 ];
