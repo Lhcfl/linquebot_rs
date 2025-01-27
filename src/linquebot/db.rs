@@ -7,7 +7,7 @@ use std::{
 };
 
 use quick_cache::sync::Cache;
-use sqlx::{Connection, SqliteConnection};
+use sqlx::{Connection, Row, SqliteConnection};
 use teloxide_core::types::{ChatId, UserId};
 use tokio::sync::{Mutex, OwnedMappedMutexGuard, OwnedMutexGuard};
 
@@ -53,22 +53,14 @@ impl DataStorage {
         let cache = if let Some(c) = self.cache.get(&id) {
             c
         } else if T::persistent() {
-            let (ty, user, chat) = (
-                std::any::type_name::<T>(),
-                id.user.map(|u| u.0 as i64),
-                id.chat.map(|c| c.0),
-            );
-            let res = sqlx::query!(
-                "select json from data where ty = ? and user = ? and chat = ?",
-                ty,
-                user,
-                chat
-            )
-            .fetch_optional(&mut *self.db.lock().await)
-            .await
-            .expect("db read error")?
-            .json?;
-            let res = T::from_str(&res);
+            let res = sqlx::query("select json from data where ty = ? and user = ? and chat = ?")
+                .bind(std::any::type_name::<T>())
+                .bind(id.user.map(|u| u.0 as i64))
+                .bind(id.chat.map(|c| c.0))
+                .fetch_optional(&mut *self.db.lock().await)
+                .await
+                .expect("db read error")?;
+            let res = T::from_str(res.get::<&str, usize>(0));
             let res = Arc::new(Mutex::new(res));
             self.cache.insert(id, res.clone());
             res
@@ -89,21 +81,20 @@ impl DataStorage {
 
     pub async fn insert<T: DbData>(&'static self, id: DataId, val: T) {
         if T::persistent() {
-            self.insert_raw(type_name::<T>(), id, val.to_string()).await;
+            self.insert_raw(type_name::<T>(), id, &val.to_string()).await;
         }
         self.cache.insert(id, Arc::new(Mutex::new(val)));
     }
-    async fn insert_raw(&'static self, ty: &str, id: DataId, val: String) {
-        let (user, chat) = (id.user.map(|u| u.0 as i64), id.chat.map(|c| c.0));
-        sqlx::query!(
-            "insert into data(ty, user, chat, json) values (?, ?, ?, ?)"
-                + "on conflict(ty, user, chat) do update set json = ?",
-            ty,
-            user,
-            chat,
-            val,
-            val
-        )
+    async fn insert_raw(&'static self, ty: &str, id: DataId, val: &str) {
+        sqlx::query(concat!(
+            "insert into data(ty, user, chat, json) values (?, ?, ?, ?) ",
+            "on conflict(ty, user, chat) do update set json = ?"
+        ))
+        .bind(ty)
+        .bind(id.user.map(|u| u.0 as i64))
+        .bind(id.chat.map(|c| c.0))
+        .bind(val)
+        .bind(val)
         .execute(&mut *self.db.lock().await)
         .await
         .expect("db write error");
@@ -112,20 +103,13 @@ impl DataStorage {
     pub async fn remove<T: DbData>(&'static self, id: DataId) {
         self.cache.remove(&id);
         if T::persistent() {
-            let (ty, user, chat) = (
-                type_name::<T>(),
-                id.user.map(|u| u.0 as i64),
-                id.chat.map(|c| c.0),
-            );
-            sqlx::query!(
-                "delete from data where ty = ? and user = ? and chat = ?",
-                ty,
-                user,
-                chat,
-            )
-            .execute(&mut *self.db.lock().await)
-            .await
-            .expect("db write error");
+            sqlx::query("delete from data where ty = ? and user = ? and chat = ?")
+                .bind(type_name::<T>())
+                .bind(id.user.map(|u| u.0 as i64))
+                .bind(id.chat.map(|c| c.0))
+                .execute(&mut *self.db.lock().await)
+                .await
+                .expect("db write error");
         }
     }
 }
@@ -156,7 +140,7 @@ impl<T: DbData> AsyncDrop for DataGuard<T> {
         async move {
             if self.changed {
                 self.db
-                    .insert_raw(type_name::<T>(), self.id, self.sub.to_string())
+                    .insert_raw(type_name::<T>(), self.id, &self.sub.to_string())
                     .await;
             }
         }
