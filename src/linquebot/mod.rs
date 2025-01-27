@@ -1,13 +1,16 @@
+pub mod db;
 pub mod msg_context;
 
-use msg_context::{CmdParts, Context};
 use std::{future::Future, pin::Pin};
+
+use msg_context::{CmdParts, Context};
 use teloxide_core::{
     prelude::*,
     types::{CallbackQuery, ChatMemberUpdated, Message},
 };
 
-use crate::db::DataStorage;
+use crate::DataStorage;
+
 type TaskResult = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 pub mod types {

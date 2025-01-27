@@ -7,9 +7,11 @@
 #![feature(str_split_whitespace_remainder)]
 #![feature(iter_array_chunks)]
 #![feature(iter_intersperse)]
+#![feature(trait_upcasting)]
+#![feature(async_drop)]
+#![feature(impl_trait_in_assoc_type)]
 
 mod assets;
-mod db;
 mod globals;
 mod linquebot;
 mod mods;
@@ -24,11 +26,11 @@ use db::DataStorage;
 use linquebot::*;
 use log::{error, info, warn};
 use simple_logger::SimpleLogger;
-use teloxide_core::{prelude::*, RequestError};
+use teloxide_core::prelude::*;
 
 static APP: OnceLock<App> = OnceLock::new();
 
-async fn init_app() -> Result<&'static linquebot::App, RequestError> {
+async fn init_app() -> anyhow::Result<&'static linquebot::App> {
     info!(target: "main", "Initializing Bot...");
     let bot = Bot::from_env();
     info!(target: "main", "Checking Network...");
@@ -38,7 +40,7 @@ async fn init_app() -> Result<&'static linquebot::App, RequestError> {
         name: "琳酱".to_string(),
         username: me.username().to_string(),
         bot,
-        db: DataStorage {},
+        db: DataStorage::new().await?,
         modules: mods::MODULES,
         micro_tasks: mods::MICRO_TASKS,
     });
@@ -47,7 +49,7 @@ async fn init_app() -> Result<&'static linquebot::App, RequestError> {
     Ok(app)
 }
 
-async fn main_loop() -> Result<(), RequestError> {
+async fn main_loop() -> anyhow::Result<()> {
     let app = init_app().await?;
     let bot = &app.bot;
 
