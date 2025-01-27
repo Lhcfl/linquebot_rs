@@ -99,7 +99,7 @@ async fn main_loop() -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> () {
-    SimpleLogger::new().init().unwrap();
+    SimpleLogger::new().env().init().unwrap();
     if let Err(err) = main_loop().await {
         error!("main-loop panicked: {}", err.to_string());
         panic!("main-loop panicked: {}", err.to_string());
