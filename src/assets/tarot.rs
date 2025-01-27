@@ -1,7 +1,46 @@
+use rand::{seq::index, thread_rng, Rng};
+
 pub struct MajorArcana {
     pub name: &'static str,
     pub cis: &'static str,
     pub trans: &'static str,
+}
+
+pub struct TarotChoosen {
+    pub id: u8,
+    pub is_reverse: bool,
+    pub name: &'static str,
+    pub description: &'static str,
+}
+
+impl TarotChoosen {
+    pub fn to_string(&self) -> String {
+        if self.is_reverse {
+            format!("{}正位: {}", self.name, self.description)
+        } else {
+            format!("{}逆位: {}", self.name, self.description)
+        }
+    }
+}
+
+pub fn n_random_majors(n: usize) -> Vec<TarotChoosen> {
+    assert!(n <= 22);
+    index::sample(&mut thread_rng(), 21, n)
+        .into_iter()
+        .map(|id| {
+            let rev: bool = thread_rng().gen();
+            TarotChoosen {
+                id: id as u8,
+                is_reverse: rev,
+                name: MAJORS[id].name,
+                description: if rev {
+                    MAJORS[id].trans
+                } else {
+                    MAJORS[id].cis
+                },
+            }
+        })
+        .collect::<Vec<_>>()
 }
 
 pub static MAJORS: &[MajorArcana] = &[

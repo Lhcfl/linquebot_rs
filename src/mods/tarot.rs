@@ -69,18 +69,9 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
 
         tokio::time::sleep(Duration::from_millis(2500)).await;
 
-        let text = tarot::MAJORS
-            .iter()
-            .choose_multiple(&mut rand::thread_rng(), num)
+        let text = tarot::n_random_majors(num)
             .into_iter()
-            .map(|arcana| {
-                let cis: bool = rand::thread_rng().gen();
-                if cis {
-                    format!("{}正位: {}", arcana.name, arcana.cis)
-                } else {
-                    format!("{}逆位: {}", arcana.name, arcana.trans)
-                }
-            })
+            .map(|tarot| tarot.to_string())
             .collect::<Vec<_>>();
 
         ctx.reply(&format!(
