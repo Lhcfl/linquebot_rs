@@ -1,11 +1,6 @@
-//! hitokoto  
-//! Send a hitokoto  
-//! Usage:
-//! ```
-//! /hitokoto
-//! ```
+//! explain
+//! 调用各种API解释一个词
 
-use log::trace;
 use log::warn;
 use msg_context::Context;
 use serde::Deserialize;
@@ -14,7 +9,6 @@ use teloxide_core::types::*;
 
 use crate::assets::idiom::get_idiom;
 use crate::linquebot::*;
-use crate::utils::escape_html;
 use crate::utils::sanitize_html;
 use crate::utils::telegram::prelude::WarnOnError;
 use crate::Consumption;
