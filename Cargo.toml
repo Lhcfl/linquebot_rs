@@ -16,3 +16,4 @@ log = "0.4.25"
 simple_logger = { version = "5.0.0", features = ["colors", "threads", "nightly", "stderr"] }
 regex = "1.11.1"
 ctor = "0.2.9"
+serde_json = "1.0.137"

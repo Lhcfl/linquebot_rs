@@ -24,6 +24,25 @@ pub fn split_n<const N: usize>(src: &str) -> (Vec<&str>, Option<&str>) {
 
 pub mod telegram {
     pub mod prelude {
+        use std::future::Future;
+
+        use log::warn;
+        pub trait WarnOnError {
+            async fn warn_on_error(self, name: &str) -> ();
+        }
+
+        impl<T, R, E> WarnOnError for T
+        where
+            T: Future<Output = Result<R, E>> + Send,
+            E: ToString,
+        {
+            async fn warn_on_error(self, name: &str) {
+                let res = self.await;
+                if let Err(err) = res {
+                    warn!(target: name, "Failed to send reply: {}", err.to_string())
+                }
+            }
+        }
         use teloxide_core::types::User;
 
         pub trait UserExtension {

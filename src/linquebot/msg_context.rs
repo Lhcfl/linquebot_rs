@@ -7,10 +7,14 @@ use teloxide_core::{
 
 use super::{App, ModuleDesctiption};
 
+/// Command parts of /xxx@yyy zzz
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub struct CmdParts<'a> {
+    /// command name
     pub cmd: &'a str,
+    /// the username of command@username
     pub username: Option<&'a str>,
+    /// the trimed remaining part of command
     pub content: &'a str,
 }
 
@@ -64,6 +68,7 @@ impl<'a> Context<'a> {
     }
 }
 
+#[derive(Clone)]
 pub struct TaskContext {
     pub chat_id: ChatId,
     pub message_id: MessageId,

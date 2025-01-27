@@ -5,6 +5,7 @@ pub mod bot_on_off;
 pub mod dice;
 pub mod help;
 pub mod hitokoto;
+pub mod jielong;
 pub mod rand;
 pub mod rong;
 pub mod set_title;
@@ -23,6 +24,8 @@ pub static MODULES: &[&'static Module] = &[
     &rand::MODULE,
     &dice::MODULE,
     &set_title::MODULE,
+    &jielong::COMMAND,
+    &jielong::ON_IDIOM,
     &rong::MODULE,
 ];
 

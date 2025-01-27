@@ -6,6 +6,7 @@
 #![feature(macro_metavar_expr)]
 #![feature(str_split_whitespace_remainder)]
 #![feature(iter_array_chunks)]
+#![feature(iter_intersperse)]
 
 mod assets;
 mod db;

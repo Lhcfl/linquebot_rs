@@ -1,4 +1,4 @@
-pub const ANSWERS: &[&str] = &[
+pub static ANSWERS: &[&str] = &[
     "用平淡的心态，去追求",
     "也许有惊喜",
     "这是一个机会",
