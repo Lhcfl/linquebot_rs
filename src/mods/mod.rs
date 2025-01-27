@@ -10,6 +10,7 @@ pub mod jielong;
 pub mod rand;
 pub mod rong;
 pub mod set_title;
+pub mod tarot;
 pub mod todo;
 
 /// Module Handles 的顺序很重要
@@ -23,6 +24,7 @@ pub static MODULES: &[&'static Module] = &[
     &hitokoto::MODULE,
     &answer_book::MODULE,
     &rand::MODULE,
+    &tarot::MODULE,
     &dice::MODULE,
     &explain::MODULE,
     &set_title::MODULE,
