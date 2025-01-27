@@ -3,6 +3,7 @@ use crate::{linquebot::Module, MicroTask};
 pub mod answer_book;
 pub mod bot_on_off;
 pub mod dice;
+pub mod explain;
 pub mod help;
 pub mod hitokoto;
 pub mod jielong;
@@ -23,6 +24,7 @@ pub static MODULES: &[&'static Module] = &[
     &answer_book::MODULE,
     &rand::MODULE,
     &dice::MODULE,
+    &explain::MODULE,
     &set_title::MODULE,
     &jielong::COMMAND,
     &jielong::ON_IDIOM,

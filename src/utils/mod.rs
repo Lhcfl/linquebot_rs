@@ -1,4 +1,48 @@
+use std::{
+    collections::{HashMap, HashSet},
+    sync::LazyLock,
+};
 pub mod pattern;
+
+macro_rules! str_hashset {
+    ($($x:expr),*) => {{
+        let mut set = HashSet::<&'static str>::new();
+        $(
+            set.insert($x);
+        )*
+        set
+    }};
+}
+
+static TG_SANITIZER: LazyLock<ammonia::Builder> = LazyLock::new(|| {
+    let mut builder = ammonia::Builder::empty();
+    builder.tags(str_hashset!(
+        "b",
+        "strong",
+        "i",
+        "em",
+        "u",
+        "ins",
+        "s",
+        "strike",
+        "del",
+        "span",
+        "tg-spoiler",
+        "a",
+        "tg-emoji",
+        "code",
+        "pre",
+        "blockquote"
+    ));
+    let mut tag_attrs = HashMap::<&'static str, HashSet<&'static str>>::new();
+    tag_attrs.insert("a", str_hashset!("href"));
+    builder.tag_attributes(tag_attrs);
+    builder
+});
+
+pub fn sanitize_html(str: &str) -> String {
+    TG_SANITIZER.clean(str).to_string()
+}
 
 pub fn escape_html(str: &str) -> String {
     let mut ret = String::new();
@@ -39,7 +83,7 @@ pub mod telegram {
             async fn warn_on_error(self, name: &str) {
                 let res = self.await;
                 if let Err(err) = res {
-                    warn!(target: name, "Failed to send reply: {}", err.to_string())
+                    warn!(target: name, "Error: {}", err.to_string())
                 }
             }
         }
