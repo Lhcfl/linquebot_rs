@@ -22,6 +22,7 @@ mod utils;
 use std::sync::OnceLock;
 
 use crate::linquebot::types::*;
+use ammonia::url::form_urlencoded::Target;
 use db::DataStorage;
 use linquebot::*;
 use log::{error, info, warn};
@@ -29,6 +30,35 @@ use simple_logger::SimpleLogger;
 use teloxide_core::prelude::*;
 
 static APP: OnceLock<App> = OnceLock::new();
+
+use crate::db::DataStorage;
+use crate::linquebot::*;
+use crate::mods;
+use colored::Colorize;
+use log::info;
+use std::sync::OnceLock;
+use teloxide_core::types::BotCommand;
+use teloxide_core::types::True;
+use teloxide_core::{prelude::*, RequestError};
+
+static APP: OnceLock<App> = OnceLock::new();
+
+async fn set_my_commands(app: &'static App) -> Result<True, RequestError> {
+    let commands = app
+        .modules
+        .iter()
+        .map(|module| {
+            if let ModuleKind::Command(cmd) = &module.kind {
+                Some(BotCommand::new(cmd.name, cmd.description))
+            } else {
+                None
+            }
+        })
+        .filter(|cmd| cmd.is_some())
+        .map(|cmd| cmd.unwrap());
+
+    app.bot.set_my_commands(commands).send().await
+}
 
 async fn init_app() -> anyhow::Result<&'static linquebot::App> {
     info!(target: "main", "Initializing Bot...");
@@ -46,6 +76,9 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
     });
     let app = APP.get().expect("should initialized app");
     info!(target: "main", "user name: {}", app.username);
+    info!(target: "main", "Settiing commands...");
+    set_my_commands(app).await?;
+    info!(target: "main", "{}", "Successfully initialized bot".green());
     Ok(app)
 }
 
