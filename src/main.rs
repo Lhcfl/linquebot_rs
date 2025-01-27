@@ -19,27 +19,17 @@ mod resolvers;
 mod test_utils;
 mod utils;
 
-use std::sync::OnceLock;
-
+use crate::db::DataStorage;
 use crate::linquebot::types::*;
-use ammonia::url::form_urlencoded::Target;
-use db::DataStorage;
-use linquebot::*;
+use crate::linquebot::*;
+use colored::Colorize;
 use log::{error, info, warn};
 use simple_logger::SimpleLogger;
-use teloxide_core::prelude::*;
-
-static APP: OnceLock<App> = OnceLock::new();
-
-use crate::db::DataStorage;
-use crate::linquebot::*;
-use crate::mods;
-use colored::Colorize;
-use log::info;
 use std::sync::OnceLock;
+use teloxide_core::prelude::*;
 use teloxide_core::types::BotCommand;
 use teloxide_core::types::True;
-use teloxide_core::{prelude::*, RequestError};
+use teloxide_core::RequestError;
 
 static APP: OnceLock<App> = OnceLock::new();
 
