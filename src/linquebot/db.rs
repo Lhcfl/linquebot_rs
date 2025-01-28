@@ -45,43 +45,79 @@ impl DataStorage {
     }
 
     pub async fn get<T: DbData>(&'static self, id: DataId) -> Option<DataGuard<T>> {
-        assert_eq!(
-            id.ty,
-            TypeId::of::<T>(),
-            "The type in DataId should be same as the type"
-        );
         let cache = if let Some(c) = self.cache.get(&id) {
             c
         } else if T::persistent() {
-            let res = sqlx::query("select json from data where ty = ? and user = ? and chat = ?")
-                .bind(std::any::type_name::<T>())
-                .bind(id.user.map(|u| u.0 as i64))
-                .bind(id.chat.map(|c| c.0))
-                .fetch_optional(&mut *self.db.lock().await)
-                .await
-                .expect("db read error")?;
-            let res = T::from_str(res.get::<&str, usize>(0));
-            let res = Arc::new(Mutex::new(res));
+            let res = self.get_from_db::<T>(id).await?;
             self.cache.insert(id, res.clone());
             res
         } else {
             None?
         };
+        Some(self.mk_insert_res::<T>(id, cache).await)
+    }
+
+    pub async fn get_or_insert<T: DbData>(
+        &'static self,
+        id: DataId,
+        mk: impl FnOnce() -> T,
+    ) -> DataGuard<T> {
+        let cache = if let Some(c) = self.cache.get(&id) {
+            c
+        } else {
+            let res = if T::persistent() {
+                self.get_from_db::<T>(id).await
+            } else {
+                None
+            };
+            let res = if let Some(r) = res {
+                r
+            } else {
+                let r = mk();
+                if T::persistent() {
+                    self.insert_raw(type_name::<T>(), id, &r.to_string()).await;
+                }
+                Arc::new(Mutex::new(r))
+            };
+            self.cache.insert(id, res.clone());
+            res
+        };
+        self.mk_insert_res::<T>(id, cache).await
+    }
+
+    async fn mk_insert_res<T: DbData>(
+        &'static self,
+        id: DataId,
+        cache: Arc<Mutex<dyn DbData>>,
+    ) -> DataGuard<T> {
         let cache = cache.lock_owned().await;
         let Ok(sub) = OwnedMutexGuard::try_map(cache, |val| <dyn Any>::downcast_mut(val)) else {
             panic!("Cached type mismatch: expected {:?}", TypeId::of::<T>());
         };
-        Some(DataGuard {
+        DataGuard {
             db: self,
             id,
             changed: false,
             sub,
-        })
+        }
+    }
+
+    async fn get_from_db<T: DbData>(&'static self, id: DataId) -> Option<Arc<Mutex<T>>> {
+        let res = sqlx::query("select json from data where ty = ? and user = ? and chat = ?")
+            .bind(std::any::type_name::<T>())
+            .bind(id.user.map(|u| u.0 as i64))
+            .bind(id.chat.map(|c| c.0))
+            .fetch_optional(&mut *self.db.lock().await)
+            .await
+            .expect("db read error")?;
+        let res = T::from_str(res.get::<&str, usize>(0));
+        Some(Arc::new(Mutex::new(res)))
     }
 
     pub async fn insert<T: DbData>(&'static self, id: DataId, val: T) {
         if T::persistent() {
-            self.insert_raw(type_name::<T>(), id, &val.to_string()).await;
+            self.insert_raw(type_name::<T>(), id, &val.to_string())
+                .await;
         }
         self.cache.insert(id, Arc::new(Mutex::new(val)));
     }
@@ -166,7 +202,6 @@ impl<T: DbData> DataBuilder<T> {
 
     pub fn data_id(&self) -> DataId {
         DataId {
-            ty: TypeId::of::<T>(),
             chat: self.chat,
             user: self.user,
         }
@@ -180,6 +215,10 @@ impl<T: DbData> DataBuilder<T> {
         self.db.insert(self.data_id(), val).await
     }
 
+    pub async fn get_or_insert(self, mk: impl FnOnce() -> T) -> DataGuard<T> {
+        self.db.get_or_insert(self.data_id(), mk).await
+    }
+
     pub async fn remove(self) {
         self.db.remove::<T>(self.data_id()).await
     }
@@ -187,7 +226,6 @@ impl<T: DbData> DataBuilder<T> {
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub struct DataId {
-    pub ty: TypeId,
     pub chat: Option<ChatId>,
     pub user: Option<UserId>,
 }
