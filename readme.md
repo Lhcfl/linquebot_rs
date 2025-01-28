@@ -1,6 +1,6 @@
 # Linquebot RS
 
-Rust-rewritten Linquebot
+琳酱新版本，由<ruby>锈<rt>Rust</rt></ruby>强力驱动！
 
 WIP
 
@@ -16,7 +16,9 @@ TELOXIDE_TOKEN="1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" cargo run
 
 ## License
 
-`src/assets/idiom.json` is from https://github.com/crazywhalecc/idiom-database/blob/master/data/idiom.json
+列出琳酱使用的第三方开源组件的许可证：
+
+`src/assets/idiom.json`: modified from https://github.com/crazywhalecc/idiom-database/blob/master/data/idiom.json
 
 ```
 MIT License
