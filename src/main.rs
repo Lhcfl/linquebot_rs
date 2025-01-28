@@ -10,6 +10,9 @@
 #![feature(trait_upcasting)]
 #![feature(async_drop)]
 #![feature(impl_trait_in_assoc_type)]
+#![feature(coroutines)]
+#![feature(stmt_expr_attributes)]
+#![feature(iter_from_coroutine)]
 
 mod assets;
 mod globals;

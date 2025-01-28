@@ -15,6 +15,7 @@ pub mod set_title;
 pub mod tarot;
 pub mod tarot_ai;
 pub mod todo;
+pub mod markov;
 
 /// Module Handles 的顺序很重要
 /// 请确保这些函数是拓扑排序的
@@ -38,6 +39,8 @@ pub static MODULES: &[&'static Module] = &[
     &jielong::ON_IDIOM,
     &rong::MODULE,
     &repeater::MODULE,
+    &markov::TRAIN_MOD,
+    &markov::GEN_CTNT,
 ];
 
 pub static MICRO_TASKS: &[&'static MicroTask] = &[&help::HELP_CALLBACK];
