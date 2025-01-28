@@ -8,7 +8,9 @@ pub mod help;
 pub mod hitokoto;
 pub mod jielong;
 pub mod rand;
+pub mod repeater;
 pub mod rong;
+pub mod say;
 pub mod set_title;
 pub mod tarot;
 pub mod tarot_ai;
@@ -24,6 +26,8 @@ pub static MODULES: &[&'static Module] = &[
     &todo::MODULE,
     &hitokoto::MODULE,
     &answer_book::MODULE,
+    &say::MODULE,
+    &repeater::TOGGLE,
     &rand::MODULE,
     &tarot::MODULE,
     &tarot_ai::MODULE,
@@ -33,6 +37,7 @@ pub static MODULES: &[&'static Module] = &[
     &jielong::COMMAND,
     &jielong::ON_IDIOM,
     &rong::MODULE,
+    &repeater::MODULE,
 ];
 
 pub static MICRO_TASKS: &[&'static MicroTask] = &[&help::HELP_CALLBACK];
