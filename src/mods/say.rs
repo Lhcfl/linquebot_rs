@@ -19,7 +19,7 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
 
 pub static MODULE: Module = Module {
     kind: ModuleKind::Command(ModuleDesctiption {
-        name: "/say",
+        name: "say",
         description: "复述内容",
         description_detailed: None,
     }),
