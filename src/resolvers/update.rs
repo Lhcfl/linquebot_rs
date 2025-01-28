@@ -1,10 +1,32 @@
-use std::any::Any;
-
 use crate::linquebot::types::*;
 use crate::linquebot::*;
 use chrono::Utc;
 use log::{trace, warn};
 use teloxide_core::types::{Update, UpdateKind};
+
+fn update_name(upd: &UpdateKind) -> &'static str {
+    match upd {
+        UpdateKind::Message(_) => "Message",
+        UpdateKind::EditedMessage(_) => "EditedMessage",
+        UpdateKind::ChannelPost(_) => "ChannelPost",
+        UpdateKind::EditedChannelPost(_) => "EditedChannelPost",
+        UpdateKind::MessageReaction(_) => "MessageReaction",
+        UpdateKind::MessageReactionCount(_) => "MessageReactionCount",
+        UpdateKind::InlineQuery(_) => "InlineQuery",
+        UpdateKind::ChosenInlineResult(_) => "ChosenInlineResult",
+        UpdateKind::CallbackQuery(_) => "CallbackQuery",
+        UpdateKind::ShippingQuery(_) => "ShippingQuery",
+        UpdateKind::PreCheckoutQuery(_) => "PreCheckoutQuery",
+        UpdateKind::Poll(_) => "Poll",
+        UpdateKind::PollAnswer(_) => "PollAnswer",
+        UpdateKind::MyChatMember(_) => "MyChatMember",
+        UpdateKind::ChatMember(_) => "ChatMember",
+        UpdateKind::ChatJoinRequest(_) => "ChatJoinRequest",
+        UpdateKind::ChatBoost(_) => "ChatBoost",
+        UpdateKind::RemovedChatBoost(_) => "RemovedChatBoost",
+        UpdateKind::Error(_) => "Error (ParseError)",
+    }
+}
 
 pub async fn resolve(app: &'static App, update: Update) {
     let now = Utc::now();
@@ -50,7 +72,10 @@ pub async fn resolve(app: &'static App, update: Update) {
         UpdateKind::ChatMember(data) => handle_kind!(OnChatMember, data),
         UpdateKind::MyChatMember(data) => handle_kind!(OnChatMember, data),
         _ => {
-            warn!("get unimplemented update kind: {:?}", update.kind.type_id());
+            warn!(
+                "get unimplemented update kind: {:?}",
+                update_name(&update.kind)
+            );
         }
     }
 }
