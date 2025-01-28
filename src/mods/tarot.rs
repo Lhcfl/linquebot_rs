@@ -2,8 +2,6 @@ use std::time::Duration;
 
 use log::warn;
 use msg_context::Context;
-use rand::seq::IteratorRandom;
-use rand::Rng;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 

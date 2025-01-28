@@ -1,7 +1,6 @@
 //! 复读机
 
 use std::collections::HashMap;
-use std::default;
 use std::sync::LazyLock;
 use std::sync::RwLock;
 
