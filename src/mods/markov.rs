@@ -2,9 +2,14 @@ use std::collections::HashMap;
 
 use rand::{rngs::SmallRng, seq::SliceRandom, thread_rng, SeedableRng};
 use serde::{Deserialize, Serialize};
-use teloxide_core::{prelude::Requester, types::Message};
+use teloxide_core::{
+    prelude::{Request, Requester},
+    types::Message,
+};
 
-use crate::{db::DbData, msg_context::Context, Consumption, Module};
+use crate::{
+    db::DbData, msg_context::Context, utils::telegram::prelude::WarnOnError, Consumption, Module,
+};
 
 #[derive(
     Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
@@ -55,7 +60,7 @@ pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
         let weight = &mut db.await.weight;
         let mut pre = ['\0'; 3];
         for (i, c) in text.chars().rev().take(3).enumerate() {
-            pre[3 - i] = c;
+            pre[2 - i] = c;
         }
         let mut pre = Gram(pre);
         let mut res = "".to_string();
@@ -76,11 +81,21 @@ pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
                 break;
             }
         }
-        ctx.app
-            .bot
-            .send_message(ctx.chat_id, res)
-            .await
-            .expect("send msg");
+        if res.is_empty() {
+            ctx.app
+                .bot
+                .send_message(ctx.chat_id, "对应语录为空")
+                .send()
+                .warn_on_error("markov")
+                .await;
+        } else {
+            ctx.app
+                .bot
+                .send_message(ctx.chat_id, text + &res)
+                .send()
+                .warn_on_error("markov")
+                .await;
+        }
     }
     .into()
 }
@@ -115,9 +130,11 @@ pub static GEN_CTNT: Module = Module {
     kind: crate::ModuleKind::General(Some(crate::ModuleDesctiption {
         name: "琳酱说说话",
         description: "让琳酱说一段话或者接一段话",
-        description_detailed: Some(concat!("直接说琳酱说说话来让琳酱随便说话, ",
-                "<code>琳酱说说话 [一句话]</code>让琳酱接话.\n\n",
-                "琳酱会从所有聊天记录里训练, 不会保存具体的聊天语料.")),
+        description_detailed: Some(concat!(
+            "直接说琳酱说说话来让琳酱随便说话, ",
+            "<code>琳酱说说话 [一句话]</code>让琳酱接话.\n\n",
+            "琳酱会从所有聊天记录里训练, 不会保存具体的聊天语料."
+        )),
     })),
     task: on_message,
 };
