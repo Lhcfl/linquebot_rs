@@ -105,6 +105,12 @@ pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
         weight: HashMap::new(),
     });
     let text = msg.text()?.to_string();
+    if text.starts_with("/") {
+        return Consumption::Next;
+    }
+    if text.starts_with("琳酱说说话") {
+        return Consumption::Next;
+    }
     tokio::spawn(async move {
         let mut db = db.await;
         let mut pre = Default::default();
