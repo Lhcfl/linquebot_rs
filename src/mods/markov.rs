@@ -81,7 +81,7 @@ pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
                 break;
             }
         }
-        if res.is_empty() {
+        if res.trim().is_empty() {
             ctx.app
                 .bot
                 .send_message(ctx.chat_id, "对应语录为空")
