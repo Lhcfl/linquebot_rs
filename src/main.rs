@@ -54,24 +54,26 @@ async fn set_my_commands(app: &'static App) -> Result<True, RequestError> {
 }
 
 async fn init_app() -> anyhow::Result<&'static linquebot::App> {
-    info!(target: "main", "Initializing Bot...");
+    info!(target: "init", "Loading Database...");
+    let db = DataStorage::new().await?;
+    info!(target: "init", "Initializing Bot...");
     let bot = Bot::from_env();
-    info!(target: "main", "Checking Network...");
+    info!(target: "init", "Checking Network...");
     let me = bot.get_me().await?;
-    info!(target: "main", "user id: {}", me.id);
+    info!(target: "init", "user id: {}", me.id);
     let _ = APP.set(linquebot::App {
         name: "琳酱".to_string(),
         username: me.username().to_string(),
         bot,
-        db: DataStorage::new().await?,
+        db,
         modules: mods::MODULES,
         micro_tasks: mods::MICRO_TASKS,
     });
     let app = APP.get().expect("should initialized app");
-    info!(target: "main", "user name: {}", app.username);
-    info!(target: "main", "Settiing commands...");
+    info!(target: "init", "user name: {}", app.username);
+    info!(target: "init", "Settiing commands...");
     set_my_commands(app).await?;
-    info!(target: "main", "{}", "Successfully initialized bot".green());
+    info!(target: "init", "{}", "Successfully initialized bot".green());
     Ok(app)
 }
 
