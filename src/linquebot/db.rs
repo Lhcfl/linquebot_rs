@@ -6,8 +6,13 @@ use std::{
     sync::Arc,
 };
 
+use log::debug;
 use quick_cache::sync::Cache;
-use sqlx::{Connection, Row, SqliteConnection};
+use sqlx::{
+    query::Query,
+    sqlite::{SqliteArguments, SqliteConnectOptions},
+    Connection, Execute, Row, Sqlite, SqliteConnection,
+};
 use teloxide_core::types::{ChatId, UserId};
 use tokio::sync::{Mutex, OwnedMappedMutexGuard, OwnedMutexGuard};
 
@@ -29,9 +34,22 @@ pub struct DataStorage {
 
 impl DataStorage {
     pub async fn new() -> anyhow::Result<Self> {
+        let mut db = SqliteConnection::connect_with(
+            &SqliteConnectOptions::new()
+                .filename("data.db")
+                .create_if_missing(true),
+        )
+        .await?;
+        sqlx::query(concat!(
+            "create table if not exists data",
+            "(ty text, user text, chat text, val blob, ",
+            "primary key (ty, user, chat), unique (ty, user, chat))",
+        ))
+        .execute(&mut db)
+        .await?;
         Ok(Self {
             cache: Cache::new(1000),
-            db: Mutex::new(SqliteConnection::connect("data.db").await?),
+            db: Mutex::new(db),
         })
     }
 
@@ -103,10 +121,8 @@ impl DataStorage {
     }
 
     async fn get_from_db<T: DbData>(&'static self, id: DataId) -> Option<Arc<Mutex<T>>> {
-        let res = sqlx::query("select json from data where ty = ? and user = ? and chat = ?")
-            .bind(std::any::type_name::<T>())
-            .bind(id.user.map(|u| u.0 as i64))
-            .bind(id.chat.map(|c| c.0))
+        let res = sqlx::query("select val from data where ty = $1 and user = $2 and chat = $3")
+            .bind_id(type_name::<T>(), id)
             .fetch_optional(&mut *self.db.lock().await)
             .await
             .expect("db read error")?;
@@ -123,13 +139,10 @@ impl DataStorage {
     }
     async fn insert_raw(&'static self, ty: &str, id: DataId, val: &str) {
         sqlx::query(concat!(
-            "insert into data(ty, user, chat, json) values (?, ?, ?, ?) ",
-            "on conflict(ty, user, chat) do update set json = ?"
+            "insert into data(ty, user, chat, val) values ($1, $2, $3, $4) ",
+            "on conflict(ty, user, chat) do update set val = $4"
         ))
-        .bind(ty)
-        .bind(id.user.map(|u| u.0 as i64))
-        .bind(id.chat.map(|c| c.0))
-        .bind(val)
+        .bind_id(ty, id)
         .bind(val)
         .execute(&mut *self.db.lock().await)
         .await
@@ -139,14 +152,28 @@ impl DataStorage {
     pub async fn remove<T: DbData>(&'static self, id: DataId) {
         self.cache.remove(&id);
         if T::persistent() {
-            sqlx::query("delete from data where ty = ? and user = ? and chat = ?")
-                .bind(type_name::<T>())
-                .bind(id.user.map(|u| u.0 as i64))
-                .bind(id.chat.map(|c| c.0))
+            sqlx::query("delete from data where ty = $1 and user = $2 and chat = $3")
+                .bind_id(type_name::<T>(), id)
                 .execute(&mut *self.db.lock().await)
                 .await
                 .expect("db write error");
         }
+    }
+}
+
+trait QueryExt<'q> {
+    fn bind_id<'a>(self, ty: &'a str, id: DataId) -> Self
+    where
+        'a: 'q;
+}
+impl<'q> QueryExt<'q> for Query<'q, Sqlite, SqliteArguments<'q>> {
+    fn bind_id<'a>(self, ty: &'a str, id: DataId) -> Self
+    where
+        'a: 'q,
+    {
+        self.bind(ty)
+            .bind(ron::to_string(&id.user.map(|u| u.0)).expect("ser u64"))
+            .bind(ron::to_string(&id.chat.map(|c| c.0)).expect("ser i64"))
     }
 }
 
@@ -169,17 +196,17 @@ impl<T: DbData> DerefMut for DataGuard<T> {
         &mut self.sub
     }
 }
-impl<T: DbData> AsyncDrop for DataGuard<T> {
-    type Dropper<'a> = impl Future<Output = ()>;
-
-    fn async_drop(self: std::pin::Pin<&mut Self>) -> Self::Dropper<'_> {
-        async move {
-            if self.changed {
-                self.db
-                    .insert_raw(type_name::<T>(), self.id, &self.sub.to_string())
-                    .await;
+impl<T: DbData> Drop for DataGuard<T> {
+    fn drop(&mut self) {
+        let Self {
+            db, id, changed, ..
+        } = *self;
+        let sub = self.sub.to_string();
+        tokio::spawn(async move {
+            if changed {
+                db.insert_raw(type_name::<T>(), id, &sub).await;
             }
-        }
+        });
     }
 }
 

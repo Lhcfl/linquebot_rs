@@ -37,11 +37,11 @@ impl DbData for Markov {
     }
 
     fn from_str(src: &str) -> Self {
-        serde_json::from_str(src).expect("deser err")
+        ron::from_str(src).expect("deser error")
     }
 
     fn to_string(&self) -> String {
-        serde_json::to_string(self).expect("ser err")
+        ron::to_string(self).expect("ser error")
     }
 }
 
@@ -81,21 +81,17 @@ pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
                 break;
             }
         }
-        if res.trim().is_empty() {
-            ctx.app
-                .bot
-                .send_message(ctx.chat_id, "对应语录为空")
-                .send()
-                .warn_on_error("markov")
-                .await;
+        let res = if res.is_empty() {
+            "琳酱不知道哦"
         } else {
-            ctx.app
-                .bot
-                .send_message(ctx.chat_id, text + &res)
-                .send()
-                .warn_on_error("markov")
-                .await;
-        }
+            &(text + &res)
+        };
+        ctx.app
+            .bot
+            .send_message(ctx.chat_id, res)
+            .send()
+            .warn_on_error("markov")
+            .await;
     }
     .into()
 }
@@ -105,10 +101,7 @@ pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
         weight: HashMap::new(),
     });
     let text = msg.text()?.to_string();
-    if text.starts_with("/") {
-        return Consumption::Next;
-    }
-    if text.starts_with("琳酱说说话") {
+    if text.starts_with("/") || text.starts_with("琳酱说说话") {
         return Consumption::Next;
     }
     tokio::spawn(async move {
@@ -118,10 +111,6 @@ pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
         for ch in text.chars() {
             *weight.entry(pre).or_default().entry(ch).or_default() += 1;
             pre.push(ch);
-        }
-        while !pre.is_empty() {
-            *weight.entry(pre).or_default().entry('\0').or_default() += 1;
-            pre.push('\0');
         }
     });
     Consumption::Next

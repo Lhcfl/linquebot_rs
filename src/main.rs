@@ -27,7 +27,6 @@ use crate::linquebot::types::*;
 use crate::linquebot::*;
 use colored::Colorize;
 use log::{error, info, warn};
-use simple_logger::SimpleLogger;
 use std::sync::OnceLock;
 use teloxide_core::prelude::*;
 use teloxide_core::types::BotCommand;
@@ -104,7 +103,7 @@ async fn main_loop() -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> () {
-    SimpleLogger::new().env().init().unwrap();
+    env_logger::init();
     if let Err(err) = main_loop().await {
         error!("main-loop panicked: {}", err.to_string());
         panic!("main-loop panicked: {}", err.to_string());
