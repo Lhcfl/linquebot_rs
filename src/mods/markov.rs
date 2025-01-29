@@ -21,8 +21,32 @@ impl Gram {
         let c = &mut self.0;
         (c[0], c[1], c[2]) = (c[1], c[2], v);
     }
-    fn is_empty(&self) -> bool {
+    fn with_pop(self) -> Self {
+        let mut c = self.0;
+        if c[0] != '\0' {
+            c[0] = '\0';
+        } else if c[1] != '\0' {
+            c[1] = '\0';
+        } else {
+            c[2] = '\0';
+        }
+        Self(c)
+    }
+    fn is_empty(self) -> bool {
         self.0 == ['\0'; 3]
+    }
+    fn segs(self) -> impl Iterator<Item = Self> {
+        let mut seg = self;
+        std::iter::from_coroutine(
+            #[coroutine]
+            move || loop {
+                yield seg;
+                seg = seg.with_pop();
+                if seg.is_empty() {
+                    break;
+                }
+            },
+        )
     }
 }
 
@@ -66,14 +90,34 @@ pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
         let mut res = "".to_string();
         let mut rng = SmallRng::from_rng(&mut thread_rng()).expect("gen rng");
         loop {
-            let cur = weight.get(&pre);
-            let cur = if let Some(ws) = cur {
-                let ws = ws.iter().collect::<Vec<_>>();
-                *ws.choose_weighted(&mut rng, |v| *v.1)
-                    .expect("rand choose")
-                    .0
-            } else {
+            let mut sel = vec![];
+            let mut pw = None;
+            let mut pushsel = |pre: Gram| {
+                let Some(ws) = weight.get(&pre) else { return };
+                let pi = sel.len();
+                sel.reserve(ws.len());
+                sel.extend(ws.iter().map(|(c, w)| (*c, *w as f64)));
+                let cw = sel[pi..].iter().map(|i| i.1).sum::<f64>();
+                let pw = if let Some(pw) = &mut pw {
+                    sel[pi..].iter_mut().for_each(|i| i.1 *= *pw / cw);
+                    pw
+                } else {
+                    pw.insert(cw)
+                };
+                *pw /= pw.ln_1p();
+            };
+            let mut pv = pre;
+            loop {
+                pushsel(pv);
+                pv = pv.with_pop();
+                if pv.is_empty() {
+                    break;
+                }
+            }
+            let cur = if sel.is_empty() {
                 '\0'
+            } else {
+                sel.choose_weighted(&mut rng, |v| v.1).expect("rand sel").0
             };
             res.push(cur);
             pre.push(cur);
@@ -106,11 +150,16 @@ pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
     }
     tokio::spawn(async move {
         let mut db = db.await;
-        let mut pre = Default::default();
+        let mut pre = Gram::default();
         let weight = &mut db.weight;
         for ch in text.chars() {
-            *weight.entry(pre).or_default().entry(ch).or_default() += 1;
+            for seg in pre.segs() {
+                *weight.entry(seg).or_default().entry(ch).or_default() += 1;
+            }
             pre.push(ch);
+        }
+        for seg in pre.segs() {
+            *weight.entry(seg).or_default().entry('\0').or_default() += 1;
         }
     });
     Consumption::Next

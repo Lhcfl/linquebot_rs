@@ -13,6 +13,7 @@
 #![feature(coroutines)]
 #![feature(stmt_expr_attributes)]
 #![feature(iter_from_coroutine)]
+#![feature(extend_one)]
 
 mod assets;
 mod globals;
