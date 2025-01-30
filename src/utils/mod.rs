@@ -1,8 +1,10 @@
+pub mod base64;
+pub mod pattern;
+
 use std::{
     collections::{HashMap, HashSet},
     sync::LazyLock,
 };
-pub mod pattern;
 
 macro_rules! str_hashset {
     ($($x:expr),*) => {{
@@ -66,6 +68,22 @@ pub fn split_n<const N: usize>(src: &str) -> (Vec<&str>, Option<&str>) {
     (pre, it.remainder().and_then(|str| Some(str.trim())))
 }
 
+pub fn split_args<const N: usize>(src: &str) -> [&str; N] {
+    let mut res: [&str; N] = [""; N];
+    let mut it = src.split(|c: char| c.is_whitespace());
+    let mut idx = 0;
+
+    (1..N)
+        .map_while(|_| it.find(|s| !s.is_empty()))
+        .for_each(|ctnt| {
+            res[idx] = ctnt;
+            idx += 1;
+        });
+
+    res[idx] = it.remainder().unwrap_or("").trim();
+    res
+}
+
 pub mod telegram {
     pub mod prelude {
         use std::future::Future;
@@ -117,6 +135,19 @@ mod tests {
         assert_eq!(
             split_n::<3>("  11  22  33  44  "),
             (vec!["11", "22"], Some("33  44"))
+        );
+    }
+
+    #[test]
+    fn split_args_test() {
+        use crate::utils::split_args;
+        assert_eq!(split_args::<3>(""), ["", "", ""]);
+        assert_eq!(split_args::<3>("11 22 33"), ["11", "22", "33"]);
+        assert_eq!(split_args::<4>("11 22 33"), ["11", "22", "33", ""]);
+        assert_eq!(split_args::<3>("11  22  33  44"), ["11", "22", "33  44"]);
+        assert_eq!(
+            split_args::<3>("  11  22  33  44  "),
+            ["11", "22", "33  44"]
         );
     }
 }

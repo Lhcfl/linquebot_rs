@@ -14,6 +14,8 @@
 #![feature(stmt_expr_attributes)]
 #![feature(iter_from_coroutine)]
 #![feature(extend_one)]
+#![feature(iter_next_chunk)]
+#![feature(vec_pop_if)]
 
 mod assets;
 mod globals;
