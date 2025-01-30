@@ -20,13 +20,25 @@ fn on_message(ctx: &mut Context, _message: &Message) -> Consumption {
     match toolname {
         "base64" => {
             let res = format!("`{}`", base64::encode(content));
-            if res.len() >= 4095 {
+            if res.len() == 2 {
+                task.reply("<空串>")
+            } else if res.len() >= 4095 {
                 task.reply("你给出的输入太长了！")
             } else {
                 task.reply_markdown(&res)
             }
         }
-        "base64d" => task.reply(&base64::decode(content).unwrap_or_else(|err| err.to_string())),
+        "base64d" => task.reply(
+            &base64::decode(content)
+                .map(|str| {
+                    if str.trim().is_empty() {
+                        "<空串>".to_string()
+                    } else {
+                        str
+                    }
+                })
+                .unwrap_or_else(|err| err.to_string()),
+        ),
         "" => task.reply_html(TOOLS_HELP),
         _ => task.reply("未知的工具名"),
     }
