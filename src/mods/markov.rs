@@ -125,7 +125,8 @@ pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
                 break;
             }
         }
-        let res = if res.is_empty() {
+        let res = res.replace("\0", "");
+        let res = if res.trim().is_empty() {
             "琳酱不知道哦"
         } else {
             &(text + &res)
@@ -145,7 +146,11 @@ pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
         weight: HashMap::new(),
     });
     let text = msg.text()?.to_string();
-    if text.starts_with("/") || text.starts_with("琳酱说说话") {
+
+    // 按 MODULES 的排列，合法命令和琳酱说说话应该都已经被 Stop 了，但是对其他 bot 的命令可能还留着。
+    if text.starts_with("/")
+    /* || text.starts_with("琳酱说说话") */
+    {
         return Consumption::Next;
     }
     tokio::spawn(async move {
