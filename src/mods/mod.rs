@@ -20,10 +20,12 @@ pub mod todo;
 /// Module Handles 的顺序很重要
 /// 请确保这些函数是拓扑排序的
 pub static MODULES: &[&'static Module] = &[
+    // --- super commands ---
     &help::MODULE,
     &bot_on_off::BOT_ON_MODULE,
     &bot_on_off::BOT_OFF_MODULE,
     &bot_on_off::STOP_WHEN_BOT_OFF,
+    // --- normal commands ---
     &todo::MODULE,
     &hitokoto::MODULE,
     &answer_book::MODULE,
@@ -36,9 +38,11 @@ pub static MODULES: &[&'static Module] = &[
     &explain::MODULE,
     &set_title::MODULE,
     &jielong::COMMAND,
-    &jielong::ON_IDIOM,
+    // --- special command: rongslashbot ---
     &rong::MODULE,
+    // --- normal message handles ---
     &markov::GEN_CTNT,
+    &jielong::ON_IDIOM,
     &markov::TRAIN_MOD,
     &repeater::MODULE,
 ];
