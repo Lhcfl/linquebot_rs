@@ -27,6 +27,7 @@ use crate::db::DataStorage;
 use crate::linquebot::types::*;
 use crate::linquebot::*;
 use colored::Colorize;
+use env_logger::Env;
 use log::{error, info, warn};
 use std::sync::OnceLock;
 use teloxide_core::prelude::*;
@@ -104,7 +105,7 @@ async fn main_loop() -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> () {
-    env_logger::init();
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     if let Err(err) = main_loop().await {
         error!("main-loop panicked: {}", err.to_string());
         panic!("main-loop panicked: {}", err.to_string());
