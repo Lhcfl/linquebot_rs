@@ -8,7 +8,11 @@ use teloxide_core::{
 };
 
 use crate::{
-    db::DbData, msg_context::Context, utils::telegram::prelude::WarnOnError, Consumption, Module,
+    db::DbData,
+    linquebot::{ModuleDesctiption, ModuleKind},
+    msg_context::Context,
+    utils::telegram::prelude::WarnOnError,
+    Consumption, Module,
 };
 
 #[derive(
@@ -69,6 +73,25 @@ impl DbData for Markov {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct MarkovChat {
+    learn_enabled: bool,
+}
+
+impl DbData for MarkovChat {
+    fn persistent() -> bool {
+        true
+    }
+
+    fn from_str(src: &str) -> Self {
+        ron::from_str(src).expect("deser error")
+    }
+
+    fn to_string(&self) -> String {
+        ron::to_string(self).expect("ser error")
+    }
+}
+
 pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
     const PROMPT: &str = "琳酱说说话";
     let text = msg.text()?;
@@ -79,8 +102,25 @@ pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
     let db = ctx.app.db.of::<Markov>().get_or_insert(|| Markov {
         weight: HashMap::new(),
     });
+    let stat = ctx
+        .app
+        .db
+        .of::<MarkovChat>()
+        .chat(ctx.chat_id)
+        .get_or_insert(|| MarkovChat {
+            learn_enabled: false,
+        });
+
     let ctx = ctx.task();
     async move {
+        let enabled = stat.await.learn_enabled;
+        if !enabled {
+            ctx.reply("只有打开语料学习的群聊可以使用琳酱说说话功能哦")
+                .send()
+                .warn_on_error("markov")
+                .await;
+            return;
+        }
         let weight = &mut db.await.weight;
         let mut pre = ['\0'; 3];
         for (i, c) in text.chars().rev().take(3).enumerate() {
@@ -141,20 +181,61 @@ pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
     .into()
 }
 
-pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
-    let db = ctx.app.db.of::<Markov>().get_or_insert(|| Markov {
-        weight: HashMap::new(),
-    });
-    let text = msg.text()?.to_string();
+pub fn toggle_learn(ctx: &mut Context, _: &Message) -> Consumption {
+    let ctx = ctx.task();
+    async move {
+        let mut stat = ctx
+            .app
+            .db
+            .of::<MarkovChat>()
+            .chat(ctx.chat_id)
+            .get_or_insert(|| MarkovChat {
+                learn_enabled: false,
+            })
+            .await;
 
+        stat.learn_enabled = !stat.learn_enabled;
+
+        if stat.learn_enabled {
+            ctx.reply("语料学习已打开")
+        } else {
+            ctx.reply("语料学习已关闭")
+        }
+        .send()
+        .warn_on_error("toggle_markov")
+        .await;
+    }
+    .into()
+}
+
+pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
     // 按 MODULES 的排列，合法命令和琳酱说说话应该都已经被 Stop 了，但是对其他 bot 的命令可能还留着。
+    let text = msg.text()?.to_string();
     if text.starts_with("/")
     /* || text.starts_with("琳酱说说话") */
     {
         return Consumption::Next;
     }
+
+    let stat = ctx
+        .app
+        .db
+        .of::<MarkovChat>()
+        .chat(ctx.chat_id)
+        .get_or_insert(|| MarkovChat {
+            learn_enabled: false,
+        });
+
+    let db = ctx.app.db.of::<Markov>().get_or_insert(|| Markov {
+        weight: HashMap::new(),
+    });
+
     tokio::spawn(async move {
         let mut db = db.await;
+        let stat = stat.await;
+        if !stat.learn_enabled {
+            return;
+        }
         let mut pre = Gram::default();
         let weight = &mut db.weight;
         for ch in text.chars() {
@@ -171,19 +252,29 @@ pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
 }
 
 pub static TRAIN_MOD: Module = Module {
-    kind: crate::ModuleKind::General(None),
+    kind: ModuleKind::General(None),
     task: train_data,
 };
 
 pub static GEN_CTNT: Module = Module {
-    kind: crate::ModuleKind::General(Some(crate::ModuleDesctiption {
+    kind: ModuleKind::General(Some(ModuleDesctiption {
         name: "琳酱说说话",
         description: "让琳酱说一段话或者接一段话",
         description_detailed: Some(concat!(
             "直接说琳酱说说话来让琳酱随便说话, ",
             "<code>琳酱说说话 [一句话]</code>让琳酱接话.\n\n",
-            "琳酱会从所有聊天记录里训练, 不会保存具体的聊天语料."
+            "琳酱会从所有聊天记录里训练, 不会保存具体的聊天语料.\n",
+            "使用 <code>/toggle_markov</code> 打开/关闭本聊天的语料学习功能。"
         )),
     })),
     task: on_message,
+};
+
+pub static TOGGLE: Module = Module {
+    kind: ModuleKind::Command(ModuleDesctiption {
+        name: "toggle_markov",
+        description: "打开/关闭<b>琳酱说说话</b>模块的学习功能",
+        description_detailed: None,
+    }),
+    task: toggle_learn,
 };

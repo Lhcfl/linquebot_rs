@@ -32,6 +32,7 @@ pub static MODULES: &[&'static Module] = &[
     &answer_book::MODULE,
     &say::MODULE,
     &repeater::TOGGLE,
+    &markov::TOGGLE,
     &rand::MODULE,
     &tools::MODULE,
     &tarot::MODULE,

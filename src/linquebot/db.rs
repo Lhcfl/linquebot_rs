@@ -218,11 +218,11 @@ pub struct DataBuilder<T: DbData> {
 }
 
 impl<T: DbData> DataBuilder<T> {
-    pub fn chat(&mut self, chat: ChatId) -> &mut Self {
+    pub fn chat(mut self, chat: ChatId) -> Self {
         self.chat = Some(chat);
         self
     }
-    pub fn user(&mut self, user: UserId) -> &mut Self {
+    pub fn user(mut self, user: UserId) -> Self {
         self.user = Some(user);
         self
     }
