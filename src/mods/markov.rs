@@ -209,13 +209,17 @@ pub fn toggle_learn(ctx: &mut Context, _: &Message) -> Consumption {
 }
 
 pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
+    let text = msg.text()?;
     // 按 MODULES 的排列，合法命令和琳酱说说话应该都已经被 Stop 了，但是对其他 bot 的命令可能还留着。
-    let text = msg.text()?.to_string();
-    if text.starts_with("/")
-    /* || text.starts_with("琳酱说说话") */
-    {
+    if text.starts_with("/") {
         return Consumption::Next;
     }
+    // 拒绝学习过长的语料
+    if text.len() > 300 {
+        return Consumption::Next;
+    }
+
+    let text = text.to_string();
 
     let stat = ctx
         .app
