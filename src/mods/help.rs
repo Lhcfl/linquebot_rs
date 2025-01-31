@@ -26,13 +26,13 @@ fn gen_help_message(app: &App) -> (String, InlineKeyboardMarkup) {
         match &module.kind {
             ModuleKind::Command(cmd) => {
                 command_texts.push(format!("/{}: {}", cmd.name, cmd.description));
-                if let Some(_) = cmd.description_detailed {
+                if cmd.description_detailed.is_some() {
                     detailed_modules.push(cmd.name);
                 }
             }
             ModuleKind::General(Some(cmd)) => {
                 general_texts.push(format!("<b>{}</b>: {}", cmd.name, cmd.description,));
-                if let Some(_) = cmd.description_detailed {
+                if cmd.description_detailed.is_some() {
                     detailed_modules.push(cmd.name);
                 }
             }

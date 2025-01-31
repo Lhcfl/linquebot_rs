@@ -20,7 +20,7 @@ pub mod tools;
 
 /// Module Handles 的顺序很重要
 /// 请确保这些函数是拓扑排序的
-pub static MODULES: &[&'static Module] = &[
+pub static MODULES: &[&Module] = &[
     // --- super commands ---
     &help::MODULE,
     &bot_on_off::BOT_ON_MODULE,
@@ -50,4 +50,4 @@ pub static MODULES: &[&'static Module] = &[
     &repeater::MODULE,
 ];
 
-pub static MICRO_TASKS: &[&'static MicroTask] = &[&help::HELP_CALLBACK];
+pub static MICRO_TASKS: &[&MicroTask] = &[&help::HELP_CALLBACK];

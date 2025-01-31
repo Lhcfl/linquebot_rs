@@ -140,7 +140,7 @@ fn send_tarot(ctx: &mut Context, _message: &Message) -> Consumption {
                     .edit_message_text(
                         ctx.chat_id,
                         placeholder.id,
-                        format!("少女祈祷失败 >.<\n{}", err.to_string()),
+                        format!("少女祈祷失败 >.<\n{}", err),
                     )
                     .send()
                     .warn_on_error("tarot-ai")

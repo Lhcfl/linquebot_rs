@@ -51,7 +51,7 @@ pub static MODULE: Module = Module {
     kind: ModuleKind::Command(ModuleDesctiption {
         name: "tools",
         description: "实用工具",
-        description_detailed: Some(&TOOLS_HELP),
+        description_detailed: Some(TOOLS_HELP),
     }),
     task: on_message,
 };

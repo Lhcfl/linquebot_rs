@@ -46,7 +46,7 @@ pub struct Context<'a> {
     pub app: &'static App,
 }
 
-impl<'a> Context<'a> {
+impl Context<'_> {
     pub fn task(&self) -> TaskContext {
         TaskContext {
             message_id: self.message_id,

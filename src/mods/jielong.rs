@@ -86,7 +86,7 @@ impl Jielong {
         }
     }
     fn pretty_result(&self) -> String {
-        let mut users = self.users.iter().map(|(_, user)| user).collect::<Vec<_>>();
+        let mut users = self.users.values().collect::<Vec<_>>();
         users.sort_by(|a, b| b.score.cmp(&a.score));
         users
             .into_iter()
@@ -141,7 +141,6 @@ fn stop_jielong(chat_id: ChatId, nonce: u64) {
                 .await;
         });
     }
-    return;
 }
 
 fn try_stop_jielong_with(
@@ -187,7 +186,7 @@ fn try_start_jielong_with(
                 .warn_on_error("jielong-report-error"),
         );
     };
-    if let Some(_) = status.get(&ctx.chat_id) {
+    if status.get(&ctx.chat_id).is_some() {
         return Box::pin(
             ctx.reply("已经有一个接龙正在进行中啦！")
                 .send()
@@ -222,14 +221,14 @@ fn try_start_jielong_with(
         "第一个成语是"
     };
 
-    return Box::pin(
+    Box::pin(
         task.reply(&format!(
             "开始接龙！{hint}：{}, 请接 {}",
             current.word, current.last
         ))
         .send()
         .warn_on_error("start-jielong"),
-    );
+    )
 }
 
 fn show_jielong_status(ctx: TaskContext) -> Pin<Box<dyn Future<Output = ()> + Send>> {
@@ -346,7 +345,7 @@ pub static COMMAND: Module = Module {
     kind: ModuleKind::Command(ModuleDesctiption {
         name: "jielong",
         description: "成语接龙",
-        description_detailed: Some(&HELP_MESSAGE),
+        description_detailed: Some(HELP_MESSAGE),
     }),
     task: on_jielong_command,
 };

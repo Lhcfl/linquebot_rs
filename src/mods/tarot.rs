@@ -19,17 +19,15 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
     let num;
     if text.is_empty() {
         num = 3;
+    } else if let Ok(parsed) = text.parse::<usize>() {
+        num = parsed;
     } else {
-        if let Ok(parsed) = text.parse::<usize>() {
-            num = parsed;
-        } else {
-            return Consumption::StopWith(Box::pin(
-                ctx.task()
-                    .reply("数字不对，不准乱玩琳酱呀")
-                    .send()
-                    .warn_on_error("tarot"),
-            ));
-        };
+        return Consumption::StopWith(Box::pin(
+            ctx.task()
+                .reply("数字不对，不准乱玩琳酱呀")
+                .send()
+                .warn_on_error("tarot"),
+        ));
     };
     if num == 0 {
         return Consumption::StopWith(Box::pin(
@@ -49,7 +47,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
     }
 
     let ctx = ctx.task();
-    return Consumption::StopWith(Box::pin(async move {
+    Consumption::StopWith(Box::pin(async move {
         ctx.reply(&format!(
             "{}最近遇到了什么烦心事吗？让琳酱给你算一算:",
             from.full_name()
@@ -80,7 +78,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
         .send()
         .warn_on_error("tarot")
         .await;
-    }));
+    }))
 }
 
 pub static MODULE: Module = Module {

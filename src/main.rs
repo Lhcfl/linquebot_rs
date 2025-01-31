@@ -43,15 +43,13 @@ async fn set_my_commands(app: &'static App) -> Result<True, RequestError> {
     let commands = app
         .modules
         .iter()
-        .map(|module| {
+        .filter_map(|module| {
             if let ModuleKind::Command(cmd) = &module.kind {
                 Some(BotCommand::new(cmd.name, cmd.description))
             } else {
                 None
             }
-        })
-        .filter(|cmd| cmd.is_some())
-        .map(|cmd| cmd.unwrap());
+        });
 
     app.bot.set_my_commands(commands).send().await
 }
@@ -90,12 +88,11 @@ async fn main_loop() -> anyhow::Result<()> {
         match bot.get_updates().offset(offset).timeout(10).send().await {
             Ok(updates) => {
                 offset = updates
-                    .last()
-                    .and_then(|u| Some(u.id.0 as i32 + 1))
+                    .last().map(|u| u.id.0 as i32 + 1)
                     .unwrap_or(offset);
 
                 for update in updates {
-                    resolvers::update::resolve(&app, update).await;
+                    resolvers::update::resolve(app, update).await;
                 }
             }
             Err(err) => {
@@ -106,11 +103,11 @@ async fn main_loop() -> anyhow::Result<()> {
 }
 
 #[tokio::main]
-async fn main() -> () {
+async fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     if let Err(err) = main_loop().await {
         error!("main-loop panicked: {}", err.to_string());
-        panic!("main-loop panicked: {}", err.to_string());
+        panic!("main-loop panicked: {}", err);
     }
     println!("bye bye");
 }

@@ -65,7 +65,7 @@ pub fn split_n<const N: usize>(src: &str) -> (Vec<&str>, Option<&str>) {
     let pre = (1..N)
         .map_while(|_| it.find(|s| !s.is_empty()))
         .collect::<Vec<_>>();
-    (pre, it.remainder().and_then(|str| Some(str.trim())))
+    (pre, it.remainder().map(|str| str.trim()))
 }
 
 pub fn split_args<const N: usize>(src: &str) -> [&str; N] {
@@ -90,7 +90,7 @@ pub mod telegram {
 
         use log::warn;
         pub trait WarnOnError {
-            async fn warn_on_error(self, name: &str) -> ();
+            async fn warn_on_error(self, name: &str);
         }
 
         impl<T, R, E> WarnOnError for T

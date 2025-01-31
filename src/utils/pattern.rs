@@ -13,7 +13,7 @@ impl Pattern for EofPat {
 impl Pattern for &str {
     fn check_pattern<'a>(&mut self, input: &'a str) -> Option<(&'a str, Self::Output<'a>)> {
         input
-            .starts_with(&*self)
+            .starts_with(*self)
             .then(|| (input.split_at(self.len()).1, ()))
     }
 }
@@ -21,7 +21,7 @@ impl Pattern for char {
     type Output<'a> = char;
     fn check_pattern<'a>(&mut self, input: &'a str) -> Option<(&'a str, Self::Output<'a>)> {
         let mut it = input.chars();
-        (it.next()? == *self).then(|| (it.as_str(), *self))
+        (it.next()? == *self).then_some((it.as_str(), *self))
     }
 }
 

@@ -20,21 +20,21 @@ impl ToString for Base64Error {
 use Base64Error::*;
 
 fn u2c(x: u8) -> char {
-    return match x {
-        0..26 => 'A' as u8 + x,
-        26..52 => 'a' as u8 + x - 26,
-        52..62 => '0' as u8 + x - 52,
-        62 => '+' as u8,
-        63 => '/' as u8,
+    (match x {
+        0..26 => b'A' + x,
+        26..52 => b'a' + x - 26,
+        52..62 => b'0' + x - 52,
+        62 => b'+',
+        63 => b'/',
         _ => unreachable!(),
-    } as char;
+    }) as char
 }
 
 fn c2u(x: u8) -> Result<u8, Base64Error> {
     Ok(match x as char {
-        'A'..='Z' => x as u8 - 'A' as u8,
-        'a'..='z' => x as u8 - 'a' as u8 + 26,
-        '0'..='9' => x as u8 - '0' as u8 + 52,
+        'A'..='Z' => x - b'A',
+        'a'..='z' => x - b'a' + 26,
+        '0'..='9' => x - b'0' + 52,
         '+' => 62,
         '/' => 63,
         '=' => 0,
@@ -71,7 +71,7 @@ pub fn encode_bytes(mut bytes: Iter<u8>) -> String {
         let tail = res.len() - padding;
         unsafe { res.as_bytes_mut()[tail..].fill(b'=') };
     }
-    return res;
+    res
 }
 
 pub fn encode(str: &str) -> String {
@@ -85,8 +85,8 @@ pub fn decode_bytes(str: &str) -> Result<Vec<u8>, Base64Error> {
         resu8.push(((c2u(b)? & 0b00001111) << 4) | (c2u(c)? >> 2));
         resu8.push(((c2u(c)? & 0b00000011) << 6) | c2u(d)?);
 
-        resu8.pop_if(|_| c == '=' as u8);
-        resu8.pop_if(|_| d == '=' as u8);
+        resu8.pop_if(|_| c == b'=');
+        resu8.pop_if(|_| d == b'=');
     }
     if str.len() % 4 == 0 {
         Ok(resu8)

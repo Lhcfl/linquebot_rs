@@ -72,7 +72,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
 
     let thing = String::from(thing);
 
-    return Consumption::StopWith(Box::pin(async move {
+    Consumption::StopWith(Box::pin(async move {
         if let Err(err) = ctx
             .reply_html(&format!(
                 "设置成功！将在 {time} 分钟后提醒 {} {}",
@@ -109,7 +109,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
         }
 
         error!("too many request errors, stop.")
-    }));
+    }))
 }
 
 pub static MODULE: Module = Module {

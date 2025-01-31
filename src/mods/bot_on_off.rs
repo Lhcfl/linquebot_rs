@@ -22,7 +22,7 @@ fn on_bot_on_message(ctx: &mut Context, _: &Message) -> Consumption {
     };
 
     let ctx = ctx.task();
-    if let Some(_) = record.remove(&ctx.chat_id) {
+    if record.remove(&ctx.chat_id).is_some() {
         Consumption::StopWith(Box::pin(async move {
             if let Err(err) = ctx.reply("琳酱已开机").send().await {
                 warn!("Failed to send reply: {}", err.to_string());

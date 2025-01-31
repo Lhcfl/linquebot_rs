@@ -1,17 +1,15 @@
 use std::{
     any::{type_name, Any, TypeId},
-    future::{AsyncDrop, Future},
     marker::PhantomData,
     ops::{Deref, DerefMut},
     sync::Arc,
 };
 
-use log::debug;
 use quick_cache::sync::Cache;
 use sqlx::{
     query::Query,
     sqlite::{SqliteArguments, SqliteConnectOptions},
-    Connection, Execute, Row, Sqlite, SqliteConnection,
+    Connection, Row, Sqlite, SqliteConnection,
 };
 use teloxide_core::types::{ChatId, UserId};
 use tokio::sync::{Mutex, OwnedMappedMutexGuard, OwnedMutexGuard};

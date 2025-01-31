@@ -54,11 +54,11 @@ pub async fn resolve(app: &'static App, update: Update) {
     }
     match update.kind {
         UpdateKind::Message(message) => {
-            if now.signed_duration_since(&message.date).num_seconds() > 30 {
+            if now.signed_duration_since(message.date).num_seconds() > 30 {
                 warn!(
                     target: "main-loop",
                     "skipped message {}s ago: {:?}",
-                    now.signed_duration_since(&message.date).num_seconds(),
+                    now.signed_duration_since(message.date).num_seconds(),
                     message.text()
                 );
                 return;

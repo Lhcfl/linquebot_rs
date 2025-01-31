@@ -31,8 +31,7 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     let mut iter = text[1..].split_whitespace();
     let action = iter.next()?.to_string();
     let addition = iter
-        .remainder()
-        .and_then(|str| Some(str.trim().to_string()));
+        .remainder().map(|str| str.trim().to_string());
     let ctx = ctx.task();
 
     Consumption::StopWith(Box::pin(async move {

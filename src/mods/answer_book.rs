@@ -14,7 +14,7 @@ fn on_message(ctx: &mut Context, _message: &Message) -> Consumption {
         let chosen = answer_book::ANSWERS
             .choose(&mut rand::thread_rng())
             .expect("not empty");
-        let res = ctx.reply(*&chosen).send().await;
+        let res = ctx.reply(chosen).send().await;
         if let Err(err) = res {
             warn!("Failed to send reply: {}", err.to_string());
         }

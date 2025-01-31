@@ -45,5 +45,5 @@ pub fn random_idiom() -> &'static Idiom {
 }
 
 pub fn get_idiom(word: &str) -> Option<&'static Idiom> {
-    IDIOM_MAP.get(word).map(|idiom| *idiom)
+    IDIOM_MAP.get(word).copied()
 }
