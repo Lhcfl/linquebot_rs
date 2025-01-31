@@ -144,7 +144,7 @@ pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
                 } else {
                     pw.insert(cw)
                 };
-                *pw /= pw.ln_1p();
+                *pw /= pw.ln() + 1.;
             };
             let mut pv = pre;
             loop {
@@ -157,15 +157,16 @@ pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
             let cur = if sel.is_empty() {
                 '\0'
             } else {
-                sel.choose_weighted(&mut rng, |v| v.1).expect("rand sel").0
+                sel.choose_weighted(&mut rng, |v| v.1.powf(1.4514))
+                    .expect("rand sel")
+                    .0
             };
-            res.push(cur);
-            pre.push(cur);
             if cur == '\0' {
                 break;
             }
+            res.push(cur);
+            pre.push(cur);
         }
-        let res = res.replace("\0", "");
         let res = if res.trim().is_empty() {
             "琳酱不知道哦"
         } else {
