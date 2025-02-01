@@ -107,6 +107,28 @@ fn send_help(ctx: &mut Context, _msg: &Message) -> Consumption {
         .into()
 }
 
+fn say_hi(ctx: &mut Context, msg: &Message) -> Consumption {
+    let news = msg.new_chat_members()?;
+    if news.iter().any(|member| member.id == ctx.app.bot_id) {
+        ctx.app
+            .bot
+            .send_message(
+                ctx.chat_id,
+                concat!(
+                    "大家好！这里是琳酱 ♪(´▽｀)\n",
+                    "琳酱是多功能的群聊机器人，提供小游戏、简单命令、实用工具等\n",
+                    "琳酱需要消息权限和设置管理员权限来解锁全部模块功能\n\n",
+                    "使用 /help 查看琳酱的帮助"
+                ),
+            )
+            .send()
+            .warn_on_error("say-hi")
+            .into()
+    } else {
+        Consumption::Next
+    }
+}
+
 fn on_help_callback(app: &'static App, cq: &CallbackQuery) -> Consumption {
     use crate::utils::pattern::*;
     let (_, (_, help_module_name)) =
@@ -134,6 +156,11 @@ pub static MODULE: Module = Module {
         description_detailed: None,
     }),
     task: send_help,
+};
+
+pub static SAY_HI: Module = Module {
+    kind: ModuleKind::General(None),
+    task: say_hi,
 };
 
 pub static HELP_CALLBACK: MicroTask = MicroTask::OnCallbackQuery(on_help_callback);

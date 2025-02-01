@@ -23,6 +23,7 @@ pub mod tools;
 pub static MODULES: &[&Module] = &[
     // --- super commands ---
     &help::MODULE,
+    &help::SAY_HI,
     &bot_on_off::BOT_ON_MODULE,
     &bot_on_off::BOT_OFF_MODULE,
     &bot_on_off::STOP_WHEN_BOT_OFF,

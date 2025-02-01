@@ -40,16 +40,13 @@ use teloxide_core::RequestError;
 static APP: OnceLock<App> = OnceLock::new();
 
 async fn set_my_commands(app: &'static App) -> Result<True, RequestError> {
-    let commands = app
-        .modules
-        .iter()
-        .filter_map(|module| {
-            if let ModuleKind::Command(cmd) = &module.kind {
-                Some(BotCommand::new(cmd.name, cmd.description))
-            } else {
-                None
-            }
-        });
+    let commands = app.modules.iter().filter_map(|module| {
+        if let ModuleKind::Command(cmd) = &module.kind {
+            Some(BotCommand::new(cmd.name, cmd.description))
+        } else {
+            None
+        }
+    });
 
     app.bot.set_my_commands(commands).send().await
 }
@@ -63,7 +60,7 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
     let me = bot.get_me().await?;
     info!(target: "init", "user id: {}", me.id);
     let _ = APP.set(linquebot::App {
-        name: "琳酱".to_string(),
+        bot_id: me.id,
         username: me.username().to_string(),
         bot,
         db,
@@ -87,9 +84,7 @@ async fn main_loop() -> anyhow::Result<()> {
     loop {
         match bot.get_updates().offset(offset).timeout(10).send().await {
             Ok(updates) => {
-                offset = updates
-                    .last().map(|u| u.id.0 as i32 + 1)
-                    .unwrap_or(offset);
+                offset = updates.last().map(|u| u.id.0 as i32 + 1).unwrap_or(offset);
 
                 for update in updates {
                     resolvers::update::resolve(app, update).await;

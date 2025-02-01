@@ -125,7 +125,7 @@ pub struct Module {
 }
 
 pub struct App {
-    pub name: String,
+    pub bot_id: UserId,
     pub username: String,
     pub bot: Bot,
     pub db: DataStorage,
