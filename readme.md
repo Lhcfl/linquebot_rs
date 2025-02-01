@@ -4,6 +4,15 @@
 
 WIP
 
+## Install Dependencies
+
+- waife module: [graphviz](https://graphviz.org/) and noto fonts
+
+```bash
+sudo apt install graphviz -y
+sudo apt install -y --force-yes --no-install-recommends fonts-noto fonts-noto-cjk fonts-noto-cjk-extra fonts-noto-color-emoji ttf-ancient-fonts
+```
+
 ## Run
 
 ```powershell
