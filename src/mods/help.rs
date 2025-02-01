@@ -98,9 +98,8 @@ fn gen_partial_help_message(
 fn send_help(ctx: &mut Context, _msg: &Message) -> Consumption {
     let module_name = ctx.cmd?.content;
     let ctx = ctx.task();
-    let (msg, btn) = gen_partial_help_message(ctx.app, module_name)
-        .or_else(|| Some(gen_help_message(ctx.app)))
-        .unwrap();
+    let (msg, btn) =
+        gen_partial_help_message(ctx.app, module_name).unwrap_or_else(|| gen_help_message(ctx.app));
     ctx.reply_html(msg)
         .reply_markup(btn)
         .send()
@@ -116,9 +115,8 @@ fn on_help_callback(app: &'static App, cq: &CallbackQuery) -> Consumption {
     let message = cq.message.clone()?;
     let chat_id = message.chat().id;
 
-    let (msg, btn) = gen_partial_help_message(app, help_module_name)
-        .or_else(|| Some(gen_help_message(app)))
-        .unwrap();
+    let (msg, btn) =
+        gen_partial_help_message(app, help_module_name).unwrap_or_else(|| gen_help_message(app));
 
     app.bot
         .edit_message_text(chat_id, message.id(), msg)

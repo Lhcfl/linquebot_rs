@@ -157,7 +157,7 @@ fn try_stop_jielong_with(
     };
     if let Some(jielong) = status.remove(&ctx.chat_id) {
         Box::pin(
-            ctx.reply(&format!(
+            ctx.reply(format!(
                 "成语接龙被 {} 结束啦！琳酱来宣布结果：\n\n{}",
                 from.full_name(),
                 jielong.pretty_result()
@@ -222,7 +222,7 @@ fn try_start_jielong_with(
     };
 
     Box::pin(
-        task.reply(&format!(
+        task.reply(format!(
             "开始接龙！{hint}：{}, 请接 {}",
             current.word, current.last
         ))
@@ -242,7 +242,7 @@ fn show_jielong_status(ctx: TaskContext) -> Pin<Box<dyn Future<Output = ()> + Se
     };
     if let Some(jielong) = status.get(&ctx.chat_id) {
         Box::pin(
-            ctx.reply(&format!(
+            ctx.reply(format!(
                 "接龙游戏开始于：{} \n当前成语：{}，请接：{}\n\n{}",
                 match SystemTime::now().duration_since(jielong.start_at) {
                     Ok(time) =>

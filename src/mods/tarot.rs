@@ -48,7 +48,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
 
     let ctx = ctx.task();
     Consumption::StopWith(Box::pin(async move {
-        ctx.reply(&format!(
+        ctx.reply(format!(
             "{}最近遇到了什么烦心事吗？让琳酱给你算一算:",
             from.full_name()
         ))
@@ -70,7 +70,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
             .map(|tarot| tarot.to_string())
             .collect::<Vec<_>>();
 
-        ctx.reply(&format!(
+        ctx.reply(format!(
             "{} 抽到的牌组是: \n{}",
             from.full_name(),
             text.join("\n")

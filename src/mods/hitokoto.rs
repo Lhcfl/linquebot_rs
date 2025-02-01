@@ -53,7 +53,7 @@ fn send_hitokoto(ctx: &mut Context, _message: &Message) -> Consumption {
         let res = get_hitokoto(&args).await;
 
         let res = ctx
-            .reply(&format!("{} ——{}", res.hitokoto, res.from))
+            .reply(format!("{} ——{}", res.hitokoto, res.from))
             .send()
             .await;
 

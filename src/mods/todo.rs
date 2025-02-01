@@ -74,7 +74,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
 
     Consumption::StopWith(Box::pin(async move {
         if let Err(err) = ctx
-            .reply_html(&format!(
+            .reply_html(format!(
                 "设置成功！将在 {time} 分钟后提醒 {} {}",
                 user.html_link(),
                 escape_html(&thing)
@@ -90,7 +90,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
 
         for retries in 0..3 {
             if let Err(err) = ctx
-                .reply_html(&format!(
+                .reply_html(format!(
                     "{} 该{}啦！",
                     &user.mention().as_ref().unwrap_or(&user.first_name),
                     escape_html(&thing)

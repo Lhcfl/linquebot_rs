@@ -29,7 +29,7 @@ fn on_message(ctx: &mut Context, _message: &Message) -> Consumption {
             }
         }
         "base64d" => task.reply(
-            &base64::decode(content)
+            base64::decode(content)
                 .map(|str| {
                     if str.trim().is_empty() {
                         "<空串>".to_string()

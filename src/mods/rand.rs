@@ -36,7 +36,7 @@ async fn send_selective_rand(ctx: TaskContext, text_body: String, spliter: &str)
         .unwrap_or(spliter);
 
     if let Err(err) = ctx
-        .reply_html(&format!("{}!", escape_html(result)))
+        .reply_html(format!("{}!", escape_html(result)))
         .send()
         .await
     {
