@@ -23,6 +23,29 @@ $env:TELOXIDE_TOKEN="1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" && cargo ru
 TELOXIDE_TOKEN="1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" cargo run
 ```
 
+## How to add a new module
+
+- Create a new module in `src/mods`, then `pub` a static `Module`. For example,
+
+  ```rust
+  pub static MODULE: Module = Module {
+      kind: ModuleKind::Command(ModuleDesctiption {
+          name: "dice",
+          description: "<code>xdy</code> 抛掷 x 个 y 面的骰子",
+          description_detailed: Some(concat!(
+              "使用 <code>/dice xdy</code> 的格式，抛掷 x 个 y 面的骰子。\n",
+              "结果返回 骰子总和: [每个骰子点数...]\n",
+              "注意 x 最大不能超过 500，y 最大不能超过 4294967295"
+          )),
+      }),
+      task: dice,
+  };
+  ```
+
+- Insert it into `crate::mods::MODULES` in topological order.
+
+It's that simple!
+
 ## License
 
 列出琳酱使用的第三方开源组件的许可证：
