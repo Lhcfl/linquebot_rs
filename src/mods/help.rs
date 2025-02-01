@@ -1,10 +1,10 @@
-use log::warn;
 use teloxide_core::prelude::*;
 use teloxide_core::types::{
     CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, ParseMode,
 };
 
 use crate::msg_context::Context;
+use crate::utils::telegram::prelude::WarnOnError;
 use crate::{App, Consumption, MicroTask, Module, ModuleDesctiption, ModuleKind};
 
 fn read_description(kind: &ModuleKind) -> Option<&ModuleDesctiption> {
@@ -69,21 +69,43 @@ fn gen_help_message(app: &App) -> (String, InlineKeyboardMarkup) {
     (message, InlineKeyboardMarkup::new(keyboards))
 }
 
-fn send_help(ctx: &mut Context, _msg: &Message) -> Consumption {
-    let ctx = ctx.task();
-    Consumption::StopWith(Box::pin(async move {
-        let (message, reply_markup) = gen_help_message(ctx.app);
-
-        let res = ctx
-            .reply_html(&message)
-            .reply_markup(reply_markup)
-            .send()
-            .await;
-
-        if let Err(err) = res {
-            warn!("Failed to send reply: {}", err.to_string());
+fn gen_partial_help_message(
+    app: &App,
+    module_name: &str,
+) -> Option<(String, InlineKeyboardMarkup)> {
+    for module in app.modules {
+        let Some(desc) = read_description(&module.kind) else {
+            continue;
+        };
+        if desc.name == module_name && desc.description_detailed.is_some() {
+            return Some((
+                format!(
+                    "{HELP_HEAD}\n\n<b>{}</b>: {}\n\n{}",
+                    desc.name,
+                    desc.description,
+                    desc.description_detailed.expect("上面检查了 is_some")
+                ),
+                InlineKeyboardMarkup::new(vec![vec![InlineKeyboardButton::callback(
+                    "返回",
+                    "help {default}",
+                )]]),
+            ));
         }
-    }))
+    }
+    None
+}
+
+fn send_help(ctx: &mut Context, _msg: &Message) -> Consumption {
+    let module_name = ctx.cmd?.content;
+    let ctx = ctx.task();
+    let (msg, btn) = gen_partial_help_message(ctx.app, module_name)
+        .or_else(|| Some(gen_help_message(ctx.app)))
+        .unwrap();
+    ctx.reply_html(msg)
+        .reply_markup(btn)
+        .send()
+        .warn_on_error("help")
+        .into()
 }
 
 fn on_help_callback(app: &'static App, cq: &CallbackQuery) -> Consumption {
@@ -94,53 +116,17 @@ fn on_help_callback(app: &'static App, cq: &CallbackQuery) -> Consumption {
     let message = cq.message.clone()?;
     let chat_id = message.chat().id;
 
-    for module in app.modules {
-        let Some(desc) = read_description(&module.kind) else {
-            continue;
-        };
-        if desc.name == help_module_name && desc.description_detailed.is_some() {
-            return Consumption::StopWith(Box::pin(async move {
-                let res = app
-                    .bot
-                    .edit_message_text(
-                        chat_id,
-                        message.id(),
-                        format!(
-                            "{HELP_HEAD}\n\n<b>{}</b>: {}\n\n{}",
-                            desc.name,
-                            desc.description,
-                            desc.description_detailed.expect("上面检查了 is_some")
-                        ),
-                    )
-                    .parse_mode(ParseMode::Html)
-                    .reply_markup(InlineKeyboardMarkup::new(vec![vec![
-                        InlineKeyboardButton::callback("返回", "help {default}"),
-                    ]]))
-                    .send()
-                    .await;
+    let (msg, btn) = gen_partial_help_message(app, help_module_name)
+        .or_else(|| Some(gen_help_message(app)))
+        .unwrap();
 
-                if let Err(err) = res {
-                    warn!("Failed to send edit: {}", err.to_string());
-                }
-            }));
-        }
-    }
-
-    Consumption::StopWith(Box::pin(async move {
-        let (text, reply_markup) = gen_help_message(app);
-
-        let res = app
-            .bot
-            .edit_message_text(chat_id, message.id(), text)
-            .parse_mode(ParseMode::Html)
-            .reply_markup(reply_markup)
-            .send()
-            .await;
-
-        if let Err(err) = res {
-            warn!("Failed to send edit: {}", err.to_string());
-        }
-    }))
+    app.bot
+        .edit_message_text(chat_id, message.id(), msg)
+        .parse_mode(ParseMode::Html)
+        .reply_markup(btn)
+        .send()
+        .warn_on_error("edit-help")
+        .into()
 }
 
 pub static MODULE: Module = Module {

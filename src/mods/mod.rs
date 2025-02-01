@@ -50,4 +50,4 @@ pub static MODULES: &[&Module] = &[
     &repeater::MODULE,
 ];
 
-pub static MICRO_TASKS: &[&MicroTask] = &[&help::HELP_CALLBACK];
+pub static MICRO_TASKS: &[&MicroTask] = &[&help::HELP_CALLBACK, &set_title::ADMIN_CALLBACK];

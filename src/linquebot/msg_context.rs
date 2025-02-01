@@ -76,18 +76,18 @@ pub struct TaskContext {
 }
 
 impl TaskContext {
-    pub fn reply(&self, text: &str) -> JsonRequest<SendMessage> {
+    pub fn reply(&self, text: impl Into<String>) -> JsonRequest<SendMessage> {
         self.app
             .bot
             .send_message(self.chat_id, text)
             .reply_parameters(ReplyParameters::new(self.message_id))
     }
 
-    pub fn reply_markdown(&self, text: &str) -> JsonRequest<SendMessage> {
+    pub fn reply_markdown(&self, text: impl Into<String>) -> JsonRequest<SendMessage> {
         self.reply(text).parse_mode(ParseMode::MarkdownV2)
     }
 
-    pub fn reply_html(&self, text: &str) -> JsonRequest<SendMessage> {
+    pub fn reply_html(&self, text: impl Into<String>) -> JsonRequest<SendMessage> {
         self.reply(text).parse_mode(ParseMode::Html)
     }
 }

@@ -5,6 +5,7 @@ use teloxide_core::ApiError;
 use teloxide_core::RequestError;
 
 use crate::linquebot::*;
+use crate::utils::telegram::prelude::WarnOnError;
 use crate::Consumption;
 use msg_context::Context;
 
@@ -101,6 +102,38 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
     }
 }
 
+pub fn on_my_chat_member(app: &'static App, chat_member: &ChatMemberUpdated) -> Consumption {
+    if !chat_member.old_chat_member.is_privileged()
+        && chat_member.new_chat_member.can_promote_members()
+    {
+        tokio::spawn(
+            app.bot
+                .send_message(
+                    chat_member.chat.id,
+                    format!(
+                        "感谢 {}，琳酱现在是管理员了，可以使用 /t 功能 ^_^",
+                        chat_member.from.full_name()
+                    ),
+                )
+                .send()
+                .warn_on_error("set-title"),
+        );
+    } else if chat_member.old_chat_member.can_promote_members()
+        && !chat_member.new_chat_member.can_promote_members()
+    {
+        tokio::spawn(
+            app.bot
+                .send_message(
+                    chat_member.chat.id,
+                    "琳酱被取消了管理权限，不再能使用 /t 功能 >_<",
+                )
+                .send()
+                .warn_on_error("set-title"),
+        );
+    }
+    Consumption::Next
+}
+
 pub static MODULE: Module = Module {
     kind: ModuleKind::Command(ModuleDesctiption {
         name: "t",
@@ -108,8 +141,10 @@ pub static MODULE: Module = Module {
         description_detailed: Some(concat!(
             "不加参数的 /t 会清除头衔。\n",
             "加参数的 /t xxx 设置头衔为 xxx。\n",
-            "琳酱必须具有管理员权限，琳酱没办法对非琳酱设置的管理员设置头衔"
+            "琳酱必须具有设置管理员的权限，琳酱没办法对非琳酱设置的管理员设置头衔"
         )),
     }),
     task: on_message,
 };
+
+pub static ADMIN_CALLBACK: MicroTask = MicroTask::OnMyChatMember(on_my_chat_member);
