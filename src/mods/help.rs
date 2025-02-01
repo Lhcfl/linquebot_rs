@@ -1,6 +1,7 @@
 use teloxide_core::prelude::*;
 use teloxide_core::types::{
-    CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, ParseMode,
+    CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, Message,
+    ParseMode,
 };
 
 use crate::msg_context::Context;
@@ -61,7 +62,18 @@ fn gen_help_message(app: &App) -> (String, InlineKeyboardMarkup) {
     }
 
     let message = format!(
-        "{HELP_HEAD}:\n{}\n\n{}\n\n点击下方按钮可以看到对应模块的详细帮助",
+        "{HELP_HEAD}
+
+命令列表:
+{}
+
+模块列表:
+{}
+
+琳酱以 AGPL 开源于 https://github.com/Lhcfl/linquebot_rs/
+欢迎检查源代码和点星星✨
+
+点击下方按钮可以看到对应模块的详细帮助",
         command_texts.join("\n"),
         general_texts.join("\n")
     );
@@ -95,6 +107,16 @@ fn gen_partial_help_message(
     None
 }
 
+fn disabled_link_preview() -> LinkPreviewOptions {
+    LinkPreviewOptions {
+        is_disabled: true,
+        url: None,
+        prefer_large_media: false,
+        prefer_small_media: false,
+        show_above_text: false,
+    }
+}
+
 fn send_help(ctx: &mut Context, _msg: &Message) -> Consumption {
     let module_name = ctx.cmd?.content;
     let ctx = ctx.task();
@@ -102,6 +124,7 @@ fn send_help(ctx: &mut Context, _msg: &Message) -> Consumption {
         gen_partial_help_message(ctx.app, module_name).unwrap_or_else(|| gen_help_message(ctx.app));
     ctx.reply_html(msg)
         .reply_markup(btn)
+        .link_preview_options(disabled_link_preview())
         .send()
         .warn_on_error("help")
         .into()
@@ -116,11 +139,12 @@ fn say_hi(ctx: &mut Context, msg: &Message) -> Consumption {
                 ctx.chat_id,
                 concat!(
                     "大家好！这里是琳酱 ♪(´▽｀)\n",
-                    "琳酱是多功能的群聊机器人，提供小游戏、简单命令、实用工具等\n",
+                    "琳酱是多功能的开源群聊机器人，提供小游戏、简单命令、实用工具等\n",
                     "琳酱需要消息权限和设置管理员权限来解锁全部模块功能\n\n",
-                    "使用 /help 查看琳酱的帮助"
+                    "使用 /help 查看详细琳酱帮助"
                 ),
             )
+            .link_preview_options(disabled_link_preview())
             .send()
             .warn_on_error("say-hi")
             .into()
@@ -143,6 +167,7 @@ fn on_help_callback(app: &'static App, cq: &CallbackQuery) -> Consumption {
     app.bot
         .edit_message_text(chat_id, message.id(), msg)
         .parse_mode(ParseMode::Html)
+        .link_preview_options(disabled_link_preview())
         .reply_markup(btn)
         .send()
         .warn_on_error("edit-help")
