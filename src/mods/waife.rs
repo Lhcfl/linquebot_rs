@@ -7,7 +7,6 @@ use rand::seq::IteratorRandom;
 use rand::thread_rng;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::hash::Hash;
 use std::sync::LazyLock;
 use std::sync::RwLock;
 use std::time::SystemTime;
@@ -15,12 +14,10 @@ use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
 use crate::linquebot::*;
-use crate::utils::escape_html;
 use crate::utils::telegram::prelude::*;
 use crate::Consumption;
 
 struct WaifeUser {
-    id: UserId,
     html_link: String,
     full_name: String,
 }
@@ -28,23 +25,9 @@ struct WaifeUser {
 impl WaifeUser {
     fn from_user(user: &User) -> Self {
         Self {
-            id: user.id,
             html_link: user.html_link(),
             full_name: user.full_name(),
         }
-    }
-
-    fn name_escaped(&self) -> String {
-        let mut result = String::new();
-        for ch in self.full_name.chars() {
-            match ch {
-                '\\' => result.push_str("\\\\"),
-                '\'' => result.push_str("\\\'"),
-                '\"' => result.push_str("\\\""),
-                x => result.push(x),
-            }
-        }
-        result
     }
 }
 
@@ -156,6 +139,9 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
             let mut users = HashMap::new();
             users.insert(from.id, WaifeUser::from_user(&from));
             for member in res {
+                if member.user.id == ctx.app.bot_id {
+                    continue;
+                }
                 users.insert(member.user.id, WaifeUser::from_user(&member.user));
             }
 
@@ -277,7 +263,10 @@ pub static GET_WAIFE: Module = Module {
     kind: ModuleKind::Command(ModuleDesctiption {
         name: "waife",
         description: "获取随机群老婆",
-        description_detailed: Some(concat!("从bot认识的群成员中获取随机群老婆")),
+        description_detailed: Some(concat!(
+            "从bot认识的群成员中获取随机群老婆\n",
+            "琳酱会认识加入以来所有发言的用户和群管理员"
+        )),
     }),
     task: get_waife,
 };
@@ -285,8 +274,8 @@ pub static GET_WAIFE: Module = Module {
 pub static WAIFE_GRAPH: Module = Module {
     kind: ModuleKind::Command(ModuleDesctiption {
         name: "waife_graph",
-        description: "群老婆图",
-        description_detailed: Some(concat!("绘制群老婆图")),
+        description: "绘制群老婆图",
+        description_detailed: None,
     }),
     task: on_waife_graph,
 };
