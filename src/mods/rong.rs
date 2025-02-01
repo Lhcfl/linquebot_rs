@@ -1,3 +1,4 @@
+/// 实现 @rongslashbot 的功能
 use log::warn;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
@@ -30,8 +31,7 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     let text = String::from(text);
     let mut iter = text[1..].split_whitespace();
     let action = iter.next()?.to_string();
-    let addition = iter
-        .remainder().map(|str| str.trim().to_string());
+    let addition = iter.remainder().map(|str| str.trim().to_string());
     let ctx = ctx.task();
 
     Consumption::StopWith(Box::pin(async move {

@@ -24,6 +24,17 @@ pub trait DbData: Any + Send + Sync {
     fn to_string(&self) -> String;
 }
 
+/// 数据库
+///
+/// 使用方式：
+/// ```
+/// ctx.db.of::<类型>().get_or_insert()
+/// ctx.db.of::<类型>().chat(chat_id).get_or_insert()
+/// ctx.db.of::<类型>().user(user_id).get_or_insert()
+/// ctx.db.of::<类型>().chat(chat_id).user(user_id).get_or_insert()
+/// ```
+///
+/// 参见 [crate::mods::markov]
 #[derive(Debug)]
 pub struct DataStorage {
     cache: Cache<DataId, Arc<Mutex<dyn DbData>>>,

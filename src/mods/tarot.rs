@@ -1,3 +1,4 @@
+/// 抽取塔罗牌
 use std::time::Duration;
 
 use log::warn;

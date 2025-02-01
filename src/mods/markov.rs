@@ -1,3 +1,4 @@
+/// 基于 Markov Chain 的简单 AI 模块
 use std::collections::HashMap;
 
 use rand::{rngs::SmallRng, seq::SliceRandom, thread_rng, SeedableRng};

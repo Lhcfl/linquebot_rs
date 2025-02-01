@@ -39,6 +39,8 @@ impl<'a> CmdParts<'a> {
     }
 }
 
+/// 和对应消息生命周期相等的 Context  
+/// 会预先 parse 好 cmd
 pub struct Context<'a> {
     pub cmd: Option<CmdParts<'a>>,
     pub chat_id: ChatId,

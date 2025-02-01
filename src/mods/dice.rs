@@ -1,3 +1,4 @@
+/// 骰子模块
 use log::warn;
 use msg_context::Context;
 use msg_context::TaskContext;

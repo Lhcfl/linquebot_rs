@@ -1,4 +1,4 @@
-//! 随机老婆
+//! 随机群老婆
 use graphviz_rust::dot_structures::Graph;
 use graphviz_rust::printer::DotPrinter;
 use graphviz_rust::printer::PrinterContext;

@@ -1,3 +1,4 @@
+/// 显示帮助和关于信息
 use teloxide_core::prelude::*;
 use teloxide_core::types::{
     CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, Message,

@@ -1,9 +1,4 @@
-//! hitokoto  
-//! Send a hitokoto  
-//! Usage:
-//! ```
-//! /hitokoto
-//! ```
+//! 塔罗牌 AI
 
 use log::trace;
 use log::warn;

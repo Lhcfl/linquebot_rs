@@ -1,9 +1,4 @@
-//! hitokoto  
-//! Send a hitokoto  
-//! Usage:
-//! ```
-//! /hitokoto
-//! ```
+//! 一言
 
 use log::trace;
 use log::warn;

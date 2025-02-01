@@ -1,4 +1,6 @@
-//! 这还是个雏形
+//! bot的开关
+//! 默认开启，无持久化
+
 use log::error;
 use log::warn;
 use std::collections::HashMap;
