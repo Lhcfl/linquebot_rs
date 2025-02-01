@@ -18,7 +18,6 @@
 #![feature(vec_pop_if)]
 
 mod assets;
-mod globals;
 mod linquebot;
 mod mods;
 mod resolvers;
