@@ -17,6 +17,7 @@ pub mod tarot;
 pub mod tarot_ai;
 pub mod todo;
 pub mod tools;
+pub mod waife;
 
 /// Module Handles 的顺序很重要
 /// 请确保这些函数是拓扑排序的
@@ -27,6 +28,7 @@ pub static MODULES: &[&Module] = &[
     &bot_on_off::BOT_ON_MODULE,
     &bot_on_off::BOT_OFF_MODULE,
     &bot_on_off::STOP_WHEN_BOT_OFF,
+    &waife::ADD_USER,
     // --- normal commands ---
     &todo::MODULE,
     &hitokoto::MODULE,
@@ -42,6 +44,8 @@ pub static MODULES: &[&Module] = &[
     &explain::MODULE,
     &set_title::MODULE,
     &jielong::COMMAND,
+    &waife::GET_WAIFE,
+    &waife::WAIFE_GRAPH,
     // --- special command: rongslashbot ---
     &rong::MODULE,
     // --- normal message handles ---
