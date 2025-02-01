@@ -69,8 +69,7 @@ pub async fn resolve(app: &'static App, update: Update) {
             trace!("get callback query: {:?}", data.data);
             handle_kind!(OnCallbackQuery, data)
         }
-        UpdateKind::ChatMember(data) => handle_kind!(OnChatMember, data),
-        UpdateKind::MyChatMember(data) => handle_kind!(OnChatMember, data),
+        UpdateKind::MyChatMember(data) => handle_kind!(OnMyChatMember, data),
         _ => {
             warn!(
                 "get unimplemented update kind: {:?}",

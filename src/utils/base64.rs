@@ -1,6 +1,5 @@
 //! 用来练手的 base64 encode/decoder (
-
-use std::slice::Iter;
+use std::{fmt, slice::Iter};
 
 #[derive(Debug, PartialEq)]
 pub enum Base64Error {
@@ -8,11 +7,11 @@ pub enum Base64Error {
     NotLongEnough(String),
 }
 
-impl ToString for Base64Error {
-    fn to_string(&self) -> String {
+impl fmt::Display for Base64Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            IllegalBase64Symbol(c) => format!("存在不应该出现在 Base64 中的字符: {c}"),
-            NotLongEnough(str) => format!("输入的长度不能被4整除。已解码的内容: {str}"),
+            IllegalBase64Symbol(c) => write!(f, "存在不应该出现在 Base64 中的字符: {c}"),
+            NotLongEnough(str) => write!(f, "输入的长度不能被4整除。已解码的内容: {str}"),
         }
     }
 }

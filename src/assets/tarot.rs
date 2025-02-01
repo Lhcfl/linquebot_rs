@@ -1,4 +1,5 @@
 use rand::{seq::index, thread_rng, Rng};
+use std::fmt;
 
 pub struct MajorArcana {
     pub name: &'static str,
@@ -13,12 +14,12 @@ pub struct TarotChoosen {
     pub description: &'static str,
 }
 
-impl TarotChoosen {
-    pub fn to_string(&self) -> String {
+impl fmt::Display for TarotChoosen {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_reverse {
-            format!("{}正位: {}", self.name, self.description)
+            write!(f, "{}正位: {}", self.name, self.description)
         } else {
-            format!("{}逆位: {}", self.name, self.description)
+            write!(f, "{}逆位: {}", self.name, self.description)
         }
     }
 }

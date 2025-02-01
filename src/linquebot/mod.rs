@@ -116,7 +116,7 @@ pub enum ModuleKind {
 
 pub enum MicroTask {
     OnCallbackQuery(fn(app: &'static App, query: &CallbackQuery) -> types::Consumption),
-    OnChatMember(fn(app: &'static App, data: &ChatMemberUpdated) -> types::Consumption),
+    OnMyChatMember(fn(app: &'static App, data: &ChatMemberUpdated) -> types::Consumption),
 }
 
 pub struct Module {
