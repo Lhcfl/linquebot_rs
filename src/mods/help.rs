@@ -64,12 +64,13 @@ fn gen_help_message(app: &App) -> (String, InlineKeyboardMarkup) {
 
     let message = format!(
         "{HELP_HEAD}
-
-命令列表:
+<blockquote expandable>命令列表:
 {}
 
 模块列表:
 {}
+</blockquote>
+⬆️ 点击展开命令菜单
 
 琳酱以 AGPL 开源于 https://github.com/Lhcfl/linquebot_rs/
 欢迎检查源代码和点星星✨
