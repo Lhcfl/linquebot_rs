@@ -1,8 +1,7 @@
+//! 实现 @rongslashbot 的功能
+
 use std::collections::HashSet;
 use std::sync::LazyLock;
-
-/// 实现 @rongslashbot 的功能
-use log::warn;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
@@ -17,7 +16,7 @@ use crate::ModuleKind;
 // 常见其它 bot 的命令名单，防止意外回复
 static RONG_BLACKLIST: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
     HashSet::from([
-        "pin", "dedede", "hammer", "start", "quit", "search", "close", "open", "join", "kill",
+        "pin", "q", "dedede", "hammer", "start", "quit", "search", "close", "open", "join", "kill",
         "kick", "settings", "enable", "disable", "leave", "skip",
     ])
 });
@@ -29,9 +28,6 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
             return Consumption::Next;
         }
     }
-    if RONG_BLACKLIST.contains(text) {
-        return Consumption::Next;
-    }
 
     let mut actee = message.reply_to_message().as_ref()?.from.clone()?;
     let mut actor = message.from.as_ref()?.clone();
@@ -42,44 +38,45 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
         return Consumption::Next;
     }
 
-    let text = String::from(text);
-    let mut iter = text[1..].split_whitespace();
-    let action = iter.next()?.to_string();
-    let addition = iter.remainder().map(|str| str.trim().to_string());
+    let [action, addition] = split_args(&text[1..]);
+    if action.is_empty() {
+        return Consumption::Next;
+    }
+    if RONG_BLACKLIST.contains(&action) {
+        return Consumption::Next;
+    }
+
+    let mut reply = format!(
+        "{} {} {}",
+        actor.html_link(),
+        escape_html(&action),
+        if actor.id == actee.id {
+            format!("<a href=\"{}\">自己</a>", actee.preferably_tme_url())
+        } else {
+            actee.html_link()
+        }
+    );
+
+    if !addition.is_empty() {
+        reply.push(' ');
+        reply.push_str(&escape_html(&addition));
+    }
+
+    reply.push('!');
+
     let ctx = ctx.task();
 
-    Consumption::StopWith(Box::pin(async move {
-        let mut text = format!(
-            "{} {} {}",
-            actor.html_link(),
-            escape_html(&action),
-            if actor.id == actee.id {
-                format!("<a href=\"{}\">自己</a>", actee.preferably_tme_url())
-            } else {
-                actee.html_link()
-            }
-        );
-        if let Some(addition) = addition {
-            text.push(' ');
-            text.push_str(&escape_html(&addition));
-        }
-        text.push('!');
-
-        let result = ctx
-            .reply_html(&text)
-            .link_preview_options(LinkPreviewOptions {
-                is_disabled: true,
-                url: None,
-                prefer_large_media: false,
-                prefer_small_media: false,
-                show_above_text: false,
-            })
-            .send()
-            .await;
-        if let Err(err) = result {
-            warn!("Failed to send reply: {}", err.to_string());
-        }
-    }))
+    ctx.reply_html(reply)
+        .link_preview_options(LinkPreviewOptions {
+            is_disabled: true,
+            url: None,
+            prefer_large_media: false,
+            prefer_small_media: false,
+            show_above_text: false,
+        })
+        .send()
+        .warn_on_error("rong")
+        .into()
 }
 
 pub static MODULE: Module = Module {
