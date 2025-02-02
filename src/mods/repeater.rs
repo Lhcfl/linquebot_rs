@@ -50,13 +50,16 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
         history.repeated = 1;
         history.text = text.clone();
     }
-    let text = text?;
+    let mut text = text?;
 
     // only repeat once!
     if history.repeated == 3
     // don't repeat command
     && !text.starts_with("/")
     {
+        if text == "没有！" {
+            text = "通过！".to_string();
+        }
         tokio::spawn(
             ctx.app
                 .bot
