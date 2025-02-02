@@ -1,3 +1,6 @@
+use std::collections::HashSet;
+use std::sync::LazyLock;
+
 /// 实现 @rongslashbot 的功能
 use log::warn;
 use teloxide_core::prelude::*;
@@ -11,12 +14,23 @@ use crate::Module;
 use crate::ModuleDescription;
 use crate::ModuleKind;
 
+// 常见其它 bot 的命令名单，防止意外回复
+static RONG_BLACKLIST: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
+    HashSet::from([
+        "pin", "dedede", "hammer", "start", "quit", "search", "close", "open", "join", "kill",
+        "kick", "settings", "enable", "disable", "leave", "skip",
+    ])
+});
+
 pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     let text = message.text()?;
     if let Some(username) = ctx.cmd.and_then(|cmd| cmd.username) {
         if username != ctx.app.username {
             return Consumption::Next;
         }
+    }
+    if RONG_BLACKLIST.contains(text) {
+        return Consumption::Next;
     }
 
     let mut actee = message.reply_to_message().as_ref()?.from.clone()?;
