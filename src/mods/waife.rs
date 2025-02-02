@@ -108,6 +108,9 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
 }
 
 fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
+    if msg.chat.is_private() {
+        return Consumption::Next;
+    }
     let from = msg.from.as_ref()?;
     let Ok(mut waife_storage) = WAIFE_STORAGE.write() else {
         log::error!("Cannot get lock of WAIFE_STORAGE");
