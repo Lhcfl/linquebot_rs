@@ -30,6 +30,7 @@
           with pkgs;
           mkShell {
             buildInputs = [
+              graphviz
               (rust-bin.selectLatestNightlyWith (
                 toolchain:
                 toolchain.default.override {
@@ -37,6 +38,23 @@
                 }
               ))
             ];
+          };
+        packages.default =
+          with pkgs;
+          let
+            rustPlatform = makeRustPlatform {
+              cargo = rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
+              rustc = rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
+            };
+          in
+          rustPlatform.buildRustPackage {
+            pname = "linquebot_rs";
+            version = "0.1.0";
+            src = ./.;
+            cargoLock = {
+              lockFile = ./Cargo.lock;
+            };
+            buildInputs = [ graphviz ]; # Broken
           };
       }
     );
