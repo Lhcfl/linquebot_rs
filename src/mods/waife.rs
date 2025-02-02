@@ -233,8 +233,10 @@ fn on_waife_graph(ctx: &mut Context, _: &Message) -> Consumption {
                             graph.print(&mut PrinterContext::default())
                         );
                         let mut err_str = err.to_string();
-                        if err_str.contains("program not found") {
-                            err_str += "\n看上去琳酱缺少了依赖：Graphviz，请联系琳酱部署者安装"
+                        if err_str.contains("program not found") || err_str.contains("No such file")
+                        {
+                            err_str = "\n看上去琳酱缺少了依赖：Graphviz，请联系琳酱部署者安装"
+                                .to_string();
                         }
                         ctx.reply(format!("琳酱在生成老婆图的时候发生了意外错误…… {err_str}"))
                             .send()
