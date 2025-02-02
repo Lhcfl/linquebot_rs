@@ -49,7 +49,7 @@ fn on_message(ctx: &mut Context, _message: &Message) -> Consumption {
 }
 
 pub static MODULE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "tools",
         description: "实用工具",
         description_detailed: Some(TOOLS_HELP),

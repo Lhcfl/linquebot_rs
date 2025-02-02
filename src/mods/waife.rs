@@ -260,7 +260,7 @@ pub static ADD_USER: Module = Module {
 };
 
 pub static GET_WAIFE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "waife",
         description: "获取随机群老婆",
         description_detailed: Some(concat!(
@@ -272,7 +272,7 @@ pub static GET_WAIFE: Module = Module {
 };
 
 pub static WAIFE_GRAPH: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "waife_graph",
         description: "绘制群老婆图",
         description_detailed: None,

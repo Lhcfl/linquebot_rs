@@ -23,7 +23,7 @@ fn on_message(ctx: &mut Context, _message: &Message) -> Consumption {
 }
 
 pub static MODULE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "answer",
         description: "答案之书",
         description_detailed: Some(concat!(

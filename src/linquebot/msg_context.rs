@@ -5,7 +5,7 @@ use teloxide_core::{
     types::{ChatId, Message, MessageId, ParseMode, ReplyParameters},
 };
 
-use super::{App, ModuleDesctiption};
+use super::{App, ModuleDescription};
 
 /// Command parts of /xxx@yyy zzz
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
@@ -57,7 +57,7 @@ impl Context<'_> {
         }
     }
 
-    pub fn matches_command(&self, desc: &ModuleDesctiption) -> bool {
+    pub fn matches_command(&self, desc: &ModuleDescription) -> bool {
         let Some(cmd) = &self.cmd else {
             return false;
         };

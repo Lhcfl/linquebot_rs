@@ -104,7 +104,7 @@ pub mod types {
 
 /// 一个模块的描述
 #[derive(Debug)]
-pub struct ModuleDesctiption {
+pub struct ModuleDescription {
     /// 对于 [ModuleKind::Command] name 即命令的名字，会被预先匹配
     pub name: &'static str,
     /// 在 help 和 my_commands 中显示的提示信息
@@ -116,10 +116,10 @@ pub struct ModuleDesctiption {
 /// 模块类型
 pub enum ModuleKind {
     /// `Command` 只响应 `/command` 形状的消息。命令名是预处理的，只会被解析一次。
-    Command(ModuleDesctiption),
+    Command(ModuleDescription),
     /// `General` 对模块响应的消息形状不做要求，自行处理  
     /// 当一个 `General` 模块没有描述的时候，它不会显示在 `/help` 中
-    General(Option<ModuleDesctiption>),
+    General(Option<ModuleDescription>),
 }
 
 /// 其他 Telegram Updates 的响应器

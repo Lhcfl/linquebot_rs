@@ -59,7 +59,7 @@ fn send_hitokoto(ctx: &mut Context, _message: &Message) -> Consumption {
 }
 
 pub static MODULE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "hitokoto",
         description: "获取一言",
         description_detailed: Some(concat!(

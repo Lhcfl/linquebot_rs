@@ -7,9 +7,9 @@ use teloxide_core::types::{
 
 use crate::msg_context::Context;
 use crate::utils::telegram::prelude::WarnOnError;
-use crate::{App, Consumption, MicroTask, Module, ModuleDesctiption, ModuleKind};
+use crate::{App, Consumption, MicroTask, Module, ModuleDescription, ModuleKind};
 
-fn read_description(kind: &ModuleKind) -> Option<&ModuleDesctiption> {
+fn read_description(kind: &ModuleKind) -> Option<&ModuleDescription> {
     match kind {
         ModuleKind::Command(cmd) => Some(cmd),
         ModuleKind::General(Some(cmd)) => Some(cmd),
@@ -176,7 +176,7 @@ fn on_help_callback(app: &'static App, cq: &CallbackQuery) -> Consumption {
 }
 
 pub static MODULE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "help",
         description: "显示帮助",
         description_detailed: None,

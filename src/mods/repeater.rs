@@ -107,7 +107,7 @@ pub static MODULE: Module = Module {
 };
 
 pub static TOGGLE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "toggle_repeat",
         description: "开关复读姬",
         description_detailed: Some(concat!(

@@ -59,7 +59,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
 }
 
 pub static MODULE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "rand",
         description: "随机一下",
         description_detailed: Some(concat!(
