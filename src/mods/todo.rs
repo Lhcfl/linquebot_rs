@@ -113,7 +113,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
 }
 
 pub static MODULE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "todo",
         description: "定时提醒",
         description_detailed: Some(concat!(

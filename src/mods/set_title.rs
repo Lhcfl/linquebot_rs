@@ -136,7 +136,7 @@ pub fn on_my_chat_member(app: &'static App, chat_member: &ChatMemberUpdated) -> 
 }
 
 pub static MODULE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "t",
         description: "设置头衔",
         description_detailed: Some(concat!(

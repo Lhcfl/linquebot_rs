@@ -10,7 +10,7 @@ use teloxide_core::{
 
 use crate::{
     db::DbData,
-    linquebot::{ModuleDesctiption, ModuleKind},
+    linquebot::{ModuleDescription, ModuleKind},
     msg_context::Context,
     utils::telegram::prelude::WarnOnError,
     Consumption, Module,
@@ -263,7 +263,7 @@ pub static TRAIN_MOD: Module = Module {
 };
 
 pub static GEN_CTNT: Module = Module {
-    kind: ModuleKind::General(Some(ModuleDesctiption {
+    kind: ModuleKind::General(Some(ModuleDescription {
         name: "琳酱说说话",
         description: "让琳酱说一段话或者接一段话",
         description_detailed: Some(concat!(
@@ -277,7 +277,7 @@ pub static GEN_CTNT: Module = Module {
 };
 
 pub static TOGGLE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "toggle_markov",
         description: "打开/关闭<b>琳酱说说话</b>模块的学习功能",
         description_detailed: None,

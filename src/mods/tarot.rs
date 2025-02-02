@@ -83,7 +83,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
 }
 
 pub static MODULE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "tarot",
         description: "抽取塔罗牌",
         description_detailed: Some(concat!("可选参数：数量\n", "默认摸 3 张。\n",)),

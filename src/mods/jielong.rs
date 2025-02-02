@@ -342,7 +342,7 @@ fn on_jielong_message(ctx: &mut Context, message: &Message) -> Consumption {
 }
 
 pub static COMMAND: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "jielong",
         description: "成语接龙",
         description_detailed: Some(HELP_MESSAGE),

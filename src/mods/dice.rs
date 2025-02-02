@@ -75,7 +75,7 @@ pub fn dice(ctx: &mut Context, message: &Message) -> Consumption {
 }
 
 pub static MODULE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "dice",
         description: "<code>xdy</code> 抛掷 x 个 y 面的骰子",
         description_detailed: Some(concat!(

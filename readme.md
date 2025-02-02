@@ -29,7 +29,7 @@ TELOXIDE_TOKEN="1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" cargo run
 
   ```rust
   pub static MODULE: Module = Module {
-      kind: ModuleKind::Command(ModuleDesctiption {
+      kind: ModuleKind::Command(ModuleDescription {
           name: "dice",
           description: "<code>xdy</code> 抛掷 x 个 y 面的骰子",
           description_detailed: Some(concat!(
@@ -50,7 +50,7 @@ It's that simple!
 
 列出琳酱使用的第三方开源组件的许可证：
 
-`src/assets/idiom.json`: modified from https://github.com/crazywhalecc/idiom-database/blob/master/data/idiom.json
+`src/assets/idiom.json`: modified from <https://github.com/crazywhalecc/idiom-database/blob/master/data/idiom.json>
 
 ```
 MIT License

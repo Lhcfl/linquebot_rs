@@ -12,7 +12,7 @@ use teloxide_core::types::*;
 use crate::msg_context::Context;
 use crate::Consumption;
 use crate::Module;
-use crate::ModuleDesctiption;
+use crate::ModuleDescription;
 use crate::ModuleKind;
 
 static BOT_ON: LazyLock<RwLock<HashMap<ChatId, bool>>> = LazyLock::new(Default::default);
@@ -70,7 +70,7 @@ fn stop_when_bot_off(ctx: &mut Context, _: &Message) -> Consumption {
 }
 
 pub static BOT_ON_MODULE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "bot_on",
         description: "打开 bot",
         description_detailed: None,
@@ -78,7 +78,7 @@ pub static BOT_ON_MODULE: Module = Module {
     task: on_bot_on_message,
 };
 pub static BOT_OFF_MODULE: Module = Module {
-    kind: ModuleKind::Command(ModuleDesctiption {
+    kind: ModuleKind::Command(ModuleDescription {
         name: "bot_off",
         description: "关闭 bot",
         description_detailed: None,

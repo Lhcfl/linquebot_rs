@@ -8,7 +8,7 @@ use crate::utils::telegram::prelude::*;
 use crate::utils::*;
 use crate::Consumption;
 use crate::Module;
-use crate::ModuleDesctiption;
+use crate::ModuleDescription;
 use crate::ModuleKind;
 
 pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
@@ -69,7 +69,7 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
 }
 
 pub static MODULE: Module = Module {
-    kind: ModuleKind::General(Some(ModuleDesctiption {
+    kind: ModuleKind::General(Some(ModuleDescription {
         name: "rong",
         description: "Rong一下人",
         description_detailed: Some(concat!(
