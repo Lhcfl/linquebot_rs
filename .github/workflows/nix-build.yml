@@ -1,0 +1,43 @@
+name: Build with Nix
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/flakehub-cache-action@main
+        with:
+          flakehub-flake-name: BeiyanYunyi/linquebot_rs
+      - uses: DeterminateSystems/flake-checker-action@main
+
+      - name: Print flake metadata
+        run: nix flake metadata --accept-flake-config
+
+      - name: Build
+        run: |
+          NIXPKGS_ALLOW_UNFREE=1 nix build .# --accept-flake-config
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: result
+          path: |
+            result

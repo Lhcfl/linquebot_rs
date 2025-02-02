@@ -1,5 +1,19 @@
 {
-  description = "A very basic flake";
+  description = "Linquebot's nix flake";
+
+  nixConfig = {
+    experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
+
+    extra-substituters = [
+      "https://nix-community.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+    ];
+  };
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
@@ -54,7 +68,14 @@
             cargoLock = {
               lockFile = ./Cargo.lock;
             };
-            buildInputs = [ graphviz ]; # Broken
+            nativeBuildInputs = [
+              pkg-config
+            ];
+            buildInputs = [
+              graphviz # Broken
+              openssl
+              sqlite
+            ];
           };
       }
     );
