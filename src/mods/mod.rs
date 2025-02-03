@@ -1,11 +1,14 @@
 use crate::{linquebot::Module, MicroTask};
 
 pub mod answer_book;
+pub mod bestapo;
 pub mod bot_on_off;
 pub mod dice;
+#[cfg(feature = "explain")]
 pub mod explain;
 pub mod help;
 pub mod hitokoto;
+#[cfg(feature = "jielong")]
 pub mod jielong;
 pub mod markov;
 pub mod rand;
@@ -13,7 +16,9 @@ pub mod repeater;
 pub mod rong;
 pub mod say;
 pub mod set_title;
+#[cfg(feature = "tarot")]
 pub mod tarot;
+#[cfg(feature = "tarot_ai")]
 pub mod tarot_ai;
 pub mod todo;
 pub mod tools;
@@ -36,13 +41,18 @@ pub static MODULES: &[&Module] = &[
     &say::MODULE,
     &repeater::TOGGLE,
     &markov::TOGGLE,
+    &bestapo::TOGGLE,
     &rand::MODULE,
     &tools::MODULE,
+    #[cfg(feature = "tarot")]
     &tarot::MODULE,
+    #[cfg(feature = "tarot_ai")]
     &tarot_ai::MODULE,
     &dice::MODULE,
+    #[cfg(feature = "explain")]
     &explain::MODULE,
     &set_title::MODULE,
+    #[cfg(feature = "jielong")]
     &jielong::COMMAND,
     &waife::GET_WAIFE,
     &waife::WAIFE_GRAPH,
@@ -50,9 +60,11 @@ pub static MODULES: &[&Module] = &[
     &rong::MODULE,
     // --- normal message handles ---
     &markov::GEN_CTNT,
+    #[cfg(feature = "jielong")]
     &jielong::ON_IDIOM,
     &markov::TRAIN_MOD,
     &repeater::MODULE,
+    &bestapo::MESSAGE_HANDLER,
 ];
 
 pub static MICRO_TASKS: &[&MicroTask] = &[&help::HELP_CALLBACK, &set_title::ADMIN_CALLBACK];
