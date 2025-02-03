@@ -119,7 +119,10 @@ impl DataStorage {
     ) -> DataGuard<T> {
         let cache = cache.lock_owned().await;
         let Ok(sub) = OwnedMutexGuard::try_map(cache, |val| <dyn Any>::downcast_mut(val)) else {
-            panic!("Cached type mismatch: expected {:?}", TypeId::of::<T>());
+            panic!(
+                "Cached type mismatch: expected {:?}",
+                std::any::type_name::<T>()
+            );
         };
         DataGuard {
             db: self,

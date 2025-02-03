@@ -5,6 +5,8 @@ use graphviz_rust::printer::PrinterContext;
 use msg_context::Context;
 use rand::seq::IteratorRandom;
 use rand::thread_rng;
+use serde::Deserialize;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::LazyLock;
@@ -13,97 +15,115 @@ use std::time::SystemTime;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::linquebot::db::DbData;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::*;
 use crate::Consumption;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct WaifeUser {
-    html_link: String,
+    id: UserId,
     full_name: String,
 }
 
 impl WaifeUser {
     fn from_user(user: &User) -> Self {
         Self {
-            html_link: user.html_link(),
+            id: user.id,
             full_name: user.full_name(),
         }
     }
+
+    fn html_link(&self) -> String {
+        format!(
+            "<a href=\"tg://user/?id={}\">{}</a>",
+            self.id, self.full_name
+        )
+    }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 struct WaifeStatus {
     users: HashMap<UserId, WaifeUser>,
     last_waife_date: SystemTime,
     waife_of: HashMap<UserId, UserId>,
 }
 
-static WAIFE_STORAGE: LazyLock<RwLock<HashMap<ChatId, WaifeStatus>>> =
-    LazyLock::new(Default::default);
-
-fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
-    let from = msg.from.as_ref()?;
-    let ctx = ctx.task();
-
-    let Ok(mut waife_storage) = WAIFE_STORAGE.write() else {
-        log::error!("Cannot get lock of WAIFE_STORAGE");
-        return Consumption::Next;
-    };
-    let Some(waife_storage) = waife_storage.get_mut(&ctx.chat_id) else {
-        return ctx
-            .reply("琳酱还不认识足够多的群成员，无法为您分配随机老婆 >_<")
-            .send()
-            .warn_on_error("waife")
-            .into();
-    };
-
-    let now = SystemTime::now();
-    let Ok(duration) = now.duration_since(waife_storage.last_waife_date) else {
-        waife_storage.last_waife_date = now;
-        return ctx
-            .reply("发生了内部错误，琳酱不知道哦 >_<")
-            .send()
-            .warn_on_error("waife")
-            .into();
-    };
-
-    if duration.as_secs() > 86400 {
-        waife_storage.last_waife_date = now;
-        waife_storage.waife_of = HashMap::new();
+impl DbData for WaifeStatus {
+    fn persistent() -> bool {
+        true
     }
 
-    if let Some(waife_uid) = waife_storage.waife_of.get(&from.id) {
-        let waife_user = waife_storage.users.get(waife_uid).unwrap();
-        return ctx
-            .reply_html(format!(
+    fn from_str(src: &str) -> Self {
+        ron::from_str(src).expect("deser error")
+    }
+
+    fn to_string(&self) -> String {
+        ron::to_string(self).expect("ser error")
+    }
+}
+
+fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
+    let from = WaifeUser::from_user(msg.from.as_ref()?);
+    let ctx = ctx.task();
+    async move {
+        let Some(mut waife_storage) = ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get().await
+        else {
+            ctx.reply("琳酱还不认识足够多的群成员，无法为您分配随机老婆 >_<")
+                .send()
+                .warn_on_error("waife")
+                .await;
+            return;
+        };
+
+        let now = SystemTime::now();
+        let Ok(duration) = now.duration_since(waife_storage.last_waife_date) else {
+            waife_storage.last_waife_date = now;
+            ctx.reply("发生了内部错误，琳酱不知道哦 >_<")
+                .send()
+                .warn_on_error("waife")
+                .await;
+            return;
+        };
+
+        if duration.as_secs() > 86400 {
+            waife_storage.last_waife_date = now;
+            waife_storage.waife_of = HashMap::new();
+        }
+
+        if let Some(waife_uid) = waife_storage.waife_of.get(&from.id) {
+            let waife_user = waife_storage.users.get(waife_uid).unwrap();
+            ctx.reply_html(format!(
                 "你今天已经有老婆了，你的群老婆是 {}",
-                waife_user.html_link,
+                waife_user.html_link(),
             ))
             .send()
             .warn_on_error("waife")
-            .into();
-    }
+            .await;
+            return;
+        }
 
-    let Some((waife_id, waife_user)) = waife_storage
-        .users
-        .iter()
-        .filter(|(uid, _)| **uid != from.id)
-        .choose(&mut thread_rng())
-    else {
-        return ctx
-            .reply("琳酱还不认识足够多的群成员，无法为您分配随机老婆 >_<")
+        let Some((waife_id, waife_user_html)) = waife_storage
+            .users
+            .iter()
+            .filter(|(uid, _)| **uid != from.id)
+            .choose(&mut thread_rng())
+            .map(|(x, y)| (*x, y.html_link()))
+        else {
+            ctx.reply("琳酱还不认识足够多的群成员，无法为您分配随机老婆 >_<")
+                .send()
+                .warn_on_error("waife")
+                .await;
+            return;
+        };
+
+        waife_storage.waife_of.insert(from.id, waife_id);
+
+        ctx.reply_html(format!("获取成功！你今天的群老婆是 {waife_user_html}"))
             .send()
             .warn_on_error("waife")
-            .into();
-    };
-
-    waife_storage.waife_of.insert(from.id, *waife_id);
-
-    ctx.reply_html(format!(
-        "获取成功！你今天的群老婆是 {}",
-        waife_user.html_link,
-    ))
-    .send()
-    .warn_on_error("waife")
+            .await;
+    }
     .into()
 }
 
@@ -111,19 +131,14 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
     if msg.chat.is_private() {
         return Consumption::Next;
     }
-    let from = msg.from.as_ref()?;
-    let Ok(mut waife_storage) = WAIFE_STORAGE.write() else {
-        log::error!("Cannot get lock of WAIFE_STORAGE");
-        return Consumption::Next;
-    };
-    if let Some(waife_storage) = waife_storage.get_mut(&ctx.chat_id) {
-        waife_storage
-            .users
-            .insert(from.id, WaifeUser::from_user(from));
-    } else {
-        let ctx = ctx.task();
-        let from = from.clone();
-        tokio::spawn(async move {
+    let from = WaifeUser::from_user(msg.from.as_ref()?);
+    let ctx = ctx.task();
+    tokio::spawn(async move {
+        if let Some(mut waife_storage) =
+            ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get().await
+        {
+            waife_storage.users.insert(from.id, from);
+        } else {
             let res = ctx
                 .app
                 .bot
@@ -134,13 +149,9 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
                 log::warn!("Failed to get chat admins result: {}", res.unwrap_err());
                 return;
             };
-            let Ok(mut waife_storage) = WAIFE_STORAGE.write() else {
-                log::error!("Cannot get lock of WAIFE_STORAGE");
-                return;
-            };
 
             let mut users = HashMap::new();
-            users.insert(from.id, WaifeUser::from_user(&from));
+            users.insert(from.id, from);
             for member in res {
                 if member.user.id == ctx.app.bot_id {
                     continue;
@@ -148,27 +159,26 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
                 users.insert(member.user.id, WaifeUser::from_user(&member.user));
             }
 
-            waife_storage.insert(
-                ctx.chat_id,
-                WaifeStatus {
+            ctx.app
+                .db
+                .of()
+                .chat(ctx.chat_id)
+                .insert(WaifeStatus {
                     users,
                     last_waife_date: SystemTime::now(),
                     waife_of: HashMap::new(),
-                },
-            );
-        });
-    }
+                })
+                .await;
+        }
+    });
     Consumption::Next
 }
 
-fn generate_waife_graph(chat_id: ChatId) -> Result<Graph, &'static str> {
-    let Ok(waife_storage) = WAIFE_STORAGE.read() else {
-        log::error!("Cannot get lock of WAIFE_STORAGE");
-        return Err("琳酱发生了内部错误……无法获取锁");
-    };
-    let Some(waife_storage) = waife_storage.get(&chat_id) else {
+async fn generate_waife_graph(app: &'static App, chat_id: ChatId) -> Result<Graph, &'static str> {
+    let Some(waife_storage) = app.db.of::<WaifeStatus>().chat(chat_id).get().await else {
         return Err("群里还没人有老婆哦");
     };
+
     if waife_storage.waife_of.is_empty() {
         return Err("群里还没人有老婆哦");
     };
@@ -203,10 +213,10 @@ fn generate_waife_graph(chat_id: ChatId) -> Result<Graph, &'static str> {
 }
 
 fn on_waife_graph(ctx: &mut Context, _: &Message) -> Consumption {
-    match generate_waife_graph(ctx.chat_id) {
-        Ok(graph) => {
-            let ctx = ctx.task();
-            async move {
+    let ctx = ctx.task();
+    async move {
+        match generate_waife_graph(ctx.app, ctx.chat_id).await {
+            Ok(graph) => {
                 ctx.app
                     .bot
                     .send_chat_action(ctx.chat_id, ChatAction::UploadPhoto)
@@ -248,15 +258,10 @@ fn on_waife_graph(ctx: &mut Context, _: &Message) -> Consumption {
                     }
                 }
             }
-            .into()
+            Err(msg) => ctx.reply(msg).send().warn_on_error("waife-graph").await,
         }
-        Err(msg) => ctx
-            .task()
-            .reply(msg)
-            .send()
-            .warn_on_error("waife-graph")
-            .into(),
     }
+    .into()
 }
 
 pub static ADD_USER: Module = Module {
