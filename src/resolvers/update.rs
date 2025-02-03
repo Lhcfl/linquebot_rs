@@ -2,7 +2,7 @@ use crate::linquebot::types::*;
 use crate::linquebot::*;
 use chrono::Utc;
 use log::{trace, warn};
-use teloxide_core::types::{Update, UpdateKind};
+use teloxide_core::types::{AllowedUpdate, Update, UpdateKind};
 
 fn update_name(upd: &UpdateKind) -> &'static str {
     match upd {
@@ -27,6 +27,12 @@ fn update_name(upd: &UpdateKind) -> &'static str {
         UpdateKind::Error(_) => "Error (ParseError)",
     }
 }
+
+pub static ALLOWED_UPDATES: &[AllowedUpdate] = &[
+    AllowedUpdate::Message,
+    AllowedUpdate::CallbackQuery,
+    AllowedUpdate::MyChatMember,
+];
 
 pub async fn resolve(app: &'static App, update: Update) {
     let now = Utc::now();

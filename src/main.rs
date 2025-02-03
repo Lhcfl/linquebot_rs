@@ -30,6 +30,7 @@ use crate::linquebot::*;
 use colored::Colorize;
 use env_logger::Env;
 use log::{error, info, warn};
+use resolvers::update::ALLOWED_UPDATES;
 use std::sync::OnceLock;
 use teloxide_core::prelude::*;
 use teloxide_core::types::BotCommand;
@@ -81,7 +82,14 @@ async fn main_loop() -> anyhow::Result<()> {
     let mut offset: i32 = 0;
 
     loop {
-        match bot.get_updates().offset(offset).timeout(10).send().await {
+        match bot
+            .get_updates()
+            .offset(offset)
+            .timeout(10)
+            .allowed_updates(ALLOWED_UPDATES.to_vec())
+            .send()
+            .await
+        {
             Ok(updates) => {
                 offset = updates.last().map(|u| u.id.0 as i32 + 1).unwrap_or(offset);
 
