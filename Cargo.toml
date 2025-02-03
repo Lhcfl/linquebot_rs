@@ -24,3 +24,12 @@ env_logger = "0.11.6"
 ron = "0.8.1"
 serde_json = "1.0.138"
 graphviz-rust = "0.9.3"
+dotenvy = "0.15.7"
+
+[features]
+default = ["full"]
+full = ["tarot", "tarot_ai", "explain", "jielong"]
+tarot = []
+tarot_ai = []
+explain = []
+jielong = []
