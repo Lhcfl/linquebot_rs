@@ -70,12 +70,19 @@
             };
             nativeBuildInputs = [
               pkg-config
+              makeWrapper
             ];
             buildInputs = [
-              graphviz # Broken
               openssl
-              sqlite
             ];
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/bin $out/lib
+              cargo build --release
+              cp target/release/linquebot_rs $out/lib/linquebot_rs
+              makeWrapper $out/lib/linquebot_rs $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
+              runHook postInstall
+            '';
           };
       }
     );
