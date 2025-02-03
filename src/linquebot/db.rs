@@ -238,6 +238,7 @@ impl<T: DbData> DataBuilder<T> {
 
     pub fn data_id(&self) -> DataId {
         DataId {
+            ty: TypeId::of::<T>(),
             chat: self.chat,
             user: self.user,
         }
@@ -262,6 +263,7 @@ impl<T: DbData> DataBuilder<T> {
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub struct DataId {
+    pub ty: TypeId,
     pub chat: Option<ChatId>,
     pub user: Option<UserId>,
 }
