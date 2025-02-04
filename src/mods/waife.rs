@@ -9,8 +9,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::sync::LazyLock;
-use std::sync::RwLock;
 use std::time::SystemTime;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
