@@ -131,6 +131,12 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
     if msg.chat.is_private() {
         return Consumption::Next;
     }
+    // Telegram says for backward compatibility, if the message was sent on behalf of a chat,
+    // the field contains a fake sender user in non-channel chats.
+    // But we don't need a fake user. Drop it.
+    if msg.sender_chat.is_some() {
+        return Consumption::Next;
+    }
     let from = WaifeUser::from_user(msg.from.as_ref()?);
     let ctx = ctx.task();
     tokio::spawn(async move {
