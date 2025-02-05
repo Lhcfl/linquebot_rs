@@ -39,7 +39,7 @@
           inherit system overlays;
         };
       in
-      {
+      rec {
         devShells.default =
           with pkgs;
           mkShell {
@@ -83,6 +83,15 @@
               makeWrapper $out/lib/linquebot_rs $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
               runHook postInstall
             '';
+          };
+        packages.dockerImage =
+          with pkgs;
+          dockerTools.buildLayeredImage {
+            name = "linquebot_rs";
+            tag = "latest";
+            contents = [ packages.default ];
+            config.Cmd = [ "/bin/linquebot_rs" ];
+            created = "now";
           };
       }
     );
