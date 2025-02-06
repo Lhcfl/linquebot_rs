@@ -97,6 +97,9 @@
               # coreutils
               # bashInteractive
               cacert
+              fontconfig
+              twemoji-color-font
+              lxgw-neoxihei
               # graphviz
               # strace
             ];
