@@ -9,9 +9,11 @@
 
     extra-substituters = [
       "https://nix-community.cachix.org"
+      "https://beiyanyunyi.cachix.org"
     ];
     extra-trusted-public-keys = [
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "beiyanyunyi.cachix.org-1:iCC1rwPPRGilc/0OS7Im2mP6karfpptTCnqn9sPtwls="
     ];
   };
 
@@ -75,14 +77,22 @@
             buildInputs = [
               openssl
             ];
+            useFetchCargoVendor = true;
+            buildPhase = ''
+              runHook preBuild
+              runHook cargoBuildHook
+              runHook cargoInstallPostBuildHook
+              runHook postBuild
+            '';
             installPhase = ''
               runHook preInstall
-              mkdir -p $out/bin $out/lib
-              cargo build --release
-              cp target/release/linquebot_rs $out/lib/linquebot_rs
+              runHook cargoInstallHook
+              mkdir -p $out/lib
+              mv $out/bin/linquebot_rs $out/lib/linquebot_rs
               makeWrapper $out/lib/linquebot_rs $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
               runHook postInstall
             '';
+
             meta.mainProgram = "linquebot_rs";
           };
         packages.dockerImage =
@@ -91,11 +101,18 @@
             name = "linquebot_rs";
             tag = "latest";
             contents = [
+              packages.default
+              coreutils
+              bashInteractive
               cacert
+              graphviz
             ];
-            config.Cmd = [
-              "${lib.meta.getExe packages.default}"
-            ];
+            config = {
+              Cmd = [
+                "${lib.meta.getExe packages.default}"
+              ];
+              WorkingDir = "/app";
+            };
             created = "now";
           };
       }
