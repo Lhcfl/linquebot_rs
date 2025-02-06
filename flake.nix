@@ -46,6 +46,7 @@
           with pkgs;
           mkShell {
             buildInputs = [
+              openssl
               graphviz
               (rust-bin.selectLatestNightlyWith (
                 toolchain:
@@ -77,20 +78,11 @@
             buildInputs = [
               openssl
             ];
+            # propagatedUserEnvPkgs = [ graphviz ];
             useFetchCargoVendor = true;
-            buildPhase = ''
-              runHook preBuild
-              runHook cargoBuildHook
-              runHook cargoInstallPostBuildHook
-              runHook postBuild
-            '';
-            installPhase = ''
-              runHook preInstall
-              runHook cargoInstallHook
-              mkdir -p $out/lib
-              mv $out/bin/linquebot_rs $out/lib/linquebot_rs
-              makeWrapper $out/lib/linquebot_rs $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
-              runHook postInstall
+            postInstall = ''
+              wrapProgram $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
+              mkdir -m 1777 $out/tmp
             '';
 
             meta.mainProgram = "linquebot_rs";
@@ -101,11 +93,12 @@
             name = "linquebot_rs";
             tag = "latest";
             contents = [
-              packages.default
-              coreutils
-              bashInteractive
+              packages.default # Just for creating /tmp
+              # coreutils
+              # bashInteractive
               cacert
-              graphviz
+              # graphviz
+              # strace
             ];
             config = {
               Cmd = [
