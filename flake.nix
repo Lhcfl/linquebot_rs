@@ -95,8 +95,9 @@
             contents = [
               packages.default # Just for creating /tmp
               # coreutils
-              # bashInteractive
-              cacert
+              dockerTools.caCertificates
+              dockerTools.usrBinEnv
+              # dockerTools.binSh
               fontconfig
               twemoji-color-font
               lxgw-neoxihei
