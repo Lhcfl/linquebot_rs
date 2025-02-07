@@ -6,7 +6,6 @@
       "nix-command"
       "flakes"
     ];
-
     extra-substituters = [
       "https://nix-community.cachix.org"
       "https://beiyanyunyi.cachix.org"
@@ -82,10 +81,34 @@
             useFetchCargoVendor = true;
             postInstall = ''
               wrapProgram $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
-              mkdir -m 1777 $out/tmp
             '';
 
             meta.mainProgram = "linquebot_rs";
+          };
+        packages.dockerSupports =
+          with pkgs;
+          let
+            fonts-conf = makeFontsConf {
+              fontDirectories = [
+                twemoji-color-font
+                noto-fonts-cjk-sans
+                noto-fonts
+              ];
+            };
+          in
+          stdenvNoCC.mkDerivation {
+            name = "linquebot_rs-docker-supports";
+            dontUnpack = true;
+            buildInputs = [
+              fontconfig
+            ];
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/etc/fonts/conf.d $out/var
+              mkdir -m 1777 $out/tmp
+              cp ${fonts-conf} $out/etc/fonts/conf.d/99-nix.conf
+              runHook postInstall
+            '';
           };
         packages.dockerImage =
           with pkgs;
@@ -93,16 +116,12 @@
             name = "linquebot_rs";
             tag = "latest";
             contents = [
-              packages.default # Just for creating /tmp
               # coreutils
               dockerTools.caCertificates
               dockerTools.usrBinEnv
               # dockerTools.binSh
-              fontconfig
-              twemoji-color-font
-              lxgw-neoxihei
-              # graphviz
               # strace
+              packages.dockerSupports
             ];
             config = {
               Cmd = [
