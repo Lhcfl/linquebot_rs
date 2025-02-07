@@ -134,6 +134,16 @@ pub struct Module {
     pub task: fn(ctx: &mut Context, message: &Message) -> types::Consumption,
 }
 
+impl Module {
+    pub fn name(&self) -> Option<&'static str> {
+        match &self.kind {
+            ModuleKind::Command(c) => Some(c.name),
+            ModuleKind::General(Some(g)) => Some(g.name),
+            _ => None,
+        }
+    }
+}
+
 /// 在整个琳酱初始化后一直存在的 App 实例  
 /// 存放预先 fetch 的 bot 数据和模块列表等
 pub struct App {

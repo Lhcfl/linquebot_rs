@@ -1,5 +1,5 @@
 use crate::{linquebot::types::*, App, ModuleKind};
-use log::trace;
+use log::{error, trace};
 use teloxide_core::types::Message;
 
 pub fn resolve(app: &'static App, message: Message) {
@@ -19,7 +19,13 @@ pub fn resolve(app: &'static App, message: Message) {
             }
             Consumption::StopWith(task) => {
                 tokio::spawn(async move {
-                    task.await;
+                    let result = tokio::spawn(task);
+                    let Err(err) = result.await else {
+                        return;
+                    };
+                    if err.is_panic() {
+                        error!("module {:?} panicked: {err}", module.name());
+                    }
                 });
                 break;
             }
