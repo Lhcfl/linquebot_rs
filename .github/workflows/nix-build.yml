@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-      deployments: write
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,9 +35,22 @@ jobs:
         run: |
           NIXPKGS_ALLOW_UNFREE=1 nix build .#dockerImage --accept-flake-config
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: result
-          path: |
-            result
+      - name: docker load
+        run: |
+          docker load < ./result
+
+      - name: docker auth
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u lhcfl --password-stdin
+
+      - name: docker push
+        run: |
+          docker tag linquebot_rs:latest ghcr.io/lhcfl/linquebot_rs:latest
+          docker push ghcr.io/lhcfl/linquebot_rs:latest
+
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: result
+      #     path: |
+      #       result
