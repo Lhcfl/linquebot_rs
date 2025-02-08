@@ -36,6 +36,18 @@ impl WaifeUser {
     fn html_link(&self) -> String {
         format!("<b>{}</b>", self.full_name)
     }
+
+    fn escaped_name(&self) -> String {
+        let mut res = String::new();
+        for ch in self.full_name.chars() {
+            match ch {
+                '\\' => res.push_str("\\\\"),
+                '"' => res.push_str("\\\""),
+                ch => res.push(ch),
+            }
+        }
+        res
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -230,7 +242,8 @@ async fn generate_waife_graph(app: &'static App, chat_id: ChatId) -> Result<Grap
             return Err("内部错误，但这不太可能发生……");
         };
         res.add_stmt(Stmt::Node(
-            node!(user_id; attr!("shape", "box"), attr!(esc "label", esc user.full_name)),
+            // why the fuck `esc` here not work?
+            node!(user_id; attr!("shape", "box"), attr!(esc "label", esc user.escaped_name())),
         ));
     }
 
