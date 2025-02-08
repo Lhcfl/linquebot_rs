@@ -9,6 +9,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::ops::DerefMut;
 use std::time::SystemTime;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
@@ -33,10 +34,7 @@ impl WaifeUser {
     }
 
     fn html_link(&self) -> String {
-        format!(
-            "<a href=\"tg://user/?id={}\">{}</a>",
-            self.id, self.full_name
-        )
+        format!("<b>{}</b>", self.full_name)
     }
 }
 
@@ -44,7 +42,7 @@ impl WaifeUser {
 struct WaifeStatus {
     users: HashMap<UserId, WaifeUser>,
     last_waife_date: SystemTime,
-    waife_of: HashMap<UserId, UserId>,
+    waife_of: HashMap<UserId, HashSet<UserId>>, // set 里面的用户 id 全都是前者的老婆！多元关系！
 }
 
 impl DbData for WaifeStatus {
@@ -63,6 +61,7 @@ impl DbData for WaifeStatus {
 
 fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
     let from = WaifeUser::from_user(msg.from.as_ref()?);
+    let poly = ctx.cmd?.content == "poly";
     let ctx = ctx.task();
     async move {
         let Some(mut waife_storage) = ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get().await
@@ -89,11 +88,23 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
             waife_storage.waife_of = HashMap::new();
         }
 
-        if let Some(waife_uid) = waife_storage.waife_of.get(&from.id) {
-            let waife_user = waife_storage.users.get(waife_uid).unwrap();
+        let WaifeStatus {
+            waife_of,
+            users,
+            last_waife_date: _,
+        } = &mut waife_storage.deref_mut();
+
+        let waife_uids = waife_of.entry(from.id).or_default();
+
+        // 一元关系
+        if waife_uids.len() > 0 && !poly {
+            let waifes = waife_uids
+                .iter()
+                .map(|uid| users.get(uid).unwrap().html_link())
+                .collect::<Vec<_>>();
             ctx.reply_html(format!(
-                "你今天已经有老婆了，你的群老婆是 {}",
-                waife_user.html_link(),
+                "你今天已经有老婆了，你的群老婆：{}",
+                waifes.join("、"),
             ))
             .send()
             .warn_on_error("waife")
@@ -101,10 +112,17 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
             return;
         }
 
-        let Some((waife_id, waife_user_html)) = waife_storage
-            .users
+        if poly && waife_uids.len() > 1 && waife_uids.len() >= users.len() - 1 {
+            ctx.reply("别贪心了，琳酱认识的群成员已经全是你老婆了！")
+                .send()
+                .warn_on_error("waife")
+                .await;
+            return;
+        }
+
+        let Some((waife_id, waife_user_html)) = users
             .iter()
-            .filter(|(uid, _)| **uid != from.id)
+            .filter(|(uid, _)| !waife_uids.contains(&uid) && **uid != from.id)
             .choose(&mut thread_rng())
             .map(|(x, y)| (*x, y.html_link()))
         else {
@@ -115,7 +133,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
             return;
         };
 
-        waife_storage.waife_of.insert(from.id, waife_id);
+        waife_uids.insert(waife_id);
 
         ctx.reply_html(format!("获取成功！你今天的群老婆是 {waife_user_html}"))
             .send()
@@ -198,10 +216,13 @@ async fn generate_waife_graph(app: &'static App, chat_id: ChatId) -> Result<Grap
 
     let mut used_userids = HashSet::new();
 
-    for (user_id, waife_id) in waife_storage.waife_of.iter() {
+    for (user_id, waife_ids) in waife_storage.waife_of.iter() {
         used_userids.insert(*user_id);
-        used_userids.insert(*waife_id);
-        res.add_stmt(Stmt::Edge(edge!(node_id!(user_id) => node_id!(waife_id))));
+        used_userids.extend(waife_ids.iter());
+
+        for waife_id in waife_ids {
+            res.add_stmt(Stmt::Edge(edge!(node_id!(user_id) => node_id!(waife_id))));
+        }
     }
 
     for user_id in used_userids {
@@ -279,7 +300,8 @@ pub static GET_WAIFE: Module = Module {
         description: "获取随机群老婆",
         description_detailed: Some(concat!(
             "从bot认识的群成员中获取随机群老婆\n",
-            "琳酱会认识加入以来所有发言的用户和群管理员"
+            "琳酱会认识加入以来所有发言的用户和群管理员\n",
+            "特别的，<code>/waife poly</code>可以让你有多个老婆——我们支持多元关系😋"
         )),
     }),
     task: get_waife,
