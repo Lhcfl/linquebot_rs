@@ -88,36 +88,6 @@
               meta.mainProgram = "linquebot_rs";
             }
           );
-        packages.rustPackageLegacy =
-          with pkgs;
-          let
-            rustPlatform = makeRustPlatform {
-              cargo = rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
-              rustc = rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
-            };
-          in
-          rustPlatform.buildRustPackage {
-            pname = "linquebot_rs";
-            version = "0.1.0";
-            src = ./.;
-            cargoLock = {
-              lockFile = ./Cargo.lock;
-            };
-            nativeBuildInputs = [
-              pkg-config
-              makeWrapper
-            ];
-            buildInputs = [
-              openssl
-            ];
-            # propagatedUserEnvPkgs = [ graphviz ];
-            useFetchCargoVendor = true;
-            postInstall = ''
-              wrapProgram $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
-            '';
-
-            meta.mainProgram = "linquebot_rs";
-          };
         packages.dockerSupports =
           with pkgs;
           let
