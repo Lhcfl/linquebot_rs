@@ -113,7 +113,7 @@
         packages.dockerImage =
           with pkgs;
           dockerTools.buildLayeredImage {
-            name = "linquebot_rs";
+            name = "ghcr.io/lhcfl/linquebot_rs";
             tag = "latest";
             contents = [
               # coreutils

@@ -46,7 +46,6 @@ jobs:
 
       - name: docker push
         run: |
-          docker tag linquebot_rs:latest ghcr.io/lhcfl/linquebot_rs:latest
           docker push ghcr.io/lhcfl/linquebot_rs:latest
 
       # - name: Upload artifact
