@@ -23,6 +23,10 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    crate2nix = {
+      url = "github:nix-community/crate2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -30,14 +34,33 @@
       nixpkgs,
       flake-utils,
       rust-overlay,
+      crate2nix,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        overlays = [ (import rust-overlay) ];
+        overlays = [
+          (import rust-overlay)
+        ];
         pkgs = import nixpkgs {
           inherit system overlays;
+        };
+        pkgs4crate2nix = import nixpkgs {
+          inherit system;
+          overlays = overlays ++ [
+            (final: prev: {
+              cargo = prev.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
+              rustc = prev.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal) // {
+                unwrapped = prev.rustc.unwrapped;
+              };
+            })
+          ];
+        };
+        crate2nix' = pkgs4crate2nix.callPackage (import "${crate2nix}/tools.nix") { };
+        cargoNix = crate2nix'.appliedCargoNix {
+          name = "rustNix";
+          src = ./.;
         };
       in
       rec {
@@ -56,6 +79,18 @@
             ];
           };
         packages.default =
+          with pkgs;
+          cargoNix.rootCrate.build.overrideAttrs (
+            final: prev: {
+              buildInputs = prev.buildInputs ++ [ openssl ];
+              nativeBuildInputs = prev.nativeBuildInputs ++ [ makeWrapper ];
+              postInstall = ''
+                wrapProgram $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
+              '';
+              meta.mainProgram = "linquebot_rs";
+            }
+          );
+        packages.rustPackageLegacy =
           with pkgs;
           let
             rustPlatform = makeRustPlatform {
