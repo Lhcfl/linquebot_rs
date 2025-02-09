@@ -46,21 +46,19 @@
         pkgs = import nixpkgs {
           inherit system overlays;
         };
-        pkgs4crate2nix = import nixpkgs {
-          inherit system;
-          overlays = overlays ++ [
-            (final: prev: {
-              cargo = prev.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
-              rustc = prev.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal) // {
-                unwrapped = prev.rustc.unwrapped;
-              };
-            })
-          ];
-        };
-        crate2nix' = pkgs4crate2nix.callPackage (import "${crate2nix}/tools.nix") { };
-        cargoNix = crate2nix'.appliedCargoNix {
+
+        buildRustCrateForPkgs =
+          crate:
+          pkgs.buildRustCrate.override {
+            rustc = (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal));
+            cargo = (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal));
+          };
+        generatedCargoNix = crate2nix.tools.${system}.generatedCargoNix {
           name = "rustNix";
           src = ./.;
+        };
+        cargoNix = import generatedCargoNix {
+          inherit pkgs buildRustCrateForPkgs;
         };
       in
       rec {
