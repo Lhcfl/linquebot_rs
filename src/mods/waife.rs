@@ -165,6 +165,10 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
     if msg.sender_chat.is_some() {
         return Consumption::Next;
     }
+    // 聊天群和绑定的 channel 可能有不同的人，为了保持 waife 不遇到晦气人，丢弃来自 forward 的消息。
+    if msg.is_automatic_forward() {
+        return Consumption::Next;
+    }
     let from = WaifeUser::from_user(msg.from.as_ref()?);
     let ctx = ctx.task();
     tokio::spawn(async move {
