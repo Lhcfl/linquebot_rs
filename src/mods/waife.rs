@@ -2,6 +2,8 @@
 use graphviz_rust::dot_structures::Graph;
 use graphviz_rust::printer::DotPrinter;
 use graphviz_rust::printer::PrinterContext;
+use log::info;
+use log::warn;
 use msg_context::Context;
 use rand::seq::IteratorRandom;
 use rand::thread_rng;
@@ -166,7 +168,8 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
         return Consumption::Next;
     }
     // 聊天群和绑定的 channel 可能有不同的人，为了保持 waife 不遇到晦气人，丢弃来自 forward 的消息。
-    if msg.is_automatic_forward() {
+    if msg.is_automatic_forward() || msg.is_reply_to_channel() {
+        info!("频道转发消息已丢弃。");
         return Consumption::Next;
     }
     let from = WaifeUser::from_user(msg.from.as_ref()?);

@@ -105,7 +105,7 @@ pub mod telegram {
                 }
             }
         }
-        use teloxide_core::types::User;
+        use teloxide_core::types::{Message, User};
 
         pub trait UserExtension {
             fn html_link(&self) -> String;
@@ -114,6 +114,18 @@ pub mod telegram {
         impl UserExtension for User {
             fn html_link(&self) -> String {
                 format!("<a href=\"{}\">{}</a>", self.url(), self.full_name())
+            }
+        }
+
+        pub trait MessageExtension {
+            fn is_reply_to_channel(&self) -> bool;
+        }
+
+        impl MessageExtension for Message {
+            fn is_reply_to_channel(&self) -> bool {
+                self.reply_to_message()
+                    .and_then(|msg| msg.sender_chat.as_ref())
+                    .is_some_and(|chat| chat.is_channel())
             }
         }
     }
