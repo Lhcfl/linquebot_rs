@@ -270,3 +270,22 @@ pub struct DataId {
     pub chat: Option<ChatId>,
     pub user: Option<UserId>,
 }
+
+#[macro_export]
+macro_rules! impl_default_dbdata {
+    ($x:ident) => {
+        impl DbData for $x {
+            fn persistent() -> bool {
+                true
+            }
+
+            fn from_str(src: &str) -> Self {
+                ron::from_str(src).expect("deser error")
+            }
+
+            fn to_string(&self) -> String {
+                ron::to_string(self).expect("ser error")
+            }
+        }
+    };
+}

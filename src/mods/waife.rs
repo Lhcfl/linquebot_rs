@@ -16,7 +16,9 @@ use std::time::SystemTime;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::impl_default_dbdata;
 use crate::linquebot::db::DbData;
+use crate::linquebot::msg_context::TaskContext;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::*;
 use crate::Consumption;
@@ -58,33 +60,53 @@ struct WaifeStatus {
     last_waife_date: SystemTime,
     waife_of: HashMap<UserId, HashSet<UserId>>, // set 里面的用户 id 全都是前者的老婆！多元关系！
 }
+impl_default_dbdata!(WaifeStatus);
 
-impl DbData for WaifeStatus {
-    fn persistent() -> bool {
-        true
+#[derive(Debug, Serialize, Deserialize)]
+struct UserChatCache {
+    cache_at: SystemTime,
+    joined: bool,
+}
+
+impl UserChatCache {
+    fn new(joined: bool) -> Self {
+        Self {
+            cache_at: SystemTime::now(),
+            joined,
+        }
     }
 
-    fn from_str(src: &str) -> Self {
-        ron::from_str(src).expect("deser error")
-    }
-
-    fn to_string(&self) -> String {
-        ron::to_string(self).expect("ser error")
+    fn invalid(&self) -> bool {
+        SystemTime::now()
+            .duration_since(self.cache_at)
+            .is_ok_and(|d| d.as_secs() > 86400)
     }
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+struct UserCache {
+    chats: HashMap<ChatId, UserChatCache>,
+    // avatar: Option<...>
+}
+impl_default_dbdata!(UserCache);
 
 fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
     let from = WaifeUser::from_user(msg.from.as_ref()?);
     let poly = ctx.cmd?.content == "poly";
     let ctx = ctx.task();
     async move {
-        let Some(mut waife_storage) = ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get().await
-        else {
-            ctx.reply("琳酱还不认识足够多的群成员，无法为您分配随机老婆 >_<")
-                .send()
-                .warn_on_error("waife")
-                .await;
-            return;
+        let mut waife_storage = match ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get().await {
+            Some(x) => x,
+            None => {
+                ctx.reply("稍等 >_<").send().warn_on_error("waife").await;
+                ctx.app
+                    .db
+                    .of::<WaifeStatus>()
+                    .chat(ctx.chat_id)
+                    .get()
+                    .await
+                    .unwrap()
+            }
         };
 
         let now = SystemTime::now();
@@ -100,6 +122,18 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
         if duration.as_secs() > 86400 {
             waife_storage.last_waife_date = now;
             waife_storage.waife_of = HashMap::new();
+            waife_storage.users.clear();
+            add_admins_to_users(&mut waife_storage.users, &ctx)
+                .warn_on_error("waife-auto-add")
+                .await;
+        }
+
+        if !check_and_add(&mut waife_storage.users, &ctx, from.clone()).await {
+            ctx.reply("失败：琳酱无法获取你在群内的状态 >_<")
+                .send()
+                .warn_on_error("waife")
+                .await;
+            return;
         }
 
         let WaifeStatus {
@@ -157,6 +191,78 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
     .into()
 }
 
+async fn add_admins_to_users(
+    users: &mut HashMap<UserId, WaifeUser>,
+    ctx: &TaskContext,
+) -> anyhow::Result<()> {
+    let admins = ctx
+        .app
+        .bot
+        .get_chat_administrators(ctx.chat_id)
+        .send()
+        .await?;
+    for member in admins {
+        if member.user.id == ctx.app.bot_id {
+            continue;
+        }
+        users.insert(member.user.id, WaifeUser::from_user(&member.user));
+    }
+    Ok(())
+}
+
+async fn check_and_add(
+    users: &mut HashMap<UserId, WaifeUser>,
+    ctx: &TaskContext,
+    user: WaifeUser,
+) -> bool {
+    let mut user_cache = ctx
+        .app
+        .db
+        .of()
+        .user(user.id)
+        .get_or_insert(|| UserCache {
+            chats: HashMap::new(),
+        })
+        .await;
+
+    if let Some(cache) = user_cache.chats.get(&ctx.chat_id) {
+        if !cache.invalid() {
+            return cache.joined;
+        }
+    }
+
+    let membership = match ctx
+        .app
+        .bot
+        .get_chat_member(ctx.chat_id, user.id)
+        .send()
+        .await
+    {
+        Ok(x) => x,
+        Err(err) => {
+            user_cache
+                .chats
+                .insert(ctx.chat_id, UserChatCache::new(false));
+            warn!("failed to fetch memebership: {err}");
+            return false;
+        }
+    };
+
+    if membership.is_present() {
+        user_cache
+            .chats
+            .insert(ctx.chat_id, UserChatCache::new(true));
+        users.insert(user.id, user);
+    } else {
+        user_cache
+            .chats
+            .insert(ctx.chat_id, UserChatCache::new(false));
+        info!("Ignored out-of-group user：{}", user.full_name);
+    }
+
+    return membership.is_present();
+}
+
 fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
     if msg.chat.is_private() {
         return Consumption::Next;
@@ -168,50 +274,31 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
         return Consumption::Next;
     }
     // 聊天群和绑定的 channel 可能有不同的人，为了保持 waife 不遇到晦气人，丢弃来自 forward 的消息。
-    // 很遗憾这似乎不能防止回复回复channel
     if msg.is_automatic_forward() || msg.is_reply_to_channel() {
-        info!("频道转发消息已丢弃。");
+        info!("Droped channel message/reply: {:?}", msg.text());
         return Consumption::Next;
     }
     let from = WaifeUser::from_user(msg.from.as_ref()?);
     let ctx = ctx.task();
     tokio::spawn(async move {
-        if let Some(mut waife_storage) =
-            ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get().await
-        {
-            waife_storage.users.insert(from.id, from);
-        } else {
-            let res = ctx
-                .app
-                .bot
-                .get_chat_administrators(ctx.chat_id)
-                .send()
-                .await;
-            let Ok(res) = res else {
-                log::warn!("Failed to get chat admins result: {}", res.unwrap_err());
-                return;
-            };
+        let mut waife_storage = ctx
+            .app
+            .db
+            .of::<WaifeStatus>()
+            .chat(ctx.chat_id)
+            .get_or_insert(|| WaifeStatus {
+                users: HashMap::new(),
+                last_waife_date: SystemTime::now(),
+                waife_of: HashMap::new(),
+            })
+            .await;
 
-            let mut users = HashMap::new();
-            users.insert(from.id, from);
-            for member in res {
-                if member.user.id == ctx.app.bot_id {
-                    continue;
-                }
-                users.insert(member.user.id, WaifeUser::from_user(&member.user));
-            }
-
-            ctx.app
-                .db
-                .of()
-                .chat(ctx.chat_id)
-                .insert(WaifeStatus {
-                    users,
-                    last_waife_date: SystemTime::now(),
-                    waife_of: HashMap::new(),
-                })
-                .await;
+        if waife_storage.users.is_empty() {
+            add_admins_to_users(&mut waife_storage.users, &ctx)
+                .warn_on_error("waife-auto-add")
+                .await
         }
+        check_and_add(&mut waife_storage.users, &ctx, from.into()).await;
     });
     Consumption::Next
 }
