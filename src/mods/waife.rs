@@ -168,6 +168,7 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
         return Consumption::Next;
     }
     // 聊天群和绑定的 channel 可能有不同的人，为了保持 waife 不遇到晦气人，丢弃来自 forward 的消息。
+    // 很遗憾这似乎不能防止回复回复channel
     if msg.is_automatic_forward() || msg.is_reply_to_channel() {
         info!("频道转发消息已丢弃。");
         return Consumption::Next;

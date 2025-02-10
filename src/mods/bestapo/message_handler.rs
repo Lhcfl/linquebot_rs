@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::mods::bestapo::utils::{is_channel_msg_reply, is_contains_url};
+use crate::{mods::bestapo::utils::is_contains_url, utils::telegram::prelude::MessageExtension};
 use log::{debug, warn};
 use teloxide_core::{
     prelude::{Request, Requester},
@@ -17,7 +17,7 @@ const SENSITIVE_WORDS: &[&str] = &["trump", "nft", "opensea"];
 
 fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     let ctx = ctx.task();
-    if !is_channel_msg_reply(&msg) || !is_contains_url(&msg) {
+    if !msg.is_reply_to_channel() || !is_contains_url(&msg) {
         return Consumption::Next;
     }
     let mut is_spam = false;
