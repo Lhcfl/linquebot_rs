@@ -9,7 +9,6 @@ use teloxide_core::{
 };
 
 use crate::{
-    db::DbData,
     linquebot::{ModuleDescription, ModuleKind},
     msg_context::Context,
     utils::telegram::prelude::WarnOnError,
@@ -60,37 +59,9 @@ struct Markov {
     weight: HashMap<Gram, HashMap<char, u32>>,
 }
 
-impl DbData for Markov {
-    fn persistent() -> bool {
-        true
-    }
-
-    fn from_str(src: &str) -> Self {
-        ron::from_str(src).expect("deser error")
-    }
-
-    fn to_string(&self) -> String {
-        ron::to_string(self).expect("ser error")
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 struct MarkovChat {
     learn_enabled: bool,
-}
-
-impl DbData for MarkovChat {
-    fn persistent() -> bool {
-        true
-    }
-
-    fn from_str(src: &str) -> Self {
-        ron::from_str(src).expect("deser error")
-    }
-
-    fn to_string(&self) -> String {
-        ron::to_string(self).expect("ser error")
-    }
 }
 
 pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {

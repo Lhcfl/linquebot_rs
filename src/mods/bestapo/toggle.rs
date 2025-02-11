@@ -3,7 +3,7 @@ use teloxide_core::{prelude::Request, types::Message};
 
 use crate::{
     linquebot::{
-        db::DbData, msg_context::Context, types::Consumption, Module, ModuleDescription, ModuleKind,
+        msg_context::Context, types::Consumption, Module, ModuleDescription, ModuleKind,
     },
     utils::telegram::prelude::WarnOnError,
 };
@@ -11,20 +11,6 @@ use crate::{
 #[derive(Debug, Serialize, Deserialize)]
 struct BestapoCensor {
     censor_enabled: bool,
-}
-
-impl DbData for BestapoCensor {
-    fn persistent() -> bool {
-        true
-    }
-
-    fn from_str(src: &str) -> Self {
-        ron::from_str(src).expect("deser error")
-    }
-
-    fn to_string(&self) -> String {
-        ron::to_string(self).expect("ser error")
-    }
 }
 
 fn on_toggle(ctx: &mut Context, _: &Message) -> Consumption {

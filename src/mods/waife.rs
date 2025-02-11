@@ -17,8 +17,6 @@ use std::time::SystemTime;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
-use crate::impl_default_dbdata;
-use crate::linquebot::db::DbData;
 use crate::linquebot::msg_context::TaskContext;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::*;
@@ -61,7 +59,6 @@ struct WaifeStatus {
     last_waife_date: SystemTime,
     waife_of: HashMap<UserId, HashSet<UserId>>, // set 里面的用户 id 全都是前者的老婆！多元关系！
 }
-impl_default_dbdata!(WaifeStatus);
 
 #[derive(Debug, Serialize, Deserialize)]
 struct UserChatCache {
@@ -89,7 +86,6 @@ struct UserCache {
     chats: HashMap<ChatId, UserChatCache>,
     // avatar: Option<...>
 }
-impl_default_dbdata!(UserCache);
 
 fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
     let from = WaifeUser::from_user(msg.from.as_ref()?);

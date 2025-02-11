@@ -6,6 +6,7 @@ use std::{
 };
 
 use quick_cache::sync::Cache;
+use serde::{Deserialize, Serialize};
 use sqlx::{
     query::Query,
     sqlite::{SqliteArguments, SqliteConnectOptions},
@@ -14,14 +15,21 @@ use sqlx::{
 use teloxide_core::types::{ChatId, UserId};
 use tokio::sync::{Mutex, OwnedMappedMutexGuard, OwnedMutexGuard};
 
-pub trait DbData: Any + Send + Sync {
-    fn persistent() -> bool
-    where
-        Self: Sized;
-    fn from_str(src: &str) -> Self
-    where
-        Self: Sized;
-    fn to_string(&self) -> String;
+pub trait DbDataDyn: Any + Send + Sync {
+    fn ser_data(&self) -> String;
+}
+pub trait DbData: DbDataDyn {
+    fn deser_data(src: &str) -> Self;
+}
+impl<T: Any + Send + Sync + Serialize> DbDataDyn for T {
+    fn ser_data(&self) -> String {
+        ron::to_string(self).expect("ser error")
+    }
+}
+impl<T: DbDataDyn + for<'a> Deserialize<'a>> DbData for T {
+    fn deser_data(src: &str) -> Self {
+        ron::from_str(src).expect("deser error")
+    }
 }
 
 /// 数据库
@@ -37,7 +45,7 @@ pub trait DbData: Any + Send + Sync {
 /// 参见 [crate::mods::markov]
 #[derive(Debug)]
 pub struct DataStorage {
-    cache: Cache<DataId, Arc<Mutex<dyn DbData>>>,
+    cache: Cache<DataId, Arc<Mutex<dyn DbDataDyn>>>,
     db: Mutex<SqliteConnection>,
 }
 
@@ -74,12 +82,10 @@ impl DataStorage {
     pub async fn get<T: DbData>(&'static self, id: DataId) -> Option<DataGuard<T>> {
         let cache = if let Some(c) = self.cache.get(&id) {
             c
-        } else if T::persistent() {
+        } else {
             let res = self.get_from_db::<T>(id).await?;
             self.cache.insert(id, res.clone());
             res
-        } else {
-            None?
         };
         Some(self.mk_insert_res::<T>(id, cache).await)
     }
@@ -92,18 +98,11 @@ impl DataStorage {
         let cache = if let Some(c) = self.cache.get(&id) {
             c
         } else {
-            let res = if T::persistent() {
-                self.get_from_db::<T>(id).await
-            } else {
-                None
-            };
-            let res = if let Some(r) = res {
+            let res = if let Some(r) = self.get_from_db::<T>(id).await {
                 r
             } else {
                 let r = mk();
-                if T::persistent() {
-                    self.insert_raw(type_name::<T>(), id, &r.to_string()).await;
-                }
+                self.insert_raw(type_name::<T>(), id, &r.ser_data()).await;
                 Arc::new(Mutex::new(r))
             };
             self.cache.insert(id, res.clone());
@@ -115,7 +114,7 @@ impl DataStorage {
     async fn mk_insert_res<T: DbData>(
         &'static self,
         id: DataId,
-        cache: Arc<Mutex<dyn DbData>>,
+        cache: Arc<Mutex<dyn DbDataDyn>>,
     ) -> DataGuard<T> {
         let cache = cache.lock_owned().await;
         let Ok(sub) = OwnedMutexGuard::try_map(cache, |val| <dyn Any>::downcast_mut(val)) else {
@@ -138,15 +137,12 @@ impl DataStorage {
             .fetch_optional(&mut *self.db.lock().await)
             .await
             .expect("db read error")?;
-        let res = T::from_str(res.get::<&str, usize>(0));
+        let res = T::deser_data(res.get::<&str, usize>(0));
         Some(Arc::new(Mutex::new(res)))
     }
 
     pub async fn insert<T: DbData>(&'static self, id: DataId, val: T) {
-        if T::persistent() {
-            self.insert_raw(type_name::<T>(), id, &val.to_string())
-                .await;
-        }
+        self.insert_raw(type_name::<T>(), id, &val.ser_data()).await;
         self.cache.insert(id, Arc::new(Mutex::new(val)));
     }
     async fn insert_raw(&'static self, ty: &str, id: DataId, val: &str) {
@@ -163,13 +159,11 @@ impl DataStorage {
 
     pub async fn remove<T: DbData>(&'static self, id: DataId) {
         self.cache.remove(&id);
-        if T::persistent() {
-            sqlx::query("delete from data where ty = $1 and user = $2 and chat = $3")
-                .bind_id(type_name::<T>(), id)
-                .execute(&mut *self.db.lock().await)
-                .await
-                .expect("db write error");
-        }
+        sqlx::query("delete from data where ty = $1 and user = $2 and chat = $3")
+            .bind_id(type_name::<T>(), id)
+            .execute(&mut *self.db.lock().await)
+            .await
+            .expect("db write error");
     }
 }
 
@@ -193,7 +187,7 @@ pub struct DataGuard<T: DbData> {
     db: &'static DataStorage,
     id: DataId,
     changed: bool,
-    sub: OwnedMappedMutexGuard<dyn DbData, T>,
+    sub: OwnedMappedMutexGuard<dyn DbDataDyn, T>,
 }
 
 impl<T: DbData> Deref for DataGuard<T> {
@@ -213,7 +207,7 @@ impl<T: DbData> Drop for DataGuard<T> {
         let Self {
             db, id, changed, ..
         } = *self;
-        let sub = self.sub.to_string();
+        let sub = self.sub.ser_data();
         tokio::spawn(async move {
             if changed {
                 db.insert_raw(type_name::<T>(), id, &sub).await;
@@ -269,23 +263,4 @@ pub struct DataId {
     pub ty: TypeId,
     pub chat: Option<ChatId>,
     pub user: Option<UserId>,
-}
-
-#[macro_export]
-macro_rules! impl_default_dbdata {
-    ($x:ident) => {
-        impl DbData for $x {
-            fn persistent() -> bool {
-                true
-            }
-
-            fn from_str(src: &str) -> Self {
-                ron::from_str(src).expect("deser error")
-            }
-
-            fn to_string(&self) -> String {
-                ron::to_string(self).expect("ser error")
-            }
-        }
-    };
 }
