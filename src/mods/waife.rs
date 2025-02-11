@@ -112,8 +112,12 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
 
         let now = SystemTime::now();
         let Ok(duration) = now.duration_since(waife_storage.last_waife_date) else {
+            error!(
+                "past is {:?} but now is {:?}, failed to get duration",
+                waife_storage.last_waife_date, now
+            );
             waife_storage.last_waife_date = now;
-            ctx.reply("发生了内部错误，琳酱不知道哦 >_<")
+            ctx.reply("发生了不应该出现的时间错误，琳酱不知道哦 >_<")
                 .send()
                 .warn_on_error("waife")
                 .await;
