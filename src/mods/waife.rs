@@ -2,6 +2,7 @@
 use graphviz_rust::dot_structures::Graph;
 use graphviz_rust::printer::DotPrinter;
 use graphviz_rust::printer::PrinterContext;
+use log::error;
 use log::info;
 use log::warn;
 use msg_context::Context;
@@ -257,6 +258,7 @@ async fn check_and_add(
         user_cache
             .chats
             .insert(ctx.chat_id, UserChatCache::new(false));
+        // 即使没有在群里也不要 remove user，防止退群引起老婆图缺失。
         info!("Ignored out-of-group user：{}", user.full_name);
     }
 
@@ -334,6 +336,10 @@ async fn generate_waife_graph(app: &'static App, chat_id: ChatId) -> Result<Grap
 
     for user_id in used_userids {
         let Some(user) = waife_storage.users.get(&user_id) else {
+            error!(
+                "need user_id: {user_id}, but storage: {:?}",
+                waife_storage.users
+            );
             return Err("内部错误，但这不太可能发生……");
         };
         res.add_stmt(Stmt::Node(
