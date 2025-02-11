@@ -232,6 +232,10 @@ async fn check_and_add(
 
     if let Some(cache) = user_cache.chats.get(&ctx.chat_id) {
         if !cache.invalid() {
+            // we still need update user info
+            if cache.joined {
+                users.insert(user.id, user);
+            }
             return cache.joined;
         }
     }
@@ -309,7 +313,20 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
     Consumption::Next
 }
 
-async fn generate_waife_graph(app: &'static App, chat_id: ChatId) -> Result<Graph, &'static str> {
+#[derive(Clone, Copy)]
+enum WaifeGraphGenerator {
+    Auto,
+    Dot,
+    Neato,
+    Fdp,
+    Circo,
+}
+
+async fn generate_waife_graph(
+    app: &'static App,
+    chat_id: ChatId,
+    perfer: WaifeGraphGenerator,
+) -> Result<Graph, &'static str> {
     let Some(waife_storage) = app.db.of::<WaifeStatus>().chat(chat_id).get().await else {
         return Err("群里还没人有老婆哦");
     };
@@ -329,12 +346,64 @@ async fn generate_waife_graph(app: &'static App, chat_id: ChatId) -> Result<Grap
 
     let mut used_userids = HashSet::new();
 
+    let mut edge_count = 0;
+    let mut stop_using_dot = false;
+
     for (user_id, waife_ids) in waife_storage.waife_of.iter() {
         used_userids.insert(*user_id);
         used_userids.extend(waife_ids.iter());
+        stop_using_dot = stop_using_dot || waife_ids.len() > 4;
+        edge_count += waife_ids.len();
 
         for waife_id in waife_ids {
             res.add_stmt(Stmt::Edge(edge!(node_id!(user_id) => node_id!(waife_id))));
+        }
+    }
+
+    let mut perfer = perfer;
+
+    match perfer {
+        WaifeGraphGenerator::Auto => {
+            if stop_using_dot {
+                if used_userids.len() >= 5
+                    && edge_count > used_userids.len() * used_userids.len() / 4
+                {
+                    perfer = WaifeGraphGenerator::Circo;
+                } else if used_userids.len() > 100 {
+                    perfer = WaifeGraphGenerator::Fdp;
+                } else {
+                    perfer = WaifeGraphGenerator::Neato
+                }
+            } else {
+                perfer = WaifeGraphGenerator::Dot;
+            }
+        }
+        WaifeGraphGenerator::Neato => {
+            if used_userids.len() > 100 {
+                perfer = WaifeGraphGenerator::Fdp;
+            }
+        }
+        _ => {}
+    };
+
+    match perfer {
+        WaifeGraphGenerator::Auto => unreachable!(),
+        WaifeGraphGenerator::Dot => {}
+        WaifeGraphGenerator::Neato => {
+            res.add_stmt(Stmt::GAttribute(GraphAttributes::Graph(vec![
+                attr!("layout", "neato"),
+                attr!("overlap", "false"),
+            ])));
+        }
+        WaifeGraphGenerator::Fdp => {
+            res.add_stmt(Stmt::GAttribute(GraphAttributes::Graph(vec![attr!(
+                "layout", "fdp"
+            )])));
+        }
+        WaifeGraphGenerator::Circo => {
+            res.add_stmt(Stmt::GAttribute(GraphAttributes::Graph(vec![attr!(
+                "layout", "circo"
+            )])));
         }
     }
 
@@ -356,9 +425,16 @@ async fn generate_waife_graph(app: &'static App, chat_id: ChatId) -> Result<Grap
 }
 
 fn on_waife_graph(ctx: &mut Context, _: &Message) -> Consumption {
+    let perfer = match ctx.cmd?.content {
+        "dot" => WaifeGraphGenerator::Dot,
+        "fdp" => WaifeGraphGenerator::Fdp,
+        "neato" => WaifeGraphGenerator::Neato,
+        "circo" => WaifeGraphGenerator::Circo,
+        _ => WaifeGraphGenerator::Auto,
+    };
     let ctx = ctx.task();
     async move {
-        match generate_waife_graph(ctx.app, ctx.chat_id).await {
+        match generate_waife_graph(ctx.app, ctx.chat_id, perfer).await {
             Ok(graph) => {
                 ctx.app
                     .bot
@@ -429,7 +505,12 @@ pub static WAIFE_GRAPH: Module = Module {
     kind: ModuleKind::Command(ModuleDescription {
         name: "waife_graph",
         description: "绘制群老婆图",
-        description_detailed: None,
+        description_detailed: Some(concat!(
+            "使用 Graphviz 绘制老婆关系图。\n",
+            "注：你可以选择绘制方式，当前可选有: <code>dot</code>, <code>neato</code>, <code>fdp</code>, <code>circo</code>。\n",
+            "默认会智能选择最合适的。",  
+        )
+        ),
     }),
     task: on_waife_graph,
 };
