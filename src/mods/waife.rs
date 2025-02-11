@@ -80,7 +80,7 @@ impl UserChatCache {
     fn invalid(&self) -> bool {
         SystemTime::now()
             .duration_since(self.cache_at)
-            .is_ok_and(|d| d.as_secs() > 86400)
+            .is_ok_and(|d| d.as_secs() > 3600)
     }
 }
 
