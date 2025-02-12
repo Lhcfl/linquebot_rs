@@ -397,9 +397,10 @@ async fn generate_waife_graph(
             )])));
         }
         WaifeGraphGenerator::Circo => {
-            res.add_stmt(Stmt::GAttribute(GraphAttributes::Graph(vec![attr!(
-                "layout", "circo"
-            )])));
+            res.add_stmt(Stmt::GAttribute(GraphAttributes::Graph(vec![
+                attr!("layout", "circo"),
+                attr!("mindist", "0.2"),
+            ])));
         }
     }
 
