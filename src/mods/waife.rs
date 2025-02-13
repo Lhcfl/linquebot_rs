@@ -362,6 +362,7 @@ async fn generate_waife_graph(
         WaifeGraphGenerator::Auto => {
             if stop_using_dot {
                 if used_userids.len() >= 5
+                    && used_userids.len() < 12
                     && edge_count > used_userids.len() * used_userids.len() / 4
                 {
                     perfer = WaifeGraphGenerator::Circo;
