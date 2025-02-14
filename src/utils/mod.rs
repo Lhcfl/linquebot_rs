@@ -6,19 +6,9 @@ use std::{
     sync::LazyLock,
 };
 
-macro_rules! str_hashset {
-    ($($x:expr),*) => {{
-        let mut set = HashSet::<&'static str>::new();
-        $(
-            set.insert($x);
-        )*
-        set
-    }};
-}
-
 static TG_SANITIZER: LazyLock<ammonia::Builder> = LazyLock::new(|| {
     let mut builder = ammonia::Builder::empty();
-    builder.tags(str_hashset!(
+    builder.tags(HashSet::from([
         "b",
         "strong",
         "i",
@@ -34,10 +24,10 @@ static TG_SANITIZER: LazyLock<ammonia::Builder> = LazyLock::new(|| {
         "tg-emoji",
         "code",
         "pre",
-        "blockquote"
-    ));
+        "blockquote",
+    ]));
     let mut tag_attrs = HashMap::<&'static str, HashSet<&'static str>>::new();
-    tag_attrs.insert("a", str_hashset!("href"));
+    tag_attrs.insert("a", HashSet::from(["href"]));
     builder.tag_attributes(tag_attrs);
     builder
 });
