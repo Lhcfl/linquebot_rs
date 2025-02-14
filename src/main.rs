@@ -7,7 +7,6 @@
 #![feature(str_split_whitespace_remainder)]
 #![feature(iter_array_chunks)]
 #![feature(iter_intersperse)]
-#![feature(trait_upcasting)]
 #![feature(async_drop)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(coroutines)]
@@ -15,7 +14,6 @@
 #![feature(iter_from_coroutine)]
 #![feature(extend_one)]
 #![feature(iter_next_chunk)]
-#![feature(vec_pop_if)]
 
 mod assets;
 mod linquebot;
