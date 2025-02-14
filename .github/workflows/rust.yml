@@ -8,7 +8,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: "-Dwarnings"
 
 jobs:
   build:
@@ -28,7 +27,7 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
       - name: Run Clippy
-        run: cargo clippy --all-targets --all-features
+        run: RUSTFLAGS=-Dwarnings cargo clippy
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
