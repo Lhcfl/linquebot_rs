@@ -1,18 +1,18 @@
-use std::{collections::HashMap, future::Future, process::Output, time::SystemTime};
+use std::{collections::HashMap, time::SystemTime};
 
 use crate::{
     linquebot::{
-        msg_context::{Context, TaskContext},
+        msg_context::Context,
         types::Consumption,
         Module, ModuleDescription, ModuleKind,
     },
-    utils::telegram::prelude::{BotExtension, WarnOnError},
+    utils::telegram::prelude::WarnOnError,
 };
 use rand::seq::IteratorRandom;
 use serde::{Deserialize, Serialize};
 use teloxide_core::{
-    prelude::{Request, Requester},
-    types::{Message, User, UserId},
+    prelude::Request,
+    types::{Message, UserId},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
