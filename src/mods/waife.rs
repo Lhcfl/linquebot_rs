@@ -449,6 +449,10 @@ fn on_waife_graph(ctx: &mut Context, _: &Message) -> Consumption {
 
                 match png {
                     Ok(res) => {
+                        log::debug!(
+                            "Graphviz generated: {}",
+                            graph.print(&mut PrinterContext::default())
+                        );
                         ctx.app
                             .bot
                             .send_photo(ctx.chat_id, InputFile::memory(res))
