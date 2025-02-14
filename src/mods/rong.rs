@@ -49,7 +49,7 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     let mut reply = format!(
         "{} {} {}",
         actor.html_link(),
-        escape_html(&action),
+        escape_html(action),
         if actor.id == actee.id {
             format!("<a href=\"{}\">自己</a>", actee.preferably_tme_url())
         } else {
@@ -59,7 +59,7 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
 
     if !addition.is_empty() {
         reply.push(' ');
-        reply.push_str(&escape_html(&addition));
+        reply.push_str(&escape_html(addition));
     }
 
     reply.push('!');

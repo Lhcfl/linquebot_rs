@@ -146,7 +146,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
         let waife_uids = waife_of.entry(from.id).or_default();
 
         // 一元关系
-        if waife_uids.len() > 0 && !poly {
+        if !(waife_uids.is_empty() || poly) {
             let waifes = waife_uids
                 .iter()
                 .map(|uid| users.get(uid).unwrap().html_link())
@@ -171,7 +171,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
 
         let Some((waife_id, waife_user_html)) = users
             .iter()
-            .filter(|(uid, _)| !waife_uids.contains(&uid) && **uid != from.id)
+            .filter(|(uid, _)| !waife_uids.contains(uid) && **uid != from.id)
             .choose(&mut thread_rng())
             .map(|(x, y)| (*x, y.html_link()))
         else {
@@ -266,7 +266,7 @@ async fn check_and_add(
         info!("Ignored out-of-group user：{}", user.full_name);
     }
 
-    return membership.is_present();
+    membership.is_present()
 }
 
 fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
@@ -304,7 +304,7 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
                 .warn_on_error("waife-auto-add")
                 .await
         }
-        check_and_add(&mut waife_storage.users, &ctx, from.into()).await;
+        check_and_add(&mut waife_storage.users, &ctx, from).await;
     });
     Consumption::Next
 }

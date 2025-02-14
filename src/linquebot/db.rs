@@ -141,6 +141,7 @@ impl DataStorage {
         Some(Arc::new(Mutex::new(res)))
     }
 
+    #[allow(dead_code)]
     pub async fn insert<T: DbData>(&'static self, id: DataId, val: T) {
         self.insert_raw(type_name::<T>(), id, &val.ser_data()).await;
         self.cache.insert(id, Arc::new(Mutex::new(val)));
@@ -157,6 +158,7 @@ impl DataStorage {
         .expect("db write error");
     }
 
+    #[allow(dead_code)]
     pub async fn remove<T: DbData>(&'static self, id: DataId) {
         self.cache.remove(&id);
         sqlx::query("delete from data where ty = $1 and user = $2 and chat = $3")
@@ -245,6 +247,7 @@ impl<T: DbData> DataBuilder<T> {
         self.db.get(self.data_id()).await
     }
 
+    #[allow(dead_code)]
     pub async fn insert(self, val: T) {
         self.db.insert(self.data_id(), val).await
     }
@@ -253,6 +256,7 @@ impl<T: DbData> DataBuilder<T> {
         self.db.get_or_insert(self.data_id(), mk).await
     }
 
+    #[allow(dead_code)]
     pub async fn remove(self) {
         self.db.remove::<T>(self.data_id()).await
     }

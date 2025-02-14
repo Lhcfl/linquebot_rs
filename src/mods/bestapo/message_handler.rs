@@ -17,7 +17,7 @@ const SENSITIVE_WORDS: &[&str] = &["trump", "nft", "opensea"];
 
 fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     let ctx = ctx.task();
-    if !msg.is_reply_to_channel() || !is_contains_url(&msg) {
+    if !msg.is_reply_to_channel() || !is_contains_url(msg) {
         return Consumption::Next;
     }
     let mut is_spam = false;
