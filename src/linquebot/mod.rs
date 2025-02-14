@@ -11,7 +11,7 @@ use teloxide_core::{
 
 use crate::DataStorage;
 
-type TaskResult = Pin<Box<dyn Future<Output = ()> + Send>>;
+pub type TaskResult = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 pub mod types {
     use std::{

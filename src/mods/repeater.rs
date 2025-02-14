@@ -29,7 +29,7 @@ impl MsgKind {
     async fn send_by_ctx(self, ctx: TaskContext) {
         match self {
             Self::Text(mut text) => {
-                if text == "没有" {
+                if text == "没有" || text == "没有！" {
                     text = "通过！".to_string();
                 }
                 ctx.app

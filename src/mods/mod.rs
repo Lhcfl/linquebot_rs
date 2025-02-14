@@ -6,6 +6,7 @@ pub mod bot_on_off;
 pub mod dice;
 #[cfg(feature = "explain")]
 pub mod explain;
+pub mod greetings;
 pub mod help;
 pub mod hitokoto;
 #[cfg(feature = "jielong")]
@@ -56,6 +57,7 @@ pub static MODULES: &[&Module] = &[
     &jielong::COMMAND,
     &waife::GET_WAIFE,
     &waife::WAIFE_GRAPH,
+    &greetings::TOGGLE,
     // --- special command: rongslashbot ---
     &rong::MODULE,
     // --- normal message handles ---
@@ -63,6 +65,7 @@ pub static MODULES: &[&Module] = &[
     #[cfg(feature = "jielong")]
     &jielong::ON_IDIOM,
     &markov::TRAIN_MOD,
+    &greetings::MODULE,
     &repeater::MODULE,
     &bestapo::MESSAGE_HANDLER,
 ];
