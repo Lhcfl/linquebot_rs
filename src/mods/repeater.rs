@@ -10,8 +10,9 @@ use std::sync::RwLock;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+#[derive(PartialEq)]
 enum MsgKind {
-    Sticker(Sticker),
+    Sticker(String),
     Text(String),
     Other,
 }
@@ -21,7 +22,7 @@ impl MsgKind {
         if let Some(text) = msg.text() {
             MsgKind::Text(text.to_string())
         } else if let Some(sticker) = msg.sticker() {
-            MsgKind::Sticker(sticker.clone())
+            MsgKind::Sticker(sticker.file.id.clone())
         } else {
             MsgKind::Other
         }
@@ -42,27 +43,11 @@ impl MsgKind {
             Self::Sticker(sticker) => {
                 ctx.app
                     .bot
-                    .send_sticker_by_file_id(ctx.chat_id, &sticker.file.id)
+                    .send_sticker_by_file_id(ctx.chat_id, &sticker)
                     .warn_on_error("repeater")
                     .await;
             }
             Self::Other => {}
-        }
-    }
-}
-
-impl PartialEq for MsgKind {
-    fn eq(&self, other: &Self) -> bool {
-        match self {
-            Self::Text(text) => match other {
-                Self::Text(text2) => text == text2,
-                _ => false,
-            },
-            Self::Sticker(sticker) => match other {
-                Self::Sticker(sticker2) => sticker.file.id == sticker2.file.id,
-                _ => false,
-            },
-            Self::Other => false,
         }
     }
 }

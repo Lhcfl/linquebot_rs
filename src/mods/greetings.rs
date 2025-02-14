@@ -38,7 +38,7 @@ fn toggle_greeting(ctx: &mut Context, _msg: &Message) -> Consumption {
             .db
             .of::<GreetingStat>()
             .chat(ctx.chat_id)
-            .get_or_insert(|| Default::default())
+            .get_or_insert(Default::default)
             .await;
         db.enabled = !db.enabled;
         let text = if db.enabled { "打开" } else { "关闭" };
@@ -109,7 +109,7 @@ fn say_greeting(ctx: &mut Context, msg: &Message) -> Consumption {
             .db
             .of::<GreetingStat>()
             .chat(ctx.chat_id)
-            .get_or_insert(|| Default::default())
+            .get_or_insert(Default::default)
             .await;
 
         if !db.enabled {
