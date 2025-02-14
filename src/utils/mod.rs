@@ -95,7 +95,11 @@ pub mod telegram {
                 }
             }
         }
-        use teloxide_core::types::{Message, User};
+        use reqwest::Response;
+        use teloxide_core::{
+            types::{ChatId, Message, User},
+            Bot,
+        };
 
         pub trait UserExtension {
             fn html_link(&self) -> String;
@@ -116,6 +120,31 @@ pub mod telegram {
                 self.reply_to_message()
                     .and_then(|msg| msg.sender_chat.as_ref())
                     .is_some_and(|chat| chat.is_channel())
+            }
+        }
+
+        pub trait BotExtension {
+            async fn send_sticker_by_file_id(
+                &self,
+                chat_id: ChatId,
+                file_id: &str,
+            ) -> reqwest::Result<Response>;
+        }
+
+        impl BotExtension for Bot {
+            async fn send_sticker_by_file_id(
+                &self,
+                chat_id: ChatId,
+                file_id: &str,
+            ) -> reqwest::Result<Response> {
+                reqwest::get(format!(
+                    "{}bot{}/sendSticker?chat_id={}&sticker={}",
+                    self.api_url(),
+                    self.token(),
+                    chat_id,
+                    file_id
+                ))
+                .await
             }
         }
     }

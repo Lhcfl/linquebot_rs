@@ -1,21 +1,86 @@
 //! 复读机
-
-use std::collections::HashMap;
-use std::sync::LazyLock;
-use std::sync::RwLock;
-
-use msg_context::Context;
-use teloxide_core::prelude::*;
-use teloxide_core::types::*;
-
+use crate::linquebot::msg_context::TaskContext;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::*;
 use crate::Consumption;
+use msg_context::Context;
+use std::collections::HashMap;
+use std::sync::LazyLock;
+use std::sync::RwLock;
+use teloxide_core::prelude::*;
+use teloxide_core::types::*;
+
+enum MsgKind {
+    Sticker(Sticker),
+    Text(String),
+    Other,
+}
+
+impl MsgKind {
+    fn from_msg(msg: &Message) -> Self {
+        if let Some(text) = msg.text() {
+            MsgKind::Text(text.to_string())
+        } else if let Some(sticker) = msg.sticker() {
+            MsgKind::Sticker(sticker.clone())
+        } else {
+            MsgKind::Other
+        }
+    }
+    async fn send_by_ctx(self, ctx: TaskContext) {
+        match self {
+            Self::Text(mut text) => {
+                if text == "没有" {
+                    text = "通过！".to_string();
+                }
+                ctx.app
+                    .bot
+                    .send_message(ctx.chat_id, text)
+                    .send()
+                    .warn_on_error("repeater")
+                    .await
+            }
+            Self::Sticker(sticker) => {
+                ctx.app
+                    .bot
+                    .send_sticker_by_file_id(ctx.chat_id, &sticker.file.id)
+                    .warn_on_error("repeater")
+                    .await;
+            }
+            Self::Other => {}
+        }
+    }
+}
+
+impl PartialEq for MsgKind {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            Self::Text(text) => match other {
+                Self::Text(text2) => text == text2,
+                _ => false,
+            },
+            Self::Sticker(sticker) => match other {
+                Self::Sticker(sticker2) => sticker.file.id == sticker2.file.id,
+                _ => false,
+            },
+            Self::Other => false,
+        }
+    }
+}
 
 struct MessageHistory {
-    text: Option<String>,
+    kind: MsgKind,
     repeated: u32,
     off: bool,
+}
+
+impl Default for MessageHistory {
+    fn default() -> Self {
+        MessageHistory {
+            kind: MsgKind::Other,
+            repeated: 1,
+            off: false,
+        }
+    }
 }
 
 static LAST_MSG: LazyLock<RwLock<HashMap<ChatId, MessageHistory>>> =
@@ -23,7 +88,7 @@ static LAST_MSG: LazyLock<RwLock<HashMap<ChatId, MessageHistory>>> =
 
 /// repeat the message if 3 continous same text
 pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
-    let text = msg.text().map(|str| str.to_string());
+    let kind = MsgKind::from_msg(msg);
     let mut manager = LAST_MSG.write().map_err(|err| {
         log::error!(
             "Error get history lock. This is not expected. {}",
@@ -31,42 +96,21 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
         );
     })?;
     let Some(history) = manager.get_mut(&ctx.chat_id) else {
-        manager.insert(
-            ctx.chat_id,
-            MessageHistory {
-                text,
-                repeated: 1,
-                off: false,
-            },
-        );
+        manager.insert(ctx.chat_id, Default::default());
         return Consumption::Next;
     };
     if history.off {
         return Consumption::Next;
     }
-    if text == history.text {
+
+    if kind == history.kind {
         history.repeated += 1;
+        if history.repeated == 3 {
+            tokio::spawn(kind.send_by_ctx(ctx.task()));
+        }
     } else {
         history.repeated = 1;
-        history.text = text.clone();
-    }
-    let mut text = text?;
-
-    // only repeat once!
-    if history.repeated == 3
-    // don't repeat command
-    && !text.starts_with("/")
-    {
-        if text == "没有！" {
-            text = "通过！".to_string();
-        }
-        tokio::spawn(
-            ctx.app
-                .bot
-                .send_message(ctx.chat_id, text)
-                .send()
-                .warn_on_error("repeater"),
-        );
+        history.kind = kind;
     }
     Consumption::Next
 }
@@ -78,19 +122,9 @@ pub fn toggle_repeat(ctx: &mut Context, _: &Message) -> Consumption {
             err.to_string()
         );
     })?;
-    let Some(history) = manager.get_mut(&ctx.chat_id) else {
-        manager.insert(
-            ctx.chat_id,
-            MessageHistory {
-                text: None,
-                repeated: 0,
-                off: true,
-            },
-        );
-        return Consumption::Next;
-    };
+    let history = manager.entry(ctx.chat_id).or_default();
     *history = MessageHistory {
-        text: None,
+        kind: MsgKind::Other,
         repeated: 0,
         off: !history.off,
     };

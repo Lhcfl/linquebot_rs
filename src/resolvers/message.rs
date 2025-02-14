@@ -3,7 +3,12 @@ use log::{error, trace};
 use teloxide_core::types::Message;
 
 pub fn resolve(app: &'static App, message: Message) {
-    trace!(target: "main-loop", "get message: {:?}", message.text());
+    if let Some(text) = message.text() {
+        trace!(target: "main-loop", "get message: {text}");
+    }
+    if let Some(sticker) = message.sticker() {
+        trace!(target: "main-loop", "get sticker: {sticker:?}");
+    }
     let mut context = app.create_message_context(&message);
     for module in app.modules {
         if let ModuleKind::Command(desc) = &module.kind {
