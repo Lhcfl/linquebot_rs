@@ -181,7 +181,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
             .filter(|user| !waife_uids.contains(&user.id) && user.id != from.id)
             .collect::<Vec<_>>();
 
-        if available_waifes.len() == 0 {
+        if available_waifes.is_empty() {
             ctx.reply("琳酱还不认识足够多的群成员，无法为您分配随机老婆 >_<")
                 .send()
                 .warn_on_error("waife")
