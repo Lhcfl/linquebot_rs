@@ -6,7 +6,7 @@ use log::error;
 use log::info;
 use log::warn;
 use msg_context::Context;
-use rand::seq::IteratorRandom;
+use rand::seq::SliceRandom;
 use rand::thread_rng;
 use serde::Deserialize;
 use serde::Serialize;
@@ -89,7 +89,8 @@ struct UserCache {
 
 fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
     let from = WaifeUser::from_user(msg.from.as_ref()?);
-    let poly = ctx.cmd?.content == "poly";
+    let num = ctx.cmd?.content.parse::<usize>().unwrap_or(1);
+    let poly = ctx.cmd?.content == "poly" || num > 1;
     let ctx = ctx.task();
     async move {
         let mut waife_storage = match ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get().await {
@@ -147,17 +148,22 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
 
         // 一元关系
         if !(waife_uids.is_empty() || poly) {
-            let waifes = waife_uids
+            let mut waife_names = waife_uids
                 .iter()
                 .map(|uid| users.get(uid).unwrap().html_link())
-                .collect::<Vec<_>>();
-            ctx.reply_html(format!(
-                "你今天已经有老婆了，你的群老婆：{}",
-                waifes.join("、"),
-            ))
-            .send()
-            .warn_on_error("waife")
-            .await;
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            if waife_names.len() > 4000 {
+                while waife_names.len() >= 4000 {
+                    waife_names.pop();
+                }
+                waife_names.push_str(" （...太多了写不下了）");
+            }
+            ctx.reply_html(format!("你今天已经有老婆了，你的群老婆：{waife_names}"))
+                .send()
+                .warn_on_error("waife")
+                .await;
             return;
         }
 
@@ -169,22 +175,46 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
             return;
         }
 
-        let Some((waife_id, waife_user_html)) = users
-            .iter()
-            .filter(|(uid, _)| !waife_uids.contains(uid) && **uid != from.id)
-            .choose(&mut thread_rng())
-            .map(|(x, y)| (*x, y.html_link()))
-        else {
+        let mut available_waifes = users
+            .values()
+            .filter(|user| !waife_uids.contains(&user.id) && user.id != from.id)
+            .collect::<Vec<_>>();
+
+        if available_waifes.len() == 0 {
             ctx.reply("琳酱还不认识足够多的群成员，无法为您分配随机老婆 >_<")
                 .send()
                 .warn_on_error("waife")
                 .await;
             return;
-        };
+        }
 
-        waife_uids.insert(waife_id);
+        if num >= 10 && available_waifes.len() >= 10 {
+            ctx.reply("我嘞个后宫王啊……")
+                .send()
+                .warn_on_error("waife")
+                .await;
+        }
 
-        ctx.reply_html(format!("获取成功！你今天的群老婆是 {waife_user_html}"))
+        available_waifes.shuffle(&mut thread_rng());
+
+        let mut waife_names = String::new();
+
+        for user in available_waifes.iter().take(num) {
+            waife_uids.insert(user.id);
+            if !waife_names.is_empty() {
+                waife_names.push_str(", ");
+            }
+            waife_names.push_str(&user.full_name);
+        }
+
+        if waife_names.len() > 4000 {
+            while waife_names.len() >= 4000 {
+                waife_names.pop();
+            }
+            waife_names.push_str(" （...太多了写不下了）");
+        }
+
+        ctx.reply_html(format!("获取成功！你今天的群老婆是 {waife_names}"))
             .send()
             .warn_on_error("waife")
             .await;
