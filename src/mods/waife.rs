@@ -19,6 +19,7 @@ use teloxide_core::types::*;
 
 use crate::linquebot::msg_context::TaskContext;
 use crate::linquebot::*;
+use crate::utils::escape_html;
 use crate::utils::telegram::prelude::*;
 use crate::Consumption;
 
@@ -37,7 +38,7 @@ impl WaifeUser {
     }
 
     fn html_link(&self) -> String {
-        format!("<b>{}</b>", self.full_name)
+        format!("<b>{}</b>", escape_html(&self.full_name))
     }
 
     fn escaped_name(&self) -> String {
@@ -204,7 +205,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
             if !waife_names.is_empty() {
                 waife_names.push_str(", ");
             }
-            waife_names.push_str(&user.full_name);
+            waife_names.push_str(&user.html_link());
         }
 
         if waife_names.len() > 4000 {
