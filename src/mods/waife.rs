@@ -574,7 +574,6 @@ fn set_waife_limit(ctx: &mut Context, msg: &Message) -> Consumption {
         match new_limit {
             Err(_) => {
                 ctx.reply("不是一个合法的数字。请输入 usize 以内的整数，或者留空或null").send().warn_on_error("set-waife-limit").await;
-                return;
             },
             Ok(new_limit) => {
                 let mut waife_storage = ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get_or_insert(Default::default).await;
