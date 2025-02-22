@@ -10,6 +10,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use serde::Deserialize;
 use serde::Serialize;
+use std::cmp::min;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ops::DerefMut;
@@ -154,8 +155,16 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
         let WaifeStatus {
             waife_of,
             users,
+            waife_limit,
             ..
         } = &mut waife_storage.deref_mut();
+
+        let waife_limit = waife_limit.unwrap_or(std::usize::MAX);
+
+        if waife_limit == 0 {
+            ctx.reply("本群禁止了 waife").send().warn_on_error("waife").await;
+            return;
+        }
 
         let waife_uids = waife_of.entry(from.id).or_default();
 
@@ -174,6 +183,17 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
                 waife_names.push_str(" （...太多了写不下了）");
             }
             ctx.reply_html(format!("你今天已经有老婆了，你的群老婆：{waife_names}"))
+                .send()
+                .warn_on_error("waife")
+                .await;
+            return;
+        }
+
+        let waifes_avail_count = waife_limit.saturating_sub(waife_uids.len());
+        let num = min(waifes_avail_count, num);
+
+        if num == 0 {
+            ctx.reply("你已经达到了今日份的老婆上限")
                 .send()
                 .warn_on_error("waife")
                 .await;
