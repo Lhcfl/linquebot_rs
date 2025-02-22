@@ -56,6 +56,7 @@ pub static MODULES: &[&Module] = &[
     #[cfg(feature = "jielong")]
     &jielong::COMMAND,
     &waife::GET_WAIFE,
+    &waife::SET_WAIFE_LIMIT,
     &waife::WAIFE_GRAPH,
     &greetings::TOGGLE,
     // --- special command: rongslashbot ---

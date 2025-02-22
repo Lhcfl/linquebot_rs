@@ -59,6 +59,18 @@ struct WaifeStatus {
     users: HashMap<UserId, WaifeUser>,
     last_waife_date: SystemTime,
     waife_of: HashMap<UserId, HashSet<UserId>>, // set 里面的用户 id 全都是前者的老婆！多元关系！
+    waife_limit: Option<usize>,                 // 每个人的 waife limit
+}
+
+impl Default for WaifeStatus {
+    fn default() -> Self {
+        Self {
+            users: HashMap::new(),
+            last_waife_date: SystemTime::now(),
+            waife_of: HashMap::new(),
+            waife_limit: None,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -142,7 +154,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
         let WaifeStatus {
             waife_of,
             users,
-            last_waife_date: _,
+            ..
         } = &mut waife_storage.deref_mut();
 
         let waife_uids = waife_of.entry(from.id).or_default();
@@ -323,11 +335,7 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
             .db
             .of::<WaifeStatus>()
             .chat(ctx.chat_id)
-            .get_or_insert(|| WaifeStatus {
-                users: HashMap::new(),
-                last_waife_date: SystemTime::now(),
-                waife_of: HashMap::new(),
-            })
+            .get_or_insert(Default::default)
             .await;
 
         if waife_storage.users.is_empty() {
@@ -516,6 +524,53 @@ fn on_waife_graph(ctx: &mut Context, _: &Message) -> Consumption {
     .into()
 }
 
+fn set_waife_limit(ctx: &mut Context, msg: &Message) -> Consumption {
+    let text = ctx.cmd?.content.to_ascii_lowercase();
+    let ctx = ctx.task();
+    let sender_id = msg.from.as_ref()?.id;
+    async move {
+        let has_admin_right = match ctx.app.bot.get_chat_member(ctx.chat_id, sender_id).send().await {
+            Ok(chat_member) => chat_member.is_privileged(),
+            Err(err) => {
+                warn!("Failed to check has_admin_right, fallback to false for userid: {sender_id}. {err}");
+                false
+            }
+        };
+        
+        if !has_admin_right {
+            ctx.reply_markdown("~You are not in the sudoers file. This incident will be reported.~ 只有管理员才能执行该命令哦。").send().warn_on_error("set-waife-limit").await;
+            return;
+        }
+
+        let new_limit = match text.as_str() {
+            "" | "null" => {
+                None
+            }
+            num => {
+                Some(num.parse::<usize>())
+            }
+        }.transpose();
+
+        match new_limit {
+            Err(_) => {
+                ctx.reply("不是一个合法的数字。请输入 usize 以内的整数，或者留空或null").send().warn_on_error("set-waife-limit").await;
+                return;
+            },
+            Ok(new_limit) => {
+                let mut waife_storage = ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get_or_insert(Default::default).await;
+                waife_storage.waife_limit = new_limit;
+                
+                let text = match new_limit {
+                    None => "无限制".to_string(),
+                    Some(x) => x.to_string()
+                };
+                ctx.reply(format!("设置成功！现在本群每人每日可抽取的老婆数为：{text}")).send().warn_on_error("set-waife-limit").await;
+            }
+        }
+    }
+    .into()
+}
+
 pub static ADD_USER: Module = Module {
     kind: ModuleKind::General(None),
     task: auto_add_user,
@@ -532,6 +587,15 @@ pub static GET_WAIFE: Module = Module {
         )),
     }),
     task: get_waife,
+};
+
+pub static SET_WAIFE_LIMIT: Module = Module {
+    kind: ModuleKind::Command(ModuleDescription {
+        name: "set_waife_limit",
+        description: "设置老婆上限",
+        description_detailed: Some(concat!("设置群老婆上限\n", "仅限管理员使用\n",)),
+    }),
+    task: set_waife_limit,
 };
 
 pub static WAIFE_GRAPH: Module = Module {
