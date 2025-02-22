@@ -159,7 +159,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
             ..
         } = &mut waife_storage.deref_mut();
 
-        let waife_limit = waife_limit.unwrap_or(std::usize::MAX);
+        let waife_limit = waife_limit.unwrap_or(usize::MAX);
 
         if waife_limit == 0 {
             ctx.reply("本群禁止了 waife").send().warn_on_error("waife").await;
