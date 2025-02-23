@@ -18,7 +18,7 @@ pub mod types {
         convert::Infallible,
         fmt::Debug,
         future::Future,
-        ops::{FromResidual, Try},
+        ops::FromResidual,
     };
 
     use super::TaskResult;
