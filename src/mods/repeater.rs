@@ -82,10 +82,10 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     })?;
     let Some(history) = manager.get_mut(&ctx.chat_id) else {
         manager.insert(ctx.chat_id, Default::default());
-        return Consumption::Next;
+        return Consumption::just_next();
     };
     if history.off {
-        return Consumption::Next;
+        return Consumption::just_next();
     }
 
     if kind == history.kind {
@@ -97,7 +97,7 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
         history.repeated = 1;
         history.kind = kind;
     }
-    Consumption::Next
+    Consumption::just_next()
 }
 
 pub fn toggle_repeat(ctx: &mut Context, _: &Message) -> Consumption {

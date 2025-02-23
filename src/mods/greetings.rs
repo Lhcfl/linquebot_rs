@@ -1,11 +1,7 @@
 use std::{collections::HashMap, time::SystemTime};
 
 use crate::{
-    linquebot::{
-        msg_context::Context,
-        types::Consumption,
-        Module, ModuleDescription, ModuleKind,
-    },
+    linquebot::{msg_context::Context, types::Consumption, Module, ModuleDescription, ModuleKind},
     utils::telegram::prelude::WarnOnError,
 };
 use rand::seq::IteratorRandom;
@@ -150,7 +146,7 @@ fn say_greeting(ctx: &mut Context, msg: &Message) -> Consumption {
         last3.rotate_right(1);
         last3[0] = now;
     });
-    Consumption::Next
+    Consumption::just_next()
 }
 
 pub static MODULE: Module = Module {

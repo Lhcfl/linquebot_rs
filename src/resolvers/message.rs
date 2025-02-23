@@ -17,23 +17,19 @@ pub fn resolve(app: &'static App, message: Message) {
             }
         }
         let task_result = (module.task)(&mut context, &message);
-        match task_result {
-            Consumption::Next => {}
-            Consumption::Stop => {
-                break;
-            }
-            Consumption::StopWith(task) => {
-                tokio::spawn(async move {
-                    let result = tokio::spawn(task);
-                    let Err(err) = result.await else {
-                        return;
-                    };
-                    if err.is_panic() {
-                        error!("module {:?} panicked: {err}", module.name());
-                    }
-                });
-                break;
-            }
+        for task in task_result.tasks {
+            tokio::spawn(async move {
+                let result = tokio::spawn(task);
+                let Err(err) = result.await else {
+                    return;
+                };
+                if err.is_panic() {
+                    error!("module {:?} panicked: {err}", module.name());
+                }
+            });
+        }
+        if !task_result.next {
+            break;
         }
     }
 }

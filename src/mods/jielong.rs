@@ -274,13 +274,13 @@ fn on_jielong_message(ctx: &mut Context, message: &Message) -> Consumption {
     let msg_idiom: &'static Idiom = get_idiom(message.text()?)?;
     let Ok(mut status) = CHAT_JIELONG_STATUS.write() else {
         error!("Failed to read CHAT_JIELONG_STATUS");
-        return Consumption::Next;
+        return Consumption::just_next();
     };
     let Some(record) = status.get_mut(&ctx.chat_id) else {
-        return Consumption::Next;
+        return Consumption::just_next();
     };
     if msg_idiom.first != record.idiom.last {
-        return Consumption::Next;
+        return Consumption::just_next();
     }
     let ctx = ctx.task();
     if record.counted.contains(&msg_idiom.word) {

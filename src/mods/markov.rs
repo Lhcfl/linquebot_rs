@@ -185,11 +185,11 @@ pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
     let text = msg.text()?;
     // 按 MODULES 的排列，合法命令和琳酱说说话应该都已经被 Stop 了，但是对其他 bot 的命令可能还留着。
     if text.starts_with("/") {
-        return Consumption::Next;
+        return Consumption::just_next();
     }
     // 拒绝学习过长的语料
     if text.len() > 300 {
-        return Consumption::Next;
+        return Consumption::just_next();
     }
 
     let text = text.to_string();
@@ -225,7 +225,7 @@ pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
             *weight.entry(seg).or_default().entry('\0').or_default() += 1;
         }
     });
-    Consumption::Next
+    Consumption::just_next()
 }
 
 pub static TRAIN_MOD: Module = Module {

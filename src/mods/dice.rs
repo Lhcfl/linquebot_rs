@@ -15,7 +15,7 @@ pub fn dice(ctx: &mut Context, message: &Message) -> Consumption {
     let text = ctx.cmd?.content;
     let Some(from) = message.from.clone() else {
         warn!("No reply target.");
-        return Consumption::Stop;
+        return Consumption::just_stop();
     };
 
     let ctx = ctx.task();

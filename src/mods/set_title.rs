@@ -123,7 +123,7 @@ pub fn on_my_chat_member(app: &'static App, chat_member: &ChatMemberUpdated) -> 
                 .warn_on_error("set-title"),
         );
     }
-    Consumption::Next
+    Consumption::just_next()
 }
 
 pub static MODULE: Module = Module {

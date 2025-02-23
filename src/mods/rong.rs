@@ -25,7 +25,7 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     let text = message.text()?;
     if let Some(username) = ctx.cmd.and_then(|cmd| cmd.username) {
         if username != ctx.app.username {
-            return Consumption::Next;
+            return Consumption::just_next();
         }
     }
 
@@ -35,15 +35,15 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     if text.starts_with('\\') {
         (actee, actor) = (actor, actee);
     } else if !text.starts_with('/') {
-        return Consumption::Next;
+        return Consumption::just_next();
     }
 
     let [action, addition] = split_args(&text[1..]);
     if action.is_empty() {
-        return Consumption::Next;
+        return Consumption::just_next();
     }
     if RONG_BLACKLIST.contains(&action) {
-        return Consumption::Next;
+        return Consumption::just_next();
     }
 
     let mut reply = format!(

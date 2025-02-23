@@ -18,7 +18,7 @@ const SENSITIVE_WORDS: &[&str] = &["trump", "nft", "opensea"];
 fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     let ctx = ctx.task();
     if !msg.is_reply_to_channel() || !is_contains_url(msg) {
-        return Consumption::Next;
+        return Consumption::just_next();
     }
     let mut is_spam = false;
     if let Some(text) = msg.text() {
@@ -33,7 +33,7 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
         }
     }
     if !is_spam {
-        return Consumption::Next;
+        return Consumption::just_next();
     }
     tokio::spawn(async move {
         ctx.reply_markdown("检测到斯帕姆。把它上市！")
@@ -47,7 +47,7 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
             .send()
             .await
     });
-    Consumption::Next
+    Consumption::just_next()
 }
 
 pub static MESSAGE_HANDLER: Module = Module {

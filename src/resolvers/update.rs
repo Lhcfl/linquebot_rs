@@ -42,17 +42,19 @@ pub async fn resolve(app: &'static App, update: Update) {
             for task in app.micro_tasks {
                 if let MicroTask::$kind(task) = task {
                     let task_result = task(app, &$data);
-                    match task_result {
-                        Consumption::Next => {}
-                        Consumption::Stop => {
-                            break;
-                        }
-                        Consumption::StopWith(task) => {
-                            tokio::spawn(async move {
-                                task.await;
-                            });
-                            break;
-                        }
+                    for task in task_result.tasks {
+                        tokio::spawn(async move {
+                            let result = tokio::spawn(task);
+                            let Err(err) = result.await else {
+                                return;
+                            };
+                            if err.is_panic() {
+                                log::error!("microtask panicked: {err}");
+                            }
+                        });
+                    }
+                    if !task_result.next {
+                        break;
                     }
                 }
             }

@@ -20,7 +20,7 @@ static BOT_ON: LazyLock<RwLock<HashMap<ChatId, bool>>> = LazyLock::new(Default::
 fn on_bot_on_message(ctx: &mut Context, _: &Message) -> Consumption {
     let Ok(mut record) = BOT_ON.write() else {
         error!("Failed to get bot on status!");
-        return Consumption::Stop;
+        return Consumption::just_stop();
     };
 
     let ctx = ctx.task();
@@ -43,7 +43,7 @@ fn on_bot_on_message(ctx: &mut Context, _: &Message) -> Consumption {
 fn on_bot_off_message(ctx: &mut Context, _: &Message) -> Consumption {
     let Ok(mut record) = BOT_ON.write() else {
         error!("Failed to get bot on status!");
-        return Consumption::Stop;
+        return Consumption::just_stop();
     };
 
     let ctx = ctx.task();
@@ -67,10 +67,10 @@ fn on_bot_off_message(ctx: &mut Context, _: &Message) -> Consumption {
 fn stop_when_bot_off(ctx: &mut Context, _: &Message) -> Consumption {
     if let Ok(record) = BOT_ON.read() {
         if let Some(false) = record.get(&ctx.chat_id) {
-            return Consumption::Stop;
+            return Consumption::just_stop();
         }
     }
-    Consumption::Next
+    Consumption::just_next()
 }
 
 pub static BOT_ON_MODULE: Module = Module {

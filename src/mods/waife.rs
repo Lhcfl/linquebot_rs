@@ -334,18 +334,18 @@ async fn check_and_add(
 
 fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
     if msg.chat.is_private() {
-        return Consumption::Next;
+        return Consumption::just_next();
     }
     // Telegram says for backward compatibility, if the message was sent on behalf of a chat,
     // the field contains a fake sender user in non-channel chats.
     // But we don't need a fake user. Drop it.
     if msg.sender_chat.is_some() {
-        return Consumption::Next;
+        return Consumption::just_next();
     }
     // 聊天群和绑定的 channel 可能有不同的人，为了保持 waife 不遇到晦气人，丢弃来自 forward 的消息。
     if msg.is_automatic_forward() || msg.is_reply_to_channel() {
         info!("Droped channel message/reply: {:?}", msg.text());
-        return Consumption::Next;
+        return Consumption::just_next();
     }
     let from = WaifeUser::from_user(msg.from.as_ref()?);
     let ctx = ctx.task();
@@ -365,7 +365,7 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
         }
         check_and_add(&mut waife_storage.users, &ctx, from).await;
     });
-    Consumption::Next
+    Consumption::just_next()
 }
 
 #[derive(Clone, Copy)]

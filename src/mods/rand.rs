@@ -49,7 +49,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
     let text = ctx.cmd?.content.to_string();
     let Some(from) = message.from.clone() else {
         warn!("No reply target.");
-        return Consumption::Stop;
+        return Consumption::just_stop();
     };
     if text.contains("还是") {
         send_selective_rand(ctx.task(), text, "还是").into()

@@ -151,7 +151,7 @@ fn say_hi(ctx: &mut Context, msg: &Message) -> Consumption {
             .warn_on_error("say-hi")
             .into()
     } else {
-        Consumption::Next
+        Consumption::just_next()
     }
 }
 
