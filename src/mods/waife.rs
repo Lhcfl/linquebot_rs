@@ -116,6 +116,10 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
     let poly = ctx.cmd?.content == "poly" || num > 1;
     let ctx = ctx.task();
     async move {
+        if num == 0 {
+            return ctx.reply("好好好 给你 0 个老婆").send().warn_on_error("waife").await;
+        }
+
         let mut waife_storage = match ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get().await {
             Some(x) => x,
             None => {
@@ -189,6 +193,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
 
             let mut divorced_count = 0;
             let mut divorced_names = String::new();
+
             // 移除 abs(n) 个老婆
             waife_uids.retain(|uid| {
                 if divorced_count + num == 0 {
@@ -205,11 +210,20 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
                 }
             });
             truncate_names(&mut divorced_names);
+            
+            let mut waife_names = waife_uids
+                .iter()
+                .map(|uid| users.get(uid).unwrap().html_link())
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            truncate_names(&mut waife_names);
+
 
             let html_text = if waife_uids.is_empty() {
-                format!("你和 {} 离婚了，现在你没有老婆了", divorced_names)
+                format!("你和 {divorced_names} 离婚了，现在你没有老婆了", )
             } else {
-                format!("你和 {} 离婚了，现在你还有 {} 个老婆", divorced_names, waife_uids.len())
+                format!("你和 {divorced_names} 离婚了，现在你还有 {} 个老婆：{waife_names}", waife_uids.len())
             };
 
             ctx.reply_html(html_text)
