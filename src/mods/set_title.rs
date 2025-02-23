@@ -98,7 +98,7 @@ pub fn on_my_chat_member(app: &'static App, chat_member: &ChatMemberUpdated) -> 
     if !chat_member.old_chat_member.is_privileged()
         && chat_member.new_chat_member.can_promote_members()
     {
-        tokio::spawn(
+        return Consumption::next_with(
             app.bot
                 .send_message(
                     chat_member.chat.id,
@@ -113,7 +113,7 @@ pub fn on_my_chat_member(app: &'static App, chat_member: &ChatMemberUpdated) -> 
     } else if chat_member.old_chat_member.can_promote_members()
         && !chat_member.new_chat_member.can_promote_members()
     {
-        tokio::spawn(
+        return Consumption::next_with(
             app.bot
                 .send_message(
                     chat_member.chat.id,

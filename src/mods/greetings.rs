@@ -99,7 +99,8 @@ fn say_greeting(ctx: &mut Context, msg: &Message) -> Consumption {
     let ctx = ctx.task();
     let user = msg.from.as_ref()?.clone();
     let is_reply = msg.reply_to_message().is_some();
-    tokio::spawn(async move {
+
+    Consumption::next_with(async move {
         let mut db = ctx
             .app
             .db
@@ -145,8 +146,7 @@ fn say_greeting(ctx: &mut Context, msg: &Message) -> Consumption {
 
         last3.rotate_right(1);
         last3[0] = now;
-    });
-    Consumption::just_next()
+    })
 }
 
 pub static MODULE: Module = Module {

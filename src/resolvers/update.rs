@@ -41,7 +41,7 @@ pub async fn resolve(app: &'static App, update: Update) {
             for task in app.micro_tasks {
                 if let MicroTask::$kind(task) = task {
                     let task_result = task(app, &$data);
-                    for task in task_result.tasks {
+                    if let Some(task) = task_result.task {
                         tokio::spawn(async move {
                             let result = tokio::spawn(task);
                             let Err(err) = result.await else {

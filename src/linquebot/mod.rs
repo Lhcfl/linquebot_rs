@@ -14,12 +14,7 @@ use crate::DataStorage;
 pub type TaskResult = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 pub mod types {
-    use std::{
-        convert::Infallible,
-        fmt::Debug,
-        future::Future,
-        ops::FromResidual,
-    };
+    use std::{convert::Infallible, fmt::Debug, future::Future, ops::FromResidual};
 
     use super::TaskResult;
 
@@ -31,20 +26,26 @@ pub mod types {
 
     pub struct Consumption {
         pub next: bool,
-        pub tasks: Vec<TaskResult>,
+        pub task: Option<TaskResult>,
     }
 
     impl Consumption {
         pub fn just_next() -> Self {
             Self {
-                tasks: Vec::new(),
+                task: None,
                 next: true,
             }
         }
         pub fn just_stop() -> Self {
             Self {
-                tasks: Vec::new(),
+                task: None,
                 next: false,
+            }
+        }
+        pub fn next_with(task_result: impl Future<Output = ()> + Send + 'static) -> Self {
+            Self {
+                next: true,
+                task: Some(Box::pin(task_result)),
             }
         }
     }
@@ -53,16 +54,16 @@ pub mod types {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
-                "Consumption[Next = {}, tasks = [TaskResult; {}]]",
+                "Consumption[Next = {}, {}]",
                 self.next,
-                self.tasks.len()
+                self.task.is_some()
             )
         }
     }
 
     impl PartialEq for Consumption {
         fn eq(&self, other: &Self) -> bool {
-            self.next == other.next && self.tasks.len() == other.tasks.len()
+            self.next == other.next && self.task.is_some() == other.task.is_some()
         }
     }
 
@@ -70,35 +71,10 @@ pub mod types {
         fn from(fut: T) -> Self {
             Self {
                 next: false,
-                tasks: vec![Box::pin(fut)],
+                task: Some(Box::pin(fut)),
             }
         }
     }
-
-    // impl Try for Consumption {
-    //     type Output = Option<TaskResult>;
-    //     type Residual = Self;
-    //     fn from_output(opt: Self::Output) -> Self {
-    //         match opt {
-    //             Some(fut) => fut.into(),
-    //             None => Consumption::Stop,
-    //         }
-    //     }
-
-    //     fn branch(self) -> std::ops::ControlFlow<Self::Residual, Self::Output> {
-    //         match self {
-    //             Consumption::just_next() => std::ops::ControlFlow::Break(self),
-    //             Consumption::Stop => std::ops::ControlFlow::Continue(None),
-    //             Consumption::StopWith(fut) => std::ops::ControlFlow::Continue(Some(fut)),
-    //         }
-    //     }
-    // }
-
-    // impl FromResidual for Consumption {
-    //     fn from_residual(res: <Self as Try>::Residual) -> Self {
-    //         res
-    //     }
-    // }
 
     impl FromResidual<Option<Infallible>> for Consumption {
         fn from_residual(None: Option<Infallible>) -> Self {

@@ -349,7 +349,7 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
     }
     let from = WaifeUser::from_user(msg.from.as_ref()?);
     let ctx = ctx.task();
-    tokio::spawn(async move {
+    Consumption::next_with(async move {
         let mut waife_storage = ctx
             .app
             .db
@@ -364,8 +364,7 @@ fn auto_add_user(ctx: &mut Context, msg: &Message) -> Consumption {
                 .await
         }
         check_and_add(&mut waife_storage.users, &ctx, from).await;
-    });
-    Consumption::just_next()
+    })
 }
 
 #[derive(Clone, Copy)]

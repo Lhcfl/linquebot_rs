@@ -91,7 +91,7 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     if kind == history.kind {
         history.repeated += 1;
         if history.repeated == 3 {
-            tokio::spawn(kind.send_by_ctx(ctx.task()));
+            return Consumption::next_with(kind.send_by_ctx(ctx.task()));
         }
     } else {
         history.repeated = 1;

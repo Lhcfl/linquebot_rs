@@ -17,7 +17,7 @@ pub fn resolve(app: &'static App, message: Message) {
             }
         }
         let task_result = (module.task)(&mut context, &message);
-        for task in task_result.tasks {
+        if let Some(task) = task_result.task {
             tokio::spawn(async move {
                 let result = tokio::spawn(task);
                 let Err(err) = result.await else {

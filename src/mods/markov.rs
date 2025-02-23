@@ -207,7 +207,7 @@ pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
         weight: HashMap::new(),
     });
 
-    tokio::spawn(async move {
+    Consumption::next_with(async move {
         let mut db = db.await;
         let stat = stat.await;
         if !stat.learn_enabled {
@@ -224,8 +224,7 @@ pub fn train_data(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
         for seg in pre.segs() {
             *weight.entry(seg).or_default().entry('\0').or_default() += 1;
         }
-    });
-    Consumption::just_next()
+    })
 }
 
 pub static TRAIN_MOD: Module = Module {
