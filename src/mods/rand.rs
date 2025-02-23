@@ -52,9 +52,9 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
         return Consumption::Stop;
     };
     if text.contains("还是") {
-        Consumption::StopWith(Box::pin(send_selective_rand(ctx.task(), text, "还是")))
+        send_selective_rand(ctx.task(), text, "还是").into()
     } else {
-        Consumption::StopWith(Box::pin(send_raw_rand(ctx.task(), from, text)))
+        send_raw_rand(ctx.task(), from, text).into()
     }
 }
 

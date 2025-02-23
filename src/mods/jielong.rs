@@ -297,11 +297,10 @@ fn on_jielong_message(ctx: &mut Context, message: &Message) -> Consumption {
     }
     let ctx = ctx.task();
     if record.counted.contains(&msg_idiom.word) {
-        Consumption::StopWith(Box::pin(
-            ctx.reply("这个成语接过了哦")
-                .send()
-                .warn_on_error("check-jielong"),
-        ))
+        ctx.reply("这个成语接过了哦")
+            .send()
+            .warn_on_error("check-jielong")
+            .into()
     } else {
         let combo = if from.id == record.last_jielong_user {
             record.combo + 1
@@ -316,27 +315,25 @@ fn on_jielong_message(ctx: &mut Context, message: &Message) -> Consumption {
 
         let full_name = from.full_name();
         if combo >= 3 {
-            Consumption::StopWith(Box::pin(
-                ctx.app
-                    .bot
-                    .send_message(
-                        ctx.chat_id,
-                        format!("{full_name} {combo} 连击！下一个: {}", msg_idiom.last),
-                    )
-                    .send()
-                    .warn_on_error("check-jielong"),
-            ))
+            ctx.app
+                .bot
+                .send_message(
+                    ctx.chat_id,
+                    format!("{full_name} {combo} 连击！下一个: {}", msg_idiom.last),
+                )
+                .send()
+                .warn_on_error("check-jielong")
+                .into()
         } else {
-            Consumption::StopWith(Box::pin(
-                ctx.app
-                    .bot
-                    .send_message(
-                        ctx.chat_id,
-                        format!("接龙成功！{full_name} 分数+1。下一个: {}", msg_idiom.last),
-                    )
-                    .send()
-                    .warn_on_error("check-jielong"),
-            ))
+            ctx.app
+                .bot
+                .send_message(
+                    ctx.chat_id,
+                    format!("接龙成功！{full_name} 分数+1。下一个: {}", msg_idiom.last),
+                )
+                .send()
+                .warn_on_error("check-jielong")
+                .into()
         }
     }
 }

@@ -11,7 +11,7 @@ use crate::Consumption;
 
 fn on_message(ctx: &mut Context, _message: &Message) -> Consumption {
     let ctx = ctx.task();
-    Consumption::StopWith(Box::pin(async move {
+    async move {
         let chosen = answer_book::ANSWERS
             .choose(&mut rand::thread_rng())
             .expect("not empty");
@@ -19,7 +19,8 @@ fn on_message(ctx: &mut Context, _message: &Message) -> Consumption {
         if let Err(err) = res {
             warn!("Failed to send reply: {}", err.to_string());
         }
-    }))
+    }
+    .into()
 }
 
 pub static MODULE: Module = Module {

@@ -18,37 +18,36 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
         return Consumption::Stop;
     };
     let num;
+
+    let ctx = ctx.task();
+
     if text.is_empty() {
         num = 3;
     } else if let Ok(parsed) = text.parse::<usize>() {
         num = parsed;
     } else {
-        return Consumption::StopWith(Box::pin(
-            ctx.task()
-                .reply("数字不对，不准乱玩琳酱呀")
-                .send()
-                .warn_on_error("tarot"),
-        ));
+        return ctx
+            .reply("数字不对，不准乱玩琳酱呀")
+            .send()
+            .warn_on_error("tarot")
+            .into();
     };
     if num == 0 {
-        return Consumption::StopWith(Box::pin(
-            ctx.task()
-                .reply("不给你牌可以，可以给你一拳")
-                .send()
-                .warn_on_error("tarot"),
-        ));
+        return ctx
+            .reply("不给你牌可以，可以给你一拳")
+            .send()
+            .warn_on_error("tarot")
+            .into();
     }
     if num > 21 {
-        return Consumption::StopWith(Box::pin(
-            ctx.task()
-                .reply("牌都给你摸完了，不准乱玩琳酱")
-                .send()
-                .warn_on_error("tarot"),
-        ));
+        return ctx
+            .reply("牌都给你摸完了，不准乱玩琳酱")
+            .send()
+            .warn_on_error("tarot")
+            .into();
     }
 
-    let ctx = ctx.task();
-    Consumption::StopWith(Box::pin(async move {
+    async move {
         ctx.reply(format!(
             "{}最近遇到了什么烦心事吗？让琳酱给你算一算:",
             from.full_name()
@@ -79,7 +78,8 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
         .send()
         .warn_on_error("tarot")
         .await;
-    }))
+    }
+    .into()
 }
 
 pub static MODULE: Module = Module {

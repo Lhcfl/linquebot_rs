@@ -25,15 +25,11 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
     let ctx = ctx.task();
 
     let (pre, Some(thing)) = split_n::<2>(args) else {
-        return Consumption::StopWith(Box::pin(async move {
-            if let Err(err) = ctx
-                .reply("/todo 需要至少两个参数哦，第一个参数是分钟，第二个参数是琳酱要提醒干什么事")
-                .send()
-                .await
-            {
-                warn!("Failed to send reply: {}", err.to_string());
-            }
-        }));
+        return ctx
+            .reply("/todo 需要至少两个参数哦，第一个参数是分钟，第二个参数是琳酱要提醒干什么事")
+            .send()
+            .warn_on_error("todo")
+            .into();
     };
 
     let [time] = pre[..] else {
@@ -43,36 +39,28 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
     };
 
     let Ok(time) = time.parse::<f64>() else {
-        return Consumption::StopWith(Box::pin(async move {
-            if let Err(err) = ctx.reply("没法解析出要几分钟后提醒呢").send().await {
-                warn!("Failed to send reply: {}", err.to_string());
-            }
-        }));
+        return ctx
+            .reply("没法解析出要几分钟后提醒呢")
+            .send()
+            .warn_on_error("todo")
+            .into();
     };
 
     if time < 0.0 {
-        return Consumption::StopWith(Box::pin(async move {
-            if let Err(err) = ctx
-                .reply("琳酱暂未研究出时间折跃技术，没法在过去提醒呢")
-                .send()
-                .await
-            {
-                warn!("Failed to send reply: {}", err.to_string());
-            }
-        }));
+        return ctx
+            .reply("琳酱暂未研究出时间折跃技术，没法在过去提醒呢")
+            .send()
+            .warn_on_error("todo")
+            .into();
     }
 
     if time > (365 * 24 * 60) as f64 {
-        return Consumption::StopWith(Box::pin(async move {
-            if let Err(err) = ctx.reply("太久远啦！").send().await {
-                warn!("Failed to send reply: {}", err.to_string());
-            }
-        }));
+        return ctx.reply("太久远啦！").send().warn_on_error("todo").into();
     }
 
     let thing = String::from(thing);
 
-    Consumption::StopWith(Box::pin(async move {
+    async move {
         if let Err(err) = ctx
             .reply_html(format!(
                 "设置成功！将在 {time} 分钟后提醒 {} {}",
@@ -109,7 +97,8 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
         }
 
         error!("too many request errors, stop.")
-    }))
+    }
+    .into()
 }
 
 pub static MODULE: Module = Module {

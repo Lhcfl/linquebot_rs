@@ -14,7 +14,7 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     if let Some(reply_to_message) = msg.reply_to_message() {
         reply = reply.reply_parameters(ReplyParameters::new(reply_to_message.id));
     }
-    Consumption::StopWith(Box::pin(reply.send().warn_on_error("say")))
+    reply.send().warn_on_error("say").into()
 }
 
 pub static MODULE: Module = Module {

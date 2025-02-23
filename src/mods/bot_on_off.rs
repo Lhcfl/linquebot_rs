@@ -25,17 +25,19 @@ fn on_bot_on_message(ctx: &mut Context, _: &Message) -> Consumption {
 
     let ctx = ctx.task();
     if record.remove(&ctx.chat_id).is_some() {
-        Consumption::StopWith(Box::pin(async move {
+        async move {
             if let Err(err) = ctx.reply("琳酱已开机").send().await {
                 warn!("Failed to send reply: {}", err.to_string());
             }
-        }))
+        }
+        .into()
     } else {
-        Consumption::StopWith(Box::pin(async move {
+        async move {
             if let Err(err) = ctx.reply("琳酱处于开机状态").send().await {
                 warn!("Failed to send reply: {}", err.to_string());
             }
-        }))
+        }
+        .into()
     }
 }
 fn on_bot_off_message(ctx: &mut Context, _: &Message) -> Consumption {
@@ -46,17 +48,19 @@ fn on_bot_off_message(ctx: &mut Context, _: &Message) -> Consumption {
 
     let ctx = ctx.task();
     if let Some(false) = record.insert(ctx.chat_id, false) {
-        Consumption::StopWith(Box::pin(async move {
+        async move {
             if let Err(err) = ctx.reply("琳酱处于关机状态").send().await {
                 warn!("Failed to send reply: {}", err.to_string());
             }
-        }))
+        }
+        .into()
     } else {
-        Consumption::StopWith(Box::pin(async move {
+        async move {
             if let Err(err) = ctx.reply("琳酱已关机").send().await {
                 warn!("Failed to send reply: {}", err.to_string());
             }
-        }))
+        }
+        .into()
     }
 }
 

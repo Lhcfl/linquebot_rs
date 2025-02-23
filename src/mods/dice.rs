@@ -1,19 +1,13 @@
-/// 骰子模块
+//! 骰子模块
 use log::warn;
 use msg_context::Context;
-use msg_context::TaskContext;
 use rand::Rng;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
 use crate::linquebot::*;
+use crate::utils::telegram::prelude::WarnOnError;
 use crate::Consumption;
-
-async fn reply(ctx: TaskContext, text: &str) {
-    if let Err(err) = ctx.reply(text).send().await {
-        warn!("Failed to send reply: {}", err.to_string());
-    }
-}
 
 pub fn dice(ctx: &mut Context, message: &Message) -> Consumption {
     use crate::utils::pattern::*;
@@ -33,32 +27,46 @@ pub fn dice(ctx: &mut Context, message: &Message) -> Consumption {
     )
         .check_pattern(text)
     else {
-        return Consumption::StopWith(Box::pin(reply(
-            ctx,
-            "参数必须是 xdy 的格式，其中 x 和 y 是正整数",
-        )));
+        return ctx
+            .reply("参数必须是 xdy 的格式，其中 x 和 y 是正整数")
+            .send()
+            .warn_on_error("dice")
+            .into();
     };
 
     if x.is_empty() || y.is_empty() {
-        return Consumption::StopWith(Box::pin(reply(
-            ctx,
-            "参数必须是 xdy 的格式，其中 x 和 y 是正整数",
-        )));
+        return ctx
+            .reply("参数必须是 xdy 的格式，其中 x 和 y 是正整数")
+            .send()
+            .warn_on_error("dice")
+            .into();
     }
 
     let Ok(x) = x.parse::<u16>() else {
-        return Consumption::StopWith(Box::pin(reply(ctx, "提供的 x 太大了！")));
+        return ctx
+            .reply("提供的 x 太大了！")
+            .send()
+            .warn_on_error("dice")
+            .into();
     };
 
     let Ok(y) = y.parse::<u32>() else {
-        return Consumption::StopWith(Box::pin(reply(ctx, "提供的 y 太大了！")));
+        return ctx
+            .reply("提供的 y 太大了！")
+            .send()
+            .warn_on_error("dice")
+            .into();
     };
 
     if x > 500 {
-        return Consumption::StopWith(Box::pin(reply(ctx, "提供的 x 太大了！")));
+        return ctx
+            .reply("提供的 x 太大了！")
+            .send()
+            .warn_on_error("dice")
+            .into();
     }
 
-    Consumption::StopWith(Box::pin(async move {
+    async move {
         let results = (0..x)
             .map(|_| rand::thread_rng().gen_range(1..=y as u64))
             .collect::<Vec<_>>();
@@ -67,11 +75,15 @@ pub fn dice(ctx: &mut Context, message: &Message) -> Consumption {
         let sum: u64 = results.iter().sum();
         let str = format!("{} 掷出了：{}: {:?}", from.full_name(), sum, results);
         if str.len() >= 4095 {
-            reply(ctx, "你的 xdy 太大了，超过了能发送的长度").await;
+            ctx.reply("你的 xdy 太大了，超过了能发送的长度")
+                .send()
+                .warn_on_error("dice")
+                .await;
         } else {
-            reply(ctx, &str).await;
+            ctx.reply(str).send().warn_on_error("dice").await;
         }
-    }))
+    }
+    .into()
 }
 
 pub static MODULE: Module = Module {

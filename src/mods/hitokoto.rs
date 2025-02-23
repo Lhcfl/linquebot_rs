@@ -44,7 +44,7 @@ fn send_hitokoto(ctx: &mut Context, _message: &Message) -> Consumption {
     let args = args.split_whitespace().collect::<Vec<_>>().join("&c=");
     let ctx = ctx.task();
 
-    Consumption::StopWith(Box::pin(async move {
+    async move {
         let res = get_hitokoto(&args).await;
 
         let res = ctx
@@ -55,7 +55,8 @@ fn send_hitokoto(ctx: &mut Context, _message: &Message) -> Consumption {
         if let Err(err) = res {
             warn!("Failed to send reply: {}", err.to_string());
         }
-    }))
+    }
+    .into()
 }
 
 pub static MODULE: Module = Module {

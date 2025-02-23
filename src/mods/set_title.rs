@@ -86,20 +86,11 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
     let user = message.from.as_ref()?.clone();
 
     if !message.chat.is_group() && !message.chat.is_supergroup() {
-        Consumption::StopWith(Box::pin(reply_info(
-            &ctx.app.bot,
-            message,
-            "需要在群里才能设置头衔哦",
-        )))
+        reply_info(&ctx.app.bot, message, "需要在群里才能设置头衔哦").into()
     } else if title.is_empty() {
-        Consumption::StopWith(Box::pin(clear_title(&ctx.app.bot, message, user)))
+        clear_title(&ctx.app.bot, message, user).into()
     } else {
-        Consumption::StopWith(Box::pin(set_title(
-            &ctx.app.bot,
-            message,
-            user,
-            title.to_string(),
-        )))
+        set_title(&ctx.app.bot, message, user, title.to_string()).into()
     }
 }
 

@@ -118,9 +118,12 @@ pub fn toggle_repeat(ctx: &mut Context, _: &Message) -> Consumption {
     } else {
         "复读姬已打开"
     };
-    Consumption::StopWith(Box::pin(
-        ctx.task().reply(text).send().warn_on_error("toggle-repeat"),
-    ))
+
+    ctx.task()
+        .reply(text)
+        .send()
+        .warn_on_error("toggle-repeat")
+        .into()
 }
 
 pub static MODULE: Module = Module {

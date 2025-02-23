@@ -37,17 +37,17 @@ async fn get_from_wikipedia(title: &str) -> Result<(String, String), reqwest::Er
 fn send_explain(ctx: &mut Context, _: &Message) -> Consumption {
     let args = ctx.cmd?.content;
     if args.is_empty() {
-        return Consumption::StopWith(Box::pin(
-            ctx.task()
-                .reply("请输入至少一个参数")
-                .send()
-                .warn_on_error("explain"),
-        ));
+        return ctx
+            .task()
+            .reply("请输入至少一个参数")
+            .send()
+            .warn_on_error("explain")
+            .into();
     }
 
     let query = args.to_string();
     let ctx = ctx.task();
-    Consumption::StopWith(Box::pin(async move {
+    async move {
         let app = ctx.app;
         let chat_id = ctx.chat_id;
         tokio::spawn(async move {
@@ -83,7 +83,8 @@ fn send_explain(ctx: &mut Context, _: &Message) -> Consumption {
                 .warn_on_error("explain-reply")
                 .await;
         }
-    }))
+    }
+    .into()
 }
 
 pub static MODULE: Module = Module {

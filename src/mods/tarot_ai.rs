@@ -93,14 +93,14 @@ fn send_tarot(ctx: &mut Context, _message: &Message) -> Consumption {
     let ctx = ctx.task();
 
     if question.to_string().is_empty() {
-        return Consumption::StopWith(Box::pin(
-            ctx.reply("必须要有参数哦，参数是 YES OR NO 的一个问题。")
-                .send()
-                .warn_on_error("tarot"),
-        ));
+        return ctx
+            .reply("必须要有参数哦，参数是 YES OR NO 的一个问题。")
+            .send()
+            .warn_on_error("tarot")
+            .into();
     }
 
-    Consumption::StopWith(Box::pin(async move {
+    async move {
         let placeholder = match ctx.reply("少女祈祷中…").send().await {
             Ok(msg) => msg,
             Err(err) => {
@@ -142,7 +142,8 @@ fn send_tarot(ctx: &mut Context, _message: &Message) -> Consumption {
                     .await;
             }
         }
-    }))
+    }
+    .into()
 }
 
 pub static MODULE: Module = Module {
