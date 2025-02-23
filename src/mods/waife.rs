@@ -101,9 +101,18 @@ struct UserCache {
     // avatar: Option<...>
 }
 
+fn truncate_names(names: &mut String) {
+    if names.len() > 4000 {
+        while names.len() >= 4000 {
+            names.pop();
+        }
+        names.push_str(" （...太多了写不下了）");
+    }
+}
+
 fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
     let from = WaifeUser::from_user(msg.from.as_ref()?);
-    let num = ctx.cmd?.content.parse::<usize>().unwrap_or(1);
+    let num = ctx.cmd?.content.parse::<isize>().unwrap_or(1);
     let poly = ctx.cmd?.content == "poly" || num > 1;
     let ctx = ctx.task();
     async move {
@@ -168,6 +177,49 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
 
         let waife_uids = waife_of.entry(from.id).or_default();
 
+        // 离婚！
+        if num < 0 {
+            if waife_uids.is_empty() {
+                ctx.reply("你还没有老婆哦")
+                    .send()
+                    .warn_on_error("waife")
+                    .await;
+                return;
+            }
+
+            let mut divorced_count = 0;
+            let mut divorced_names = String::new();
+            // 移除 abs(n) 个老婆
+            waife_uids.retain(|uid| {
+                if divorced_count + num == 0 {
+                    // 成功移除了足够多的老婆，停止
+                    true
+                } else {
+                    divorced_count += 1;
+                    let link = users.get(uid).unwrap().html_link();
+                    if !divorced_names.is_empty() {
+                        divorced_names.push_str(", ");
+                    }
+                    divorced_names.push_str(&link);
+                    false
+                }
+            });
+            truncate_names(&mut divorced_names);
+
+            let html_text = if waife_uids.is_empty() {
+                format!("你和 {} 离婚了，现在你没有老婆了", divorced_names)
+            } else {
+                format!("你和 {} 离婚了，现在你还有 {} 个老婆", divorced_names, waife_uids.len())
+            };
+
+            ctx.reply_html(html_text)
+                .send()
+                .warn_on_error("waife")
+                .await;
+
+            return;
+        }
+
         // 一元关系
         if !(waife_uids.is_empty() || poly) {
             let mut waife_names = waife_uids
@@ -176,12 +228,8 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            if waife_names.len() > 4000 {
-                while waife_names.len() >= 4000 {
-                    waife_names.pop();
-                }
-                waife_names.push_str(" （...太多了写不下了）");
-            }
+            truncate_names(&mut waife_names);
+
             ctx.reply_html(format!("你今天已经有老婆了，你的群老婆：{waife_names}"))
                 .send()
                 .warn_on_error("waife")
@@ -190,7 +238,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
         }
 
         let waifes_avail_count = waife_limit.saturating_sub(waife_uids.len());
-        let num = min(waifes_avail_count, num);
+        let num = min(waifes_avail_count, num as usize);
 
         if num == 0 {
             ctx.reply("你已经达到了今日份的老婆上限")
@@ -240,12 +288,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
             waife_names.push_str(&user.html_link());
         }
 
-        if waife_names.len() > 4000 {
-            while waife_names.len() >= 4000 {
-                waife_names.pop();
-            }
-            waife_names.push_str(" （...太多了写不下了）");
-        }
+        truncate_names(&mut waife_names);
 
         ctx.reply_html(format!("获取成功！你今天的群老婆是 {waife_names}"))
             .send()
