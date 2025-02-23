@@ -2,8 +2,6 @@
 //! 成语接龙
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::LazyLock;
 use std::sync::RwLock;
 use std::time::Duration;
@@ -143,66 +141,58 @@ fn stop_jielong(chat_id: ChatId, nonce: u64) {
     }
 }
 
-fn try_stop_jielong_with(
-    ctx: TaskContext,
-    from: &User,
-) -> Pin<Box<dyn Future<Output = ()> + Send>> {
+fn try_stop_jielong_with(ctx: TaskContext, from: &User) -> Consumption {
     let Ok(mut status) = CHAT_JIELONG_STATUS.write() else {
         error!("Failed to read CHAT_JIELONG_STATUS");
-        return Box::pin(
-            ctx.reply("发生了未知错误……")
-                .send()
-                .warn_on_error("jielong-report-error"),
-        );
+        return ctx
+            .reply("发生了未知错误……")
+            .send()
+            .warn_on_error("jielong-report-error")
+            .into();
     };
     if let Some(jielong) = status.remove(&ctx.chat_id) {
-        Box::pin(
-            ctx.reply(format!(
-                "成语接龙被 {} 结束啦！琳酱来宣布结果：\n\n{}",
-                from.full_name(),
-                jielong.pretty_result()
-            ))
-            .send()
-            .warn_on_error("stop-jielong-manual"),
-        )
+        ctx.reply(format!(
+            "成语接龙被 {} 结束啦！琳酱来宣布结果：\n\n{}",
+            from.full_name(),
+            jielong.pretty_result()
+        ))
+        .send()
+        .warn_on_error("stop-jielong-manual")
+        .into()
     } else {
-        Box::pin(
-            ctx.reply("接龙还没开始哦。")
-                .send()
-                .warn_on_error("stop-jielong-manual"),
-        )
+        ctx.reply("接龙还没开始哦。")
+            .send()
+            .warn_on_error("stop-jielong-manual")
+            .into()
     }
 }
 
-fn try_start_jielong_with(
-    ctx: TaskContext,
-    init: &str,
-) -> Pin<Box<dyn Future<Output = ()> + Send>> {
+fn try_start_jielong_with(ctx: TaskContext, init: &str) -> Consumption {
     let Ok(mut status) = CHAT_JIELONG_STATUS.write() else {
         error!("Failed to read CHAT_JIELONG_STATUS");
-        return Box::pin(
-            ctx.reply("发生了未知错误……")
-                .send()
-                .warn_on_error("jielong-report-error"),
-        );
+        return ctx
+            .reply("发生了未知错误……")
+            .send()
+            .warn_on_error("jielong-report-error")
+            .into();
     };
     if status.get(&ctx.chat_id).is_some() {
-        return Box::pin(
-            ctx.reply("已经有一个接龙正在进行中啦！")
-                .send()
-                .warn_on_error("start-jielong"),
-        );
+        return ctx
+            .reply("已经有一个接龙正在进行中啦！")
+            .send()
+            .warn_on_error("start-jielong")
+            .into();
     }
     let task = ctx.clone();
     let jielong = if init.is_empty() {
         Jielong::new(ctx)
     } else {
         let Some(idiom) = get_idiom(init) else {
-            return Box::pin(
-                ctx.reply("没有这个成语哦")
-                    .send()
-                    .warn_on_error("start-jielong"),
-            );
+            return ctx
+                .reply("没有这个成语哦")
+                .send()
+                .warn_on_error("start-jielong")
+                .into();
         };
         Jielong::new_with(ctx, idiom)
     };
@@ -221,47 +211,43 @@ fn try_start_jielong_with(
         "第一个成语是"
     };
 
-    Box::pin(
-        task.reply(format!(
-            "开始接龙！{hint}：{}, 请接 {}",
-            current.word, current.last
-        ))
-        .send()
-        .warn_on_error("start-jielong"),
-    )
+    task.reply(format!(
+        "开始接龙！{hint}：{}, 请接 {}",
+        current.word, current.last
+    ))
+    .send()
+    .warn_on_error("start-jielong")
+    .into()
 }
 
-fn show_jielong_status(ctx: TaskContext) -> Pin<Box<dyn Future<Output = ()> + Send>> {
+fn show_jielong_status(ctx: TaskContext) -> Consumption {
     let Ok(status) = CHAT_JIELONG_STATUS.read() else {
         error!("Failed to read CHAT_JIELONG_STATUS");
-        return Box::pin(
-            ctx.reply("发生了未知错误……")
-                .send()
-                .warn_on_error("jielong-report-error"),
-        );
+        return ctx
+            .reply("发生了未知错误……")
+            .send()
+            .warn_on_error("jielong-report-error")
+            .into();
     };
     if let Some(jielong) = status.get(&ctx.chat_id) {
-        Box::pin(
-            ctx.reply(format!(
-                "接龙游戏开始于：{} \n当前成语：{}，请接：{}\n\n{}",
-                match SystemTime::now().duration_since(jielong.start_at) {
-                    Ok(time) =>
-                        format!("{} 分钟 {} 秒前", time.as_secs() / 60, time.as_secs() % 60),
-                    Err(_) => "某个奇怪的时间裂隙前".to_string(),
-                },
-                jielong.idiom.word,
-                jielong.idiom.last,
-                jielong.pretty_result()
-            ))
-            .send()
-            .warn_on_error("show-jielong-status"),
-        )
+        ctx.reply(format!(
+            "接龙游戏开始于：{} \n当前成语：{}，请接：{}\n\n{}",
+            match SystemTime::now().duration_since(jielong.start_at) {
+                Ok(time) => format!("{} 分钟 {} 秒前", time.as_secs() / 60, time.as_secs() % 60),
+                Err(_) => "某个奇怪的时间裂隙前".to_string(),
+            },
+            jielong.idiom.word,
+            jielong.idiom.last,
+            jielong.pretty_result()
+        ))
+        .send()
+        .warn_on_error("show-jielong-status")
+        .into()
     } else {
-        Box::pin(
-            ctx.reply("没有正在进行的接龙游戏哦")
-                .send()
-                .warn_on_error("show-jielong-status"),
-        )
+        ctx.reply("没有正在进行的接龙游戏哦")
+            .send()
+            .warn_on_error("show-jielong-status")
+            .into()
     }
 }
 
@@ -269,17 +255,18 @@ fn on_jielong_command(ctx: &mut Context, message: &Message) -> Consumption {
     let args = ctx.cmd?.content;
     let ctx = ctx.task();
     let from = message.from.as_ref()?;
-    Consumption::StopWith(match args {
+    match args {
         "stop" => try_stop_jielong_with(ctx, from),
         "start" => try_start_jielong_with(ctx, ""),
         "show" => show_jielong_status(ctx),
-        "" => Box::pin(async move {
+        "" => async move {
             if let Err(err) = ctx.reply_html(HELP_MESSAGE).send().await {
                 warn!("Failed to send reply: {}", err.to_string());
             }
-        }),
+        }
+        .into(),
         x => try_start_jielong_with(ctx, x),
-    })
+    }
 }
 
 fn on_jielong_message(ctx: &mut Context, message: &Message) -> Consumption {
