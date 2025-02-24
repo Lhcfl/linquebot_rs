@@ -35,7 +35,7 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     if !is_spam {
         return Consumption::just_next();
     }
-    tokio::spawn(async move {
+    Consumption::next_with(async move {
         ctx.reply_markdown("检测到斯帕姆。把它上市！")
             .send()
             .warn_on_error("bestapo")
@@ -45,9 +45,9 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
             .bot
             .delete_message(ctx.chat_id, ctx.message_id)
             .send()
-            .await
-    });
-    Consumption::just_next()
+            .warn_on_error("bestapo")
+            .await;
+    })
 }
 
 pub static MESSAGE_HANDLER: Module = Module {
