@@ -23,10 +23,11 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    crate2nix = {
-      url = "github:nix-community/crate2nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # crate2nix = {
+    #   url = "github:nix-community/crate2nix";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
+    crane.url = "github:ipetkov/crane";
   };
 
   outputs =
@@ -34,7 +35,8 @@
       nixpkgs,
       flake-utils,
       rust-overlay,
-      crate2nix,
+      # crate2nix,
+      crane,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
@@ -46,21 +48,24 @@
         pkgs = import nixpkgs {
           inherit system overlays;
         };
+        craneLib = (crane.mkLib pkgs).overrideToolchain (
+          p: p.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal)
+        );
 
-        buildRustCrateForPkgs =
-          crate:
-          pkgs.buildRustCrate.override {
-            rustc = (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal));
-            cargo = (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal));
-          };
-        generatedCargoNix = crate2nix.tools.${system}.generatedCargoNix {
-          name = "rustNix";
-          src = ./.;
-        };
-        cargoNix = import generatedCargoNix {
-          inherit pkgs buildRustCrateForPkgs;
-        };
       in
+      # buildRustCrateForPkgs =
+      #   crate:
+      #   pkgs.buildRustCrate.override {
+      #     rustc = (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal));
+      #     cargo = (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal));
+      #   };
+      # generatedCargoNix = crate2nix.tools.${system}.generatedCargoNix {
+      #   name = "rustNix";
+      #   src = ./.;
+      # };
+      # cargoNix = import generatedCargoNix {
+      #   inherit pkgs buildRustCrateForPkgs;
+      # };
       rec {
         devShells.default =
           with pkgs;
@@ -76,18 +81,41 @@
               ))
             ];
           };
+        # packages.default =
+        #   with pkgs;
+        #   cargoNix.rootCrate.build.overrideAttrs (
+        #     final: prev: {
+        #       buildInputs = prev.buildInputs ++ [ openssl ];
+        #       nativeBuildInputs = prev.nativeBuildInputs ++ [ makeWrapper ];
+        #       postInstall = ''
+        #         wrapProgram $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
+        #       '';
+        #       meta.mainProgram = "linquebot_rs";
+        #     }
+        #   );
         packages.default =
           with pkgs;
-          cargoNix.rootCrate.build.overrideAttrs (
-            final: prev: {
-              buildInputs = prev.buildInputs ++ [ openssl ];
-              nativeBuildInputs = prev.nativeBuildInputs ++ [ makeWrapper ];
-              postInstall = ''
-                wrapProgram $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
-              '';
-              meta.mainProgram = "linquebot_rs";
-            }
-          );
+          let
+            jsonFilter = path: _type: builtins.match ".*json$" path != null;
+            jsonOrCargo = path: type: (jsonFilter path type) || (craneLib.filterCargoSources path type);
+          in
+          craneLib.buildPackage {
+            src = lib.cleanSourceWith {
+              src = ./.;
+              filter = jsonOrCargo;
+              name = "source";
+            };
+
+            # Add extra inputs here or any other derivation settings
+            # doCheck = true;
+            buildInputs =
+              [ ]
+              ++ lib.optionals stdenvNoCC.hostPlatform.isLinux [
+                openssl
+                pkg-config
+              ];
+            # nativeBuildInputs = [];
+          };
         packages.dockerSupports =
           with pkgs;
           let
