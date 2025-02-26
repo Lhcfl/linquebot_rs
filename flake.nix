@@ -23,10 +23,6 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # crate2nix = {
-    #   url = "github:nix-community/crate2nix";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
     crane.url = "github:ipetkov/crane";
   };
 
@@ -35,7 +31,6 @@
       nixpkgs,
       flake-utils,
       rust-overlay,
-      # crate2nix,
       crane,
       ...
     }:
@@ -53,19 +48,6 @@
         );
 
       in
-      # buildRustCrateForPkgs =
-      #   crate:
-      #   pkgs.buildRustCrate.override {
-      #     rustc = (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal));
-      #     cargo = (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal));
-      #   };
-      # generatedCargoNix = crate2nix.tools.${system}.generatedCargoNix {
-      #   name = "rustNix";
-      #   src = ./.;
-      # };
-      # cargoNix = import generatedCargoNix {
-      #   inherit pkgs buildRustCrateForPkgs;
-      # };
       rec {
         devShells.default =
           with pkgs;
@@ -81,18 +63,6 @@
               ))
             ];
           };
-        # packages.default =
-        #   with pkgs;
-        #   cargoNix.rootCrate.build.overrideAttrs (
-        #     final: prev: {
-        #       buildInputs = prev.buildInputs ++ [ openssl ];
-        #       nativeBuildInputs = prev.nativeBuildInputs ++ [ makeWrapper ];
-        #       postInstall = ''
-        #         wrapProgram $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
-        #       '';
-        #       meta.mainProgram = "linquebot_rs";
-        #     }
-        #   );
         packages.default =
           with pkgs;
           let
@@ -105,7 +75,6 @@
               filter = jsonOrCargo;
               name = "source";
             };
-
             # Add extra inputs here or any other derivation settings
             # doCheck = true;
             buildInputs =
@@ -115,6 +84,7 @@
                 pkg-config
               ];
             # nativeBuildInputs = [];
+            meta.mainProgram = "linquebot_rs";
           };
         packages.dockerSupports =
           with pkgs;
