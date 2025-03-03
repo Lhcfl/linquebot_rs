@@ -21,6 +21,35 @@ static RONG_BLACKLIST: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
     ])
 });
 
+#[derive(Debug)]
+struct RongUser {
+    turl: Option<String>,
+    name: String,
+}
+
+impl RongUser {
+    fn from_user(user: &User) -> Self {
+        Self {
+            name: user.full_name(),
+            turl: Some(user.preferably_tme_url().to_string()),
+        }
+    }
+
+    fn from_chat(chat: &Chat) -> Option<Self> {
+        Some(Self {
+            name: chat.title()?.to_string(),
+            turl: chat.username().map(|name| format!("t.me/{}", name)),
+        })
+    }
+
+    fn html_link(&self) -> String {
+        match &self.turl {
+            Some(url) => format!("<a href=\"{url}\">{}</a>", escape_html(&self.name)),
+            None => format!("<b>{}</b>", self.name),
+        }
+    }
+}
+
 pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     let text = message.text()?;
     if let Some(username) = ctx.cmd.and_then(|cmd| cmd.username) {
@@ -29,12 +58,11 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
         }
     }
 
-    let mut actee = message.reply_to_message().as_ref()?.from.clone()?;
-    let mut actor = message.from.as_ref()?.clone();
-
-    if actee.is_telegram() {
-        return Consumption::just_next();
-    }
+    let mut actee = message.reply_to_message().and_then(|msg| match &msg.from {
+        Some(user) if !user.is_telegram() => Some(RongUser::from_user(user)),
+        _ => RongUser::from_chat(msg.sender_chat.as_ref()?),
+    })?;
+    let mut actor = RongUser::from_user(message.from.as_ref()?);
 
     if text.starts_with('\\') {
         (actee, actor) = (actor, actee);
@@ -42,7 +70,12 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
         return Consumption::just_next();
     }
 
+    if actor.turl == actee.turl {
+        actee.name = "自己".to_string()
+    }
+
     let [action, addition] = split_args(&text[1..]);
+    let action = action.trim_end_matches(&format!("@{}", ctx.app.username));
     if action.is_empty() {
         return Consumption::just_next();
     }
@@ -54,11 +87,7 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
         "{} {} {}",
         actor.html_link(),
         escape_html(action),
-        if actor.id == actee.id {
-            format!("<a href=\"{}\">自己</a>", actee.preferably_tme_url())
-        } else {
-            actee.html_link()
-        }
+        actee.html_link(),
     );
 
     if !addition.is_empty() {
