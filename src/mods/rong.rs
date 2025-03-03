@@ -75,7 +75,7 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     }
 
     let [action, addition] = split_args(&text[1..]);
-    let action = action.trim_end_matches(&format!("@{}", ctx.app.username));
+    let action = action.trim_end_matches(&ctx.app.username);
     if action.is_empty() {
         return Consumption::just_next();
     }

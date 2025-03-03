@@ -135,7 +135,7 @@ impl Module {
 pub struct App {
     /// telegram bot id
     pub bot_id: UserId,
-    /// telegram bot username
+    /// telegram bot username, **WITH @ symbol**
     pub username: String,
     /// teloxide bot instance
     pub bot: Bot,

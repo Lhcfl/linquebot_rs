@@ -59,7 +59,7 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
     info!(target: "init", "user id: {}", me.id);
     let _ = APP.set(linquebot::App {
         bot_id: me.id,
-        username: me.username().to_string(),
+        username: format!("@{}", me.username()),
         bot,
         db,
         modules: mods::MODULES,

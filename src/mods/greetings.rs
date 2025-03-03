@@ -95,7 +95,7 @@ fn say_greeting(ctx: &mut Context, msg: &Message) -> Consumption {
     if text.len() < 50 && text.contains("晚安") {
         greeting = GreetingKind::Night;
     }
-    let force = text.contains(&format!("@{}", ctx.app.username));
+    let force = text.contains(&ctx.app.username);
     let ctx = ctx.task();
     let user = msg.from.as_ref()?.clone();
     let is_reply = msg.reply_to_message().is_some();

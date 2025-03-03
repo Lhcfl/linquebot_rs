@@ -12,7 +12,7 @@ use super::{App, ModuleDescription};
 pub struct CmdParts<'a> {
     /// command name
     pub cmd: &'a str,
-    /// the username of command@username
+    /// the username of command@username, **WITH @ symbol**
     pub username: Option<&'a str>,
     /// the trimed remaining part of command
     pub content: &'a str,
@@ -25,7 +25,7 @@ impl<'a> CmdParts<'a> {
         let (content, (_, cmd, username)) = (
             "/",
             of_pred(|c| !c.is_whitespace() && c != '@'),
-            maybe(("@", of_pred(|c| !c.is_whitespace()))),
+            maybe(of_pred(|c| !c.is_whitespace())),
         )
             .check_pattern(text)?;
         if cmd.is_empty() {
@@ -33,7 +33,7 @@ impl<'a> CmdParts<'a> {
         }
         Some(CmdParts {
             cmd,
-            username: username.map(|u| u.1),
+            username: username.and_then(|name| if name.is_empty() { None } else { Some(name) }),
             content: content.trim(),
         })
     }
@@ -138,7 +138,7 @@ mod tests {
             CmdParts::parse_from(&fab_text_message("/test@somebot  args more spaces")),
             Some(CmdParts {
                 cmd: "test",
-                username: Some("somebot"),
+                username: Some("@somebot"),
                 content: "args more spaces",
             })
         );
@@ -146,7 +146,7 @@ mod tests {
             CmdParts::parse_from(&fab_text_message("/test@@strange  args more spaces")),
             Some(CmdParts {
                 cmd: "test",
-                username: Some("@strange"),
+                username: Some("@@strange"),
                 content: "args more spaces",
             })
         );
@@ -162,7 +162,7 @@ mod tests {
             CmdParts::parse_from(&fab_text_message("/揉@somebot")),
             Some(CmdParts {
                 cmd: "揉",
-                username: Some("somebot"),
+                username: Some("@somebot"),
                 content: "",
             })
         );
