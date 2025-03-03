@@ -83,7 +83,10 @@
                 openssl
                 pkg-config
               ];
-            # nativeBuildInputs = [];
+            nativeBuildInputs = [ makeWrapper ];
+            postInstall = ''
+              wrapProgram $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
+            '';
             meta.mainProgram = "linquebot_rs";
           };
         packages.dockerSupports =
