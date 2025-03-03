@@ -32,6 +32,10 @@ pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     let mut actee = message.reply_to_message().as_ref()?.from.clone()?;
     let mut actor = message.from.as_ref()?.clone();
 
+    if actee.is_telegram() {
+        return Consumption::just_next();
+    }
+
     if text.starts_with('\\') {
         (actee, actor) = (actor, actee);
     } else if !text.starts_with('/') {
