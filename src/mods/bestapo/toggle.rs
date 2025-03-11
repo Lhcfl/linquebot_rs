@@ -2,9 +2,7 @@ use serde::{Deserialize, Serialize};
 use teloxide_core::{prelude::Request, types::Message};
 
 use crate::{
-    linquebot::{
-        msg_context::Context, types::Consumption, Module, ModuleDescription, ModuleKind,
-    },
+    linquebot::{msg_context::Context, types::Consumption, Module, ModuleDescription, ModuleKind},
     utils::telegram::prelude::WarnOnError,
 };
 

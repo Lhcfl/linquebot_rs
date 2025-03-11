@@ -117,7 +117,11 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
     let ctx = ctx.task();
     async move {
         if num == 0 {
-            return ctx.reply("好好好 给你 0 个老婆").send().warn_on_error("waife").await;
+            return ctx
+                .reply("好好好 给你 0 个老婆")
+                .send()
+                .warn_on_error("waife")
+                .await;
         }
 
         let mut waife_storage = match ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get().await {
@@ -175,7 +179,10 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
         let waife_limit = waife_limit.unwrap_or(usize::MAX);
 
         if waife_limit == 0 {
-            ctx.reply("本群禁止了 waife").send().warn_on_error("waife").await;
+            ctx.reply("本群禁止了 waife")
+                .send()
+                .warn_on_error("waife")
+                .await;
             return;
         }
 
@@ -210,7 +217,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
                 }
             });
             truncate_names(&mut divorced_names);
-            
+
             let mut waife_names = waife_uids
                 .iter()
                 .map(|uid| users.get(uid).unwrap().html_link())
@@ -219,11 +226,13 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
 
             truncate_names(&mut waife_names);
 
-
             let html_text = if waife_uids.is_empty() {
-                format!("你和 {divorced_names} 离婚了，现在你没有老婆了", )
+                format!("你和 {divorced_names} 离婚了，现在你没有老婆了",)
             } else {
-                format!("你和 {divorced_names} 离婚了，现在你还有 {} 个老婆：{waife_names}", waife_uids.len())
+                format!(
+                    "你和 {divorced_names} 离婚了，现在你还有 {} 个老婆：{waife_names}",
+                    waife_uids.len()
+                )
             };
 
             ctx.reply_html(html_text)

@@ -9,7 +9,7 @@ use teloxide_core::{
 };
 
 use crate::{
-    linquebot::{ModuleDescription, ModuleKind},
+    linquebot::{msg_context::TaskContext, ModuleDescription, ModuleKind},
     msg_context::Context,
     utils::telegram::prelude::WarnOnError,
     Consumption, Module,
@@ -64,6 +64,65 @@ struct MarkovChat {
     learn_enabled: bool,
 }
 
+async fn get_said(text: String, ctx: &TaskContext) -> String {
+    let db = ctx.app.db.of::<Markov>().get_or_insert(|| Markov {
+        weight: HashMap::new(),
+    });
+
+    let weight = &mut db.await.weight;
+    let mut pre = ['\0'; 3];
+    for (i, c) in text.chars().rev().take(3).enumerate() {
+        pre[2 - i] = c;
+    }
+    let mut pre = Gram(pre);
+    let mut res = "".to_string();
+    let mut rng = SmallRng::from_rng(&mut thread_rng()).expect("gen rng");
+    loop {
+        let mut sel = vec![];
+        let mut pw = None;
+        let mut pushsel = |pre: Gram| {
+            let Some(ws) = weight.get(&pre) else { return };
+            let pi = sel.len();
+            sel.reserve(ws.len());
+            sel.extend(ws.iter().map(|(c, w)| (*c, *w as f64)));
+            let cw = sel[pi..].iter().map(|i| i.1).sum::<f64>();
+            let pw = if let Some(pw) = &mut pw {
+                sel[pi..].iter_mut().for_each(|i| i.1 *= *pw / cw);
+                pw
+            } else {
+                pw.insert(cw)
+            };
+            *pw /= pw.ln() + 1.;
+        };
+        let mut pv = pre;
+        loop {
+            pushsel(pv);
+            pv = pv.with_pop();
+            if pv.is_empty() {
+                break;
+            }
+        }
+        let cur = if sel.is_empty() {
+            '\0'
+        } else {
+            sel.choose_weighted(&mut rng, |v| v.1.powf(1.4514))
+                .expect("rand sel")
+                .0
+        };
+        if cur == '\0' {
+            break;
+        }
+        res.push(cur);
+        pre.push(cur);
+    }
+
+    if res.trim().is_empty() {
+        "琳酱不知道哦".to_string()
+    } else {
+        text + &res
+    }
+}
+
 pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
     const PROMPT: &str = "琳酱说说话";
     let text = msg.text()?;
@@ -71,82 +130,32 @@ pub fn on_message(ctx: &mut Context<'_>, msg: &Message) -> Consumption {
         None?
     }
     let text = text.split_at(PROMPT.len()).1.trim().to_string();
-    let db = ctx.app.db.of::<Markov>().get_or_insert(|| Markov {
-        weight: HashMap::new(),
-    });
-    let stat = ctx
-        .app
-        .db
-        .of::<MarkovChat>()
-        .chat(ctx.chat_id)
-        .get_or_insert(|| MarkovChat {
-            learn_enabled: false,
-        });
-
     let ctx = ctx.task();
     async move {
-        let enabled = stat.await.learn_enabled;
-        if !enabled {
-            ctx.reply("只有打开语料学习的群聊可以使用琳酱说说话功能哦")
-                .send()
-                .warn_on_error("markov")
-                .await;
-            return;
-        }
-        let weight = &mut db.await.weight;
-        let mut pre = ['\0'; 3];
-        for (i, c) in text.chars().rev().take(3).enumerate() {
-            pre[2 - i] = c;
-        }
-        let mut pre = Gram(pre);
-        let mut res = "".to_string();
-        let mut rng = SmallRng::from_rng(&mut thread_rng()).expect("gen rng");
-        loop {
-            let mut sel = vec![];
-            let mut pw = None;
-            let mut pushsel = |pre: Gram| {
-                let Some(ws) = weight.get(&pre) else { return };
-                let pi = sel.len();
-                sel.reserve(ws.len());
-                sel.extend(ws.iter().map(|(c, w)| (*c, *w as f64)));
-                let cw = sel[pi..].iter().map(|i| i.1).sum::<f64>();
-                let pw = if let Some(pw) = &mut pw {
-                    sel[pi..].iter_mut().for_each(|i| i.1 *= *pw / cw);
-                    pw
-                } else {
-                    pw.insert(cw)
-                };
-                *pw /= pw.ln() + 1.;
-            };
-            let mut pv = pre;
-            loop {
-                pushsel(pv);
-                pv = pv.with_pop();
-                if pv.is_empty() {
-                    break;
-                }
+        {
+            let enabled = ctx
+                .app
+                .db
+                .of::<MarkovChat>()
+                .chat(ctx.chat_id)
+                .get_or_insert(|| MarkovChat {
+                    learn_enabled: false,
+                })
+                .await
+                .learn_enabled;
+
+            if !enabled {
+                ctx.reply("只有打开语料学习的群聊可以使用琳酱说说话功能哦")
+                    .send()
+                    .warn_on_error("markov")
+                    .await;
+                return;
             }
-            let cur = if sel.is_empty() {
-                '\0'
-            } else {
-                sel.choose_weighted(&mut rng, |v| v.1.powf(1.4514))
-                    .expect("rand sel")
-                    .0
-            };
-            if cur == '\0' {
-                break;
-            }
-            res.push(cur);
-            pre.push(cur);
         }
-        let res = if res.trim().is_empty() {
-            "琳酱不知道哦"
-        } else {
-            &(text + &res)
-        };
+
         ctx.app
             .bot
-            .send_message(ctx.chat_id, res)
+            .send_message(ctx.chat_id, get_said(text, &ctx).await)
             .send()
             .warn_on_error("markov")
             .await;
