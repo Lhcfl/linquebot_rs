@@ -29,16 +29,25 @@ impl MsgKind {
     }
     async fn send_by_ctx(self, ctx: TaskContext) {
         match self {
-            Self::Text(mut text) => {
-                if text == "没有" || text == "没有！" {
-                    text = "通过！".to_string();
-                }
+            Self::Text(text) => {
+                // 彩蛋
+                let egg = text == "没有" || text == "没有！";
+
                 ctx.app
                     .bot
                     .send_message(ctx.chat_id, text)
                     .send()
                     .warn_on_error("repeater")
-                    .await
+                    .await;
+
+                if egg {
+                    ctx.app
+                        .bot
+                        .send_message(ctx.chat_id, "通过！")
+                        .send()
+                        .warn_on_error("repeater")
+                        .await;
+                }
             }
             Self::Sticker(sticker) => {
                 ctx.app
@@ -90,7 +99,7 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
 
     if kind == history.kind {
         history.repeated += 1;
-        if history.repeated == 3 {
+        if history.repeated == 2 {
             return Consumption::next_with(kind.send_by_ctx(ctx.task()));
         }
     } else {
