@@ -10,7 +10,7 @@ use std::sync::RwLock;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 enum MsgKind {
     Sticker(String),
     Text(String),
@@ -27,18 +27,30 @@ impl MsgKind {
             MsgKind::Other
         }
     }
+}
+
+#[derive(Clone)]
+struct MessageHistory {
+    kind: MsgKind,
+    reply_to_msg_id: Option<MessageId>,
+    repeated: u32,
+    off: bool,
+}
+
+impl MessageHistory {
     async fn send_by_ctx(self, ctx: TaskContext) {
-        match self {
-            Self::Text(text) => {
+        match self.kind {
+            MsgKind::Text(text) => {
                 // 彩蛋
                 let egg = text == "没有" || text == "没有！";
 
-                ctx.app
-                    .bot
-                    .send_message(ctx.chat_id, text)
-                    .send()
-                    .warn_on_error("repeater")
-                    .await;
+                let mut req = ctx.app.bot.send_message(ctx.chat_id, text);
+
+                if let Some(reply_to_msg_id) = self.reply_to_msg_id {
+                    req = req.reply_parameters(ReplyParameters::new(reply_to_msg_id));
+                }
+
+                req.send().warn_on_error("repeater").await;
 
                 if egg {
                     ctx.app
@@ -49,28 +61,23 @@ impl MsgKind {
                         .await;
                 }
             }
-            Self::Sticker(sticker) => {
+            MsgKind::Sticker(sticker) => {
                 ctx.app
                     .bot
                     .send_sticker_by_file_id(ctx.chat_id, &sticker)
                     .warn_on_error("repeater")
                     .await;
             }
-            Self::Other => {}
+            MsgKind::Other => {}
         }
     }
-}
-
-struct MessageHistory {
-    kind: MsgKind,
-    repeated: u32,
-    off: bool,
 }
 
 impl Default for MessageHistory {
     fn default() -> Self {
         MessageHistory {
             kind: MsgKind::Other,
+            reply_to_msg_id: None,
             repeated: 1,
             off: false,
         }
@@ -89,6 +96,7 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
             err.to_string()
         );
     })?;
+
     let Some(history) = manager.get_mut(&ctx.chat_id) else {
         manager.insert(ctx.chat_id, Default::default());
         return Consumption::just_next();
@@ -99,8 +107,9 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
 
     if kind == history.kind {
         history.repeated += 1;
+        history.reply_to_msg_id = msg.reply_to_message().map(|msg| msg.id);
         if history.repeated == 2 {
-            return Consumption::next_with(kind.send_by_ctx(ctx.task()));
+            return Consumption::next_with(history.clone().send_by_ctx(ctx.task()));
         }
     } else {
         history.repeated = 1;
@@ -120,6 +129,7 @@ pub fn toggle_repeat(ctx: &mut Context, _: &Message) -> Consumption {
     *history = MessageHistory {
         kind: MsgKind::Other,
         repeated: 0,
+        reply_to_msg_id: None,
         off: !history.off,
     };
     let text = if history.off {
