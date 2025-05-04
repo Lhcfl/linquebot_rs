@@ -127,10 +127,8 @@ pub fn toggle_repeat(ctx: &mut Context, _: &Message) -> Consumption {
     })?;
     let history = manager.entry(ctx.chat_id).or_default();
     *history = MessageHistory {
-        kind: MsgKind::Other,
-        repeated: 0,
-        reply_to_msg_id: None,
         off: !history.off,
+        ..Default::default()
     };
     let text = if history.off {
         "复读姬已关闭"
