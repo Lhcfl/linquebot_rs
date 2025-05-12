@@ -1,17 +1,13 @@
-use std::time::Duration;
-
-use crate::{mods::bestapo::utils::is_contains_url, utils::telegram::prelude::MessageExtension};
+use super::utils::{is_contains_url, is_zero_width_char};
+use crate::linquebot::{msg_context::Context, types::Consumption, Module};
+use crate::utils::telegram::prelude::{MessageExtension, WarnOnError};
 use log::{debug, warn};
+use std::time::Duration;
 use teloxide_core::{
     prelude::{Request, Requester},
     types::Message,
 };
 use tokio::time::sleep;
-
-use crate::{
-    linquebot::{msg_context::Context, types::Consumption, Module},
-    utils::telegram::prelude::WarnOnError,
-};
 
 const SENSITIVE_WORDS: &[&str] = &["trump", "nft", "opensea"];
 
@@ -22,7 +18,7 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     }
     let mut is_spam = false;
     if let Some(text) = msg.text() {
-        let text = text.to_lowercase();
+        let text = text.to_lowercase().replace(is_zero_width_char, "");
         for word in SENSITIVE_WORDS.iter() {
             if text.contains(word) {
                 warn!("Sensitive word detected: {}", word);
