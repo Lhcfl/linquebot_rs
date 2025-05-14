@@ -14,6 +14,7 @@
 #![feature(iter_from_coroutine)]
 #![feature(extend_one)]
 #![feature(iter_next_chunk)]
+#![feature(duration_constructors_lite)]
 
 mod assets;
 mod linquebot;
