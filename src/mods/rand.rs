@@ -3,6 +3,7 @@ use log::warn;
 use msg_context::Context;
 use msg_context::TaskContext;
 use rand::seq::IteratorRandom;
+use rand::seq::SliceRandom;
 use rand::Rng;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
@@ -29,12 +30,15 @@ async fn send_raw_rand(ctx: TaskContext, from: User, text_body: String) {
 }
 
 async fn send_selective_rand(ctx: TaskContext, text_body: String, spliter: &str) {
-    let result = text_body
+    let mut result = text_body
         .split(&spliter)
         .map(|str| str.trim())
         .filter(|str| !str.is_empty())
-        .choose(&mut rand::thread_rng())
-        .unwrap_or(spliter);
+        .collect::<Vec<_>>();
+
+    result.shuffle(&mut rand::thread_rng());
+
+    let result = result.get(0).unwrap_or(&spliter);
 
     if let Err(err) = ctx
         .reply_html(format!("{}!", escape_html(result)))
