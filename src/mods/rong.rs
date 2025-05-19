@@ -38,7 +38,7 @@ impl RongUser {
     fn from_chat(chat: &Chat) -> Option<Self> {
         Some(Self {
             name: chat.title()?.to_string(),
-            turl: chat.username().map(|name| format!("t.me/{}", name)),
+            turl: chat.username().map(|name| format!("t.me/{name}")),
         })
     }
 

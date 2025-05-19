@@ -18,7 +18,7 @@ struct Hitokoto {
 
 async fn get_hitokoto(args: &str) -> Hitokoto {
     let res: Result<_, reqwest::Error> = try {
-        reqwest::get(format!("https://v1.hitokoto.cn/?c={}", args))
+        reqwest::get(format!("https://v1.hitokoto.cn/?c={args}"))
             .await?
             .json::<Hitokoto>()
             .await?

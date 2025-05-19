@@ -109,7 +109,7 @@ async fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     if let Err(err) = main_loop().await {
         error!("main-loop panicked: {}", err.to_string());
-        panic!("main-loop panicked: {}", err);
+        panic!("main-loop panicked: {err}");
     }
     println!("bye bye");
 }
