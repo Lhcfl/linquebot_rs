@@ -17,6 +17,7 @@ pub mod rand;
 pub mod repeater;
 pub mod rong;
 pub mod say;
+pub mod search;
 pub mod set_title;
 #[cfg(feature = "tarot")]
 pub mod tarot;
@@ -45,6 +46,8 @@ pub static MODULES: &[&Module] = &[
     &repeater::TOGGLE,
     &markov::TOGGLE,
     &bestapo::TOGGLE,
+    &search::TOGGLE_SEARCH,
+    &search::TOGGLE_SEARCH_RECORDING,
     &rand::MODULE,
     &tools::MODULE,
     #[cfg(feature = "tarot")]
@@ -71,6 +74,7 @@ pub static MODULES: &[&Module] = &[
     &greetings::MODULE,
     &repeater::MODULE,
     &bestapo::MESSAGE_HANDLER,
+    &search::MESSAGE_HANDLER,
 ];
 
 pub static MICRO_TASKS: &[&MicroTask] = &[&help::HELP_CALLBACK, &set_title::ADMIN_CALLBACK];
