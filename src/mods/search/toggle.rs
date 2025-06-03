@@ -1,15 +1,23 @@
-use serde::{Deserialize, Serialize};
-use teloxide_core::{prelude::Request, types::Message};
-
 use crate::{
     linquebot::{msg_context::Context, types::Consumption, Module, ModuleDescription, ModuleKind},
     utils::telegram::prelude::WarnOnError,
 };
+use serde::{Deserialize, Serialize};
+use teloxide_core::{prelude::Request, types::Message};
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Search {
-    search_enabled: bool,
-    search_recording_enabled: bool,
+pub struct Search {
+    pub search_enabled: bool,
+    pub search_recording_enabled: bool,
+}
+
+impl Search {
+    pub fn default() -> Self {
+        Search {
+            search_enabled: false,
+            search_recording_enabled: false,
+        }
+    }
 }
 
 fn on_toggle_recording(ctx: &mut Context, _: &Message) -> Consumption {
@@ -20,10 +28,7 @@ fn on_toggle_recording(ctx: &mut Context, _: &Message) -> Consumption {
             .db
             .of::<Search>()
             .chat(ctx.chat_id)
-            .get_or_insert(|| Search {
-                search_enabled: false,
-                search_recording_enabled: false,
-            })
+            .get_or_insert(|| Search::default())
             .await;
 
         stat.search_recording_enabled = !stat.search_recording_enabled;
@@ -48,10 +53,7 @@ fn on_toggle_search(ctx: &mut Context, _: &Message) -> Consumption {
             .db
             .of::<Search>()
             .chat(ctx.chat_id)
-            .get_or_insert(|| Search {
-                search_enabled: false,
-                search_recording_enabled: false,
-            })
+            .get_or_insert(|| Search::default())
             .await;
 
         stat.search_enabled = !stat.search_enabled;
@@ -82,7 +84,7 @@ pub static TOGGLE_SEARCH_RECORDING: Module = Module {
 
 pub static TOGGLE_SEARCH: Module = Module {
     kind: ModuleKind::Command(ModuleDescription {
-        name: "toggle_search_recording",
+        name: "toggle_search",
         description: "打开/关闭<b>搜索</b>模块的群组消息搜索功能",
         description_detailed: Some(concat!(
             "该命令不需要参数。\n",

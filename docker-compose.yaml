@@ -1,0 +1,28 @@
+services:
+  linquebot:
+    depends_on:
+      - pgvector
+    image: ghcr.io/lhcfl/linquebot_rs
+    network_mode: bridge
+    volumes:
+      - ./app:/app
+    environment:
+      - VECTOR_DATABASE_URL=postgres://postgres:123456@pgvector:5432/linquebot
+
+  pgvector:
+    image: ghcr.io/tensorchord/pgvecto-rs:pg17-v0.4.0
+    # ports:
+    #   - 5433:5432 # For local development, uncomment to expose port
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: linquebot
+      POSTGRES_PASSWORD: "123456"
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./app/pgvector_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
