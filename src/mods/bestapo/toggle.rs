@@ -7,8 +7,8 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, Deserialize)]
-struct BestapoCensor {
-    censor_enabled: bool,
+pub struct BestapoCensor {
+    pub censor_enabled: bool,
 }
 
 fn on_toggle(ctx: &mut Context, _: &Message) -> Consumption {
