@@ -28,7 +28,7 @@ fn on_toggle_recording(ctx: &mut Context, _: &Message) -> Consumption {
             .db
             .of::<Search>()
             .chat(ctx.chat_id)
-            .get_or_insert(|| Search::default())
+            .get_or_insert(Search::default)
             .await;
 
         stat.search_recording_enabled = !stat.search_recording_enabled;
@@ -53,7 +53,7 @@ fn on_toggle_search(ctx: &mut Context, _: &Message) -> Consumption {
             .db
             .of::<Search>()
             .chat(ctx.chat_id)
-            .get_or_insert(|| Search::default())
+            .get_or_insert(Search::default)
             .await;
 
         stat.search_enabled = !stat.search_enabled;

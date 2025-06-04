@@ -18,7 +18,7 @@ use teloxide_core::{
 fn vector_result_to_link(r: &VectorResult) -> anyhow::Result<Url> {
     let message_id = MessageId(r.index.parse()?);
     let chat_id = ChatId(r.chat.parse()?);
-    let user_id = r.user.as_ref().and_then(|s| Some(s.as_str()));
+    let user_id = r.user.as_ref().map(|s| s.as_str());
     match Message::url_of(chat_id, user_id, message_id) {
         None => {
             warn!("Failed to create URL for message: {:?}", r);
@@ -37,7 +37,7 @@ fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
             .db
             .of::<Search>()
             .chat(ctx.chat_id)
-            .get_or_insert(|| Search::default())
+            .get_or_insert(Search::default)
             .await
             .search_enabled;
         if !enabled {
@@ -69,7 +69,7 @@ fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
             Ok(embedding) => embedding,
             Err(e) => {
                 warn!("Text Embedding Error with:\n{e}");
-                ctx.reply_markdown(format!("词嵌入发生了内部错误\n```\n{}\n```", e))
+                ctx.reply_markdown(format!("词嵌入发生了内部错误\n```\n{e}\n```"))
                     .send()
                     .warn_on_error("search")
                     .await;
@@ -86,7 +86,7 @@ fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
         {
             Err(e) => {
                 warn!("Query Failed with:\n{e}");
-                ctx.reply_markdown(format!("搜索发生了内部错误\n```\n{}\n```", e))
+                ctx.reply_markdown(format!("搜索发生了内部错误\n```\n{e}\n```"))
                     .send()
                     .warn_on_error("search")
                     .await;

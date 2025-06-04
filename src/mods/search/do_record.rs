@@ -23,7 +23,7 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
                 .db
                 .of::<Search>()
                 .chat(ctx.chat_id)
-                .get_or_insert(|| Search::default())
+                .get_or_insert(Search::default)
                 .await
                 .search_recording_enabled;
             if !enabled {

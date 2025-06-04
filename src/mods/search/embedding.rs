@@ -33,8 +33,8 @@ pub async fn text_embedding(text: impl Into<String>) -> Result<Vec<f64>> {
     let res = REQWEST_CLIENT
         .post(OLLAMA_EMBEDDING_API_URL.as_str())
         .json(&EmbeddingReq {
-            model: &OLLAMA_EMBEDDING_MODEL.as_str(),
-            prompt: text.try_into()?,
+            model: OLLAMA_EMBEDDING_MODEL.as_str(),
+            prompt: text.into(),
         })
         .send()
         .await?

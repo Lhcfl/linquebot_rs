@@ -27,7 +27,7 @@ fn on_toggle(ctx: &mut Context, _: &Message) -> Consumption {
             .db
             .of::<BestapoCensor>()
             .chat(ctx.chat_id)
-            .get_or_insert(|| BestapoCensor::default())
+            .get_or_insert(BestapoCensor::default)
             .await;
 
         stat.censor_enabled = !stat.censor_enabled;
