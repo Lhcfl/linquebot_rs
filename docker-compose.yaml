@@ -19,10 +19,14 @@ services:
       POSTGRES_PASSWORD: "123456"
     volumes:
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./app/pgvector_data:/var/lib/postgresql/data
+      - pgvector_data:/var/lib/postgresql/data
     healthcheck:
       test: [CMD-SHELL, pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+volumes:
+  pgvector_data:
+    driver: local

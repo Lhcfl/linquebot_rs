@@ -5,11 +5,26 @@ pub struct VectorDB {
     pool: Pool<Postgres>,
 }
 
+#[derive(Debug)]
 pub struct VectorData {
     pub index: String,
     pub user: Option<String>,
     pub chat: String,
     pub vector: Vec<f64>,
+}
+
+#[derive(Debug)]
+pub struct VectorQuery {
+    pub user: Option<String>,
+    pub chat: String,
+    pub vector: Vec<f64>,
+}
+
+#[derive(Debug)]
+pub struct VectorResult {
+    pub user: Option<String>,
+    pub chat: String,
+    pub index: String,
 }
 
 const CREATE_VECTOR_DB_QUERY: &str = r#"
@@ -43,10 +58,18 @@ const UPSERT_VECTOR_QUERY: &str = r#"
 INSERT INTO
     vector_db (index, "user", chat, vector)
 VALUES
-    ($1, $2, $3, $4::vector(1024)) ON CONFLICT (index, "user", chat) DO
+    ($1, $2, $3, $4::vector) ON CONFLICT (index, "user", chat) DO
 UPDATE
 SET
-    vector = $4::vector(1024);
+    vector = $4::vector;
+"#;
+
+const SELECT_VECTOR_QUERY: &str = r#"
+SELECT index
+FROM vector_db
+WHERE chat = $1
+ORDER BY vector <-> $2::vector
+LIMIT 10;
 "#;
 
 impl VectorDB {
@@ -86,25 +109,19 @@ impl VectorDB {
         Ok(())
     }
 
-    pub async fn get(&self, data: VectorData) -> anyhow::Result<Vec<VectorData>> {
-        let rows = sqlx::query(concat!(
-            "SELECT vector FROM vector_db WHERE index = $1 AND \"user\" = $2 AND chat = $3 ",
-            "ORDER BY vector <-> $4 LIMIT 10"
-        ))
-        .bind(&data.index)
-        .bind(&data.user)
-        .bind(&data.chat)
-        .bind(&data.vector)
-        .fetch_all(&self.pool)
-        .await?;
+    pub async fn get(&self, data: VectorQuery) -> anyhow::Result<Vec<VectorResult>> {
+        let rows = sqlx::query(SELECT_VECTOR_QUERY)
+            .bind(&data.chat)
+            .bind(format!("{:?}", data.vector))
+            .fetch_all(&self.pool)
+            .await?;
         let mut result = Vec::new();
         for row in rows {
-            let vector: Vec<f64> = row.get(0);
-            result.push(VectorData {
-                index: data.index.to_string(),
+            let index: String = row.get(0);
+            result.push(VectorResult {
+                index,
                 user: data.user.clone(),
                 chat: data.chat.to_string(),
-                vector,
             });
         }
         Ok(result)
