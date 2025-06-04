@@ -7,7 +7,7 @@
 #![feature(str_split_whitespace_remainder)]
 #![feature(iter_array_chunks)]
 #![feature(iter_intersperse)]
-#![feature(async_drop)]
+// #![feature(async_drop)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(coroutines)]
 #![feature(stmt_expr_attributes)]

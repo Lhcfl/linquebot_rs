@@ -3,6 +3,7 @@ use crate::{linquebot::Module, MicroTask};
 pub mod answer_book;
 pub mod bestapo;
 pub mod bot_on_off;
+pub mod debuger;
 pub mod dice;
 #[cfg(feature = "explain")]
 pub mod explain;
@@ -36,6 +37,7 @@ pub static MODULES: &[&Module] = &[
     &bot_on_off::STOP_WHEN_BOT_OFF,
     &waife::ADD_USER,
     // --- normal commands ---
+    &debuger::DEBUGGER,
     &todo::MODULE,
     &hitokoto::MODULE,
     &answer_book::MODULE,
