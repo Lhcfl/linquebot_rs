@@ -46,7 +46,7 @@ services:
   ollama-init:
     container_name: ollama-init
     image: ollama/ollama
-    command: ["pull", "bge-m3"]
+    command: ["pull", "snowflake-arctic-embed2"]
     environment:
       - OLLAMA_HOST=ollama:11434
     depends_on:

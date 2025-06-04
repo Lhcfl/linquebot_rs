@@ -26,8 +26,9 @@ static OLLAMA_EMBEDDING_API_URL: LazyLock<String> = LazyLock::new(|| {
         .unwrap_or("http://localhost:11434/api/embeddings".to_string())
 });
 
-static OLLAMA_EMBEDDING_MODEL: LazyLock<String> =
-    LazyLock::new(|| std::env::var("OLLAMA_EMBEDDING_MODEL").unwrap_or("bge-m3".to_string()));
+static OLLAMA_EMBEDDING_MODEL: LazyLock<String> = LazyLock::new(|| {
+    std::env::var("OLLAMA_EMBEDDING_MODEL").unwrap_or("snowflake-arctic-embed2".to_string())
+});
 
 pub async fn text_embedding(text: impl Into<String>) -> Result<Vec<f64>> {
     let res = REQWEST_CLIENT
