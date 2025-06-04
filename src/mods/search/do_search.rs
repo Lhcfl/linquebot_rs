@@ -18,7 +18,7 @@ use teloxide_core::{
 fn vector_result_to_link(r: &VectorResult) -> anyhow::Result<Url> {
     let message_id = MessageId(r.index.parse()?);
     let chat_id = ChatId(r.chat.parse()?);
-    let user_id = r.user.as_ref().map(|s| s.as_str());
+    let user_id = r.user.as_deref();
     match Message::url_of(chat_id, user_id, message_id) {
         None => {
             warn!("Failed to create URL for message: {:?}", r);
