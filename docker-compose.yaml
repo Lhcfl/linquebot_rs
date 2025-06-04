@@ -1,9 +1,15 @@
 services:
   linquebot:
+    container_name: linquebot
+    restart: unless-stopped
     depends_on:
-      - pgvector
+      pgvector:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      ollama-init:
+        condition: service_completed_successfully
     image: ghcr.io/lhcfl/linquebot_rs
-    network_mode: bridge
     volumes:
       - ./app:/app
     environment:
@@ -42,6 +48,9 @@ services:
     command: ["pull", "bge-m3"]
     environment:
       - OLLAMA_HOST=ollama:11434
+    depends_on:
+      ollama:
+        condition: service_started
 
 volumes:
   pgvector_data:
