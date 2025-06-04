@@ -31,13 +31,6 @@ fn vector_result_to_link(r: &VectorResult) -> anyhow::Result<Url> {
 fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
     let text = ctx.cmd?.content.to_owned();
     let ctx = ctx.task();
-    let vector_db = match &ctx.app.vector_db {
-        None => {
-            debug!("Vector DB is not initialized, skipping message recording");
-            return Consumption::just_next();
-        }
-        Some(db) => db,
-    };
     async move {
         let enabled = ctx
             .app
@@ -54,6 +47,17 @@ fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
                 .await;
             return;
         }
+        let vector_db = match &ctx.app.vector_db {
+            None => {
+                debug!("Vector DB is not initialized, skipping message searching");
+                ctx.reply("未连接到向量数据库，无法进行搜索")
+                    .send()
+                    .warn_on_error("search")
+                    .await;
+                return;
+            }
+            Some(db) => db,
+        };
         if text.is_empty() {
             ctx.reply("搜索内容不能为空")
                 .send()
