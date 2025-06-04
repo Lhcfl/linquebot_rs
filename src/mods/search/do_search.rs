@@ -54,6 +54,13 @@ fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
                 .await;
             return;
         }
+        if text.is_empty() {
+            ctx.reply("搜索内容不能为空")
+                .send()
+                .warn_on_error("search")
+                .await;
+            return;
+        }
         let embedding = match text_embedding(&text).await {
             Ok(embedding) => embedding,
             Err(e) => {
