@@ -1,15 +1,34 @@
 use super::{embedding::text_embedding, toggle::Search};
 use crate::{
     linquebot::{
-        msg_context::Context, types::Consumption, vector_db::VectorQuery, Module,
-        ModuleDescription, ModuleKind,
+        msg_context::Context,
+        types::Consumption,
+        vector_db::{VectorQuery, VectorResult},
+        Module, ModuleDescription, ModuleKind,
     },
     utils::telegram::prelude::WarnOnError,
 };
-use log::{debug, info, warn};
-use teloxide_core::{prelude::Request, types::Message};
+use ammonia::Url;
+use log::{debug, warn};
+use teloxide_core::{
+    prelude::Request,
+    types::{ChatId, Message, MessageId},
+};
 
-fn on_search(ctx: &mut Context, msg: &Message) -> Consumption {
+fn vector_result_to_link(r: &VectorResult) -> anyhow::Result<Url> {
+    let message_id = MessageId(r.index.parse()?);
+    let chat_id = ChatId(r.chat.parse()?);
+    let user_id = r.user.as_ref().and_then(|s| Some(s.as_str()));
+    match Message::url_of(chat_id, user_id, message_id) {
+        None => {
+            warn!("Failed to create URL for message: {:?}", r);
+            Err(anyhow::anyhow!("Failed to create URL for message"))
+        }
+        Some(url) => Ok(url),
+    }
+}
+
+fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
     let text = ctx.cmd?.content.to_owned();
     let ctx = ctx.task();
     let vector_db = match &ctx.app.vector_db {
@@ -39,7 +58,7 @@ fn on_search(ctx: &mut Context, msg: &Message) -> Consumption {
             Ok(embedding) => embedding,
             Err(e) => {
                 warn!("Text Embedding Error with:\n{e}");
-                ctx.reply("Text Embedding 发生了内部错误")
+                ctx.reply_markdown(format!("词嵌入发生了内部错误\n```\n{}\n```", e))
                     .send()
                     .warn_on_error("search")
                     .await;
@@ -56,7 +75,7 @@ fn on_search(ctx: &mut Context, msg: &Message) -> Consumption {
         {
             Err(e) => {
                 warn!("Query Failed with:\n{e}");
-                ctx.reply("搜索发生了内部错误")
+                ctx.reply_markdown(format!("搜索发生了内部错误\n```\n{}\n```", e))
                     .send()
                     .warn_on_error("search")
                     .await;
@@ -64,8 +83,19 @@ fn on_search(ctx: &mut Context, msg: &Message) -> Consumption {
             }
             Ok(i) => i,
         };
-        info!("{:?}", results);
-        ctx.reply(text).send().warn_on_error("search").await;
+        let links = results
+            .iter()
+            .map(vector_result_to_link)
+            .filter_map(|item| match item {
+                Ok(url) => Some(url.to_string()),
+                Err(e) => {
+                    warn!("Failed to convert vector result to link: {}", e);
+                    None
+                }
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+        ctx.reply(links).send().warn_on_error("search").await;
     }
     .into()
 }
