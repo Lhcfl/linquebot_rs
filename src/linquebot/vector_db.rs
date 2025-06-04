@@ -68,7 +68,8 @@ const SELECT_VECTOR_QUERY: &str = r#"
 SELECT index
 FROM vector_db
 WHERE chat = $1
-ORDER BY vector <-> $2::vector
+    AND "user" IS NOT DISTINCT FROM $2
+ORDER BY vector <-> $3::vector
 LIMIT 10;
 "#;
 
@@ -112,6 +113,7 @@ impl VectorDB {
     pub async fn get(&self, data: VectorQuery) -> anyhow::Result<Vec<VectorResult>> {
         let rows = sqlx::query(SELECT_VECTOR_QUERY)
             .bind(&data.chat)
+            .bind(&data.user)
             .bind(format!("{:?}", data.vector))
             .fetch_all(&self.pool)
             .await?;
