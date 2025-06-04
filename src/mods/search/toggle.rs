@@ -34,7 +34,7 @@ fn on_toggle_recording(ctx: &mut Context, _: &Message) -> Consumption {
         stat.search_recording_enabled = !stat.search_recording_enabled;
 
         if stat.search_recording_enabled {
-            ctx.reply("消息记录已打开")
+            ctx.reply("消息记录已打开，注意数据库里不会保存原文本，也无法从中恢复消息")
         } else {
             ctx.reply("消息记录已关闭")
         }
@@ -77,6 +77,7 @@ pub static TOGGLE_SEARCH_RECORDING: Module = Module {
         description_detailed: Some(concat!(
             "该命令不需要参数。\n",
             "打开/关闭<b>搜索</b>模块的群组消息记录功能。\n",
+            "开启后，群组消息会被记录到数据库中，但数据库中不会保存原文本，也无法从中读取或恢复消息。\n",
         )),
     }),
     task: on_toggle_recording,
