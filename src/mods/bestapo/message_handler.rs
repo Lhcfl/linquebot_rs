@@ -38,9 +38,7 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
             .db
             .of::<BestapoCensor>()
             .chat(ctx.chat_id)
-            .get_or_insert(|| BestapoCensor {
-                censor_enabled: false,
-            })
+            .get_or_insert(|| BestapoCensor::default())
             .await
             .censor_enabled;
         if !enabled {

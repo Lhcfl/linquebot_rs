@@ -11,6 +11,14 @@ pub struct BestapoCensor {
     pub censor_enabled: bool,
 }
 
+impl BestapoCensor {
+    pub fn default() -> Self {
+        BestapoCensor {
+            censor_enabled: false,
+        }
+    }
+}
+
 fn on_toggle(ctx: &mut Context, _: &Message) -> Consumption {
     let ctx = ctx.task();
     async move {
@@ -19,9 +27,7 @@ fn on_toggle(ctx: &mut Context, _: &Message) -> Consumption {
             .db
             .of::<BestapoCensor>()
             .chat(ctx.chat_id)
-            .get_or_insert(|| BestapoCensor {
-                censor_enabled: false,
-            })
+            .get_or_insert(|| BestapoCensor::default())
             .await;
 
         stat.censor_enabled = !stat.censor_enabled;
