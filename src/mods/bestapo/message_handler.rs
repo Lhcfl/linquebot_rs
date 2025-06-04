@@ -1,3 +1,4 @@
+use super::toggle::BestapoCensor;
 use super::utils::{is_contains_url, is_zero_width_char};
 use crate::linquebot::{msg_context::Context, types::Consumption, Module};
 use crate::utils::telegram::prelude::{MessageExtension, WarnOnError};
@@ -32,6 +33,17 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
         return Consumption::just_next();
     }
     Consumption::next_with(async move {
+        let enabled = ctx
+            .app
+            .db
+            .of::<BestapoCensor>()
+            .chat(ctx.chat_id)
+            .get_or_insert(|| BestapoCensor::default())
+            .await
+            .censor_enabled;
+        if !enabled {
+            return;
+        }
         ctx.reply_markdown("检测到斯帕姆。把它上市！")
             .send()
             .warn_on_error("bestapo")

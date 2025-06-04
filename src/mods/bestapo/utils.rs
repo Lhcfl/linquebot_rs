@@ -13,8 +13,9 @@ pub fn is_zero_width_char(chr: char) -> bool {
 mod tests {
     use super::*;
 
+    /// Test for replacing zero-width characters in a string.
     #[test]
-    fn test_is_contains_url() {
+    fn test_is_zero_width_replaced() {
         let msg_with_zero_width = "⁢⁢y⁢⁢o⁢⁢ ⁢⁢g⁢⁢e⁢⁢t⁢⁢ ⁢⁢f⁢⁢r⁢⁢e⁢⁢e⁢⁢ ⁢⁢N⁢⁢F⁢⁢T⁢⁢  https://faly.world/";
         let msg_trimed = msg_with_zero_width.replace(is_zero_width_char, "");
         assert_eq!(msg_trimed, "yo get free NFT  https://faly.world/");
