@@ -6,5 +6,16 @@
   "clangd.fallbackFlags": ["--std=c++23"],
   "rust-analyzer.cargo.extraEnv": {
     "DATABASE_URL": "sqlite://data.db"
-  }
+  },
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5433,
+      "driver": "PostgreSQL",
+      "name": "linquebot",
+      "database": "linquebot",
+      "username": "postgres"
+    }
+  ]
 }

@@ -1,0 +1,50 @@
+services:
+  linquebot:
+    depends_on:
+      - pgvector
+    image: ghcr.io/lhcfl/linquebot_rs
+    network_mode: bridge
+    volumes:
+      - ./app:/app
+    environment:
+      - VECTOR_DATABASE_URL=postgres://postgres:123456@pgvector:5432/linquebot
+
+  pgvector:
+    image: ghcr.io/tensorchord/pgvecto-rs:pg17-v0.4.0
+    # ports:
+    #   - 5433:5432 # For local development, uncomment to expose port
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: linquebot
+      POSTGRES_PASSWORD: "123456"
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgvector_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  ollama:
+    container_name: ollama
+    image: ollama/ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - 11434:11434
+
+  ollama-init:
+    container_name: ollama-init
+    image: ollama/ollama
+    command: ["pull", "bge-m3"]
+    environment:
+      - OLLAMA_HOST=ollama:11434
+
+volumes:
+  pgvector_data:
+    driver: local
+  ollama_data:
+    driver: local

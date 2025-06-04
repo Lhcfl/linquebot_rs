@@ -1,5 +1,6 @@
 pub mod db;
 pub mod msg_context;
+pub mod vector_db;
 
 use std::{future::Future, pin::Pin};
 
@@ -10,6 +11,7 @@ use teloxide_core::{
 };
 
 use crate::DataStorage;
+use crate::VectorDB;
 
 pub type TaskResult = Pin<Box<dyn Future<Output = ()> + Send>>;
 
@@ -141,6 +143,8 @@ pub struct App {
     pub bot: Bot,
     /// database
     pub db: DataStorage,
+    /// vector database for searching
+    pub vector_db: Option<VectorDB>,
     /// modules loaded
     pub modules: &'static [&'static Module],
     /// micor_tasks loaded

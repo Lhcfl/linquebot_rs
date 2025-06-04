@@ -26,6 +26,7 @@ mod utils;
 use crate::db::DataStorage;
 use crate::linquebot::types::*;
 use crate::linquebot::*;
+use crate::vector_db::VectorDB;
 use colored::Colorize;
 use env_logger::Env;
 use log::{error, info, warn};
@@ -53,6 +54,8 @@ async fn set_my_commands(app: &'static App) -> Result<True, RequestError> {
 async fn init_app() -> anyhow::Result<&'static linquebot::App> {
     info!(target: "init", "Loading Database...");
     let db = DataStorage::new().await?;
+    info!(target: "init", "Loading Vector Database...");
+    let vector_db = VectorDB::new().await;
     info!(target: "init", "Initializing Bot...");
     let bot = Bot::from_env();
     info!(target: "init", "Checking Network...");
@@ -63,6 +66,7 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
         username: format!("@{}", me.username()),
         bot,
         db,
+        vector_db,
         modules: mods::MODULES,
         micro_tasks: mods::MICRO_TASKS,
     });
