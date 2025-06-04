@@ -70,7 +70,7 @@ FROM vector_db
 WHERE chat = $1
     AND "user" IS NOT DISTINCT FROM $2
 ORDER BY vector <-> $3::vector
-LIMIT 10;
+LIMIT 5;
 "#;
 
 impl VectorDB {
