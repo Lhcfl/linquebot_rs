@@ -25,6 +25,7 @@ pub struct VectorResult {
     pub user: Option<String>,
     pub chat: String,
     pub index: String,
+    pub distance: f32,
 }
 
 const CREATE_VECTOR_DB_QUERY: &str = r#"
@@ -65,11 +66,17 @@ SET
 "#;
 
 const SELECT_VECTOR_QUERY: &str = r#"
-SELECT index
-FROM vector_db
-WHERE chat = $1
-    AND "user" IS NOT DISTINCT FROM $2
-ORDER BY vector <-> $3::vector
+SELECT index,
+    distance
+FROM (
+        SELECT index,
+            vector <-> $3::vector AS distance
+        FROM vector_db
+        WHERE chat = $1
+            AND "user" IS NOT DISTINCT
+        FROM $2
+    ) AS sub
+ORDER BY distance
 LIMIT 5;
 "#;
 
@@ -119,11 +126,11 @@ impl VectorDB {
             .await?;
         let mut result = Vec::new();
         for row in rows {
-            let index: String = row.get(0);
             result.push(VectorResult {
-                index,
+                index: row.get(0),
                 user: data.user.clone(),
-                chat: data.chat.to_string(),
+                chat: data.chat.clone(),
+                distance: row.get(1),
             });
         }
         Ok(result)

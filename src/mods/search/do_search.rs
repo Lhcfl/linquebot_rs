@@ -8,23 +8,23 @@ use crate::{
     },
     utils::telegram::prelude::WarnOnError,
 };
-use ammonia::Url;
 use log::{debug, warn};
 use teloxide_core::{
     prelude::Request,
     types::{ChatId, Message, MessageId},
 };
 
-fn vector_result_to_link(r: &VectorResult) -> anyhow::Result<Url> {
-    let message_id = MessageId(r.index.parse()?);
-    let chat_id = ChatId(r.chat.parse()?);
+fn vector_result_to_string(r: &VectorResult) -> Option<String> {
+    let message_id = MessageId(r.index.parse().ok()?);
+    let chat_id = ChatId(r.chat.parse().ok()?);
     let user_id = r.user.as_deref();
+    let distance = r.distance;
     match Message::url_of(chat_id, user_id, message_id) {
         None => {
             warn!("Failed to create URL for message: {:?}", r);
-            Err(anyhow::anyhow!("Failed to create URL for message"))
+            None
         }
-        Some(url) => Ok(url),
+        Some(url) => Some(format!("{} {}", url.as_str(), distance)),
     }
 }
 
@@ -96,14 +96,7 @@ fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
         };
         let links = results
             .iter()
-            .map(vector_result_to_link)
-            .filter_map(|item| match item {
-                Ok(url) => Some(url.to_string()),
-                Err(e) => {
-                    warn!("Failed to convert vector result to link: {}", e);
-                    None
-                }
-            })
+            .filter_map(vector_result_to_string)
             .collect::<Vec<String>>()
             .join("\n");
         ctx.reply(links).send().warn_on_error("search").await;
