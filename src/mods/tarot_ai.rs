@@ -150,7 +150,7 @@ pub static MODULE: Module = Module {
     kind: ModuleKind::Command(ModuleDescription {
         name: "tarot_ai",
         description: "塔罗牌（AI版）",
-        description_detailed: Some(concat!("必选参数：提出的问题（最好是 YES OR NO 能回答的）")),
+        description_detailed: Some("必选参数：提出的问题（最好是 YES OR NO 能回答的）"),
     }),
     task: send_tarot,
 };

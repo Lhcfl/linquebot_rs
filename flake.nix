@@ -58,7 +58,10 @@
               (rust-bin.selectLatestNightlyWith (
                 toolchain:
                 toolchain.default.override {
-                  extensions = [ "rust-src" ];
+                  extensions = [
+                    "rust-src"
+                    "clippy-preview"
+                  ];
                 }
               ))
             ];

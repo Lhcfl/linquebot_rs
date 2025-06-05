@@ -91,7 +91,7 @@ pub static MODULE: Module = Module {
     kind: ModuleKind::Command(ModuleDescription {
         name: "explain",
         description: "解释名词",
-        description_detailed: Some(concat!("需要一个参数，即等待解释的名词")),
+        description_detailed: Some("需要一个参数，即等待解释的名词"),
     }),
     task: send_explain,
 };
