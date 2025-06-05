@@ -39,17 +39,17 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
                 return;
             }
         };
-        let res = vector_db
-            .upsert(VectorData {
-                chat: ctx.chat_id.to_string(),
-                index: ctx.message_id.to_string(),
-                user: None,
-                vector: embedding,
-            })
-            .await;
-        if res.is_err() {
-            warn!("Failed to upsert vector data");
-        }
+        // let res = vector_db
+        //     .upsert(VectorData {
+        //         chat: ctx.chat_id.to_string(),
+        //         index: ctx.message_id.to_string(),
+        //         user: None,
+        //         vector: embedding,
+        //     })
+        //     .await;
+        // if res.is_err() {
+        //     warn!("Failed to upsert vector data");
+        // }
     })
 }
 
