@@ -144,7 +144,7 @@ pub struct App {
     /// database
     pub db: DataStorage,
     /// vector database for searching
-    pub vector_db: Option<VectorDB>,
+    pub vector_db: anyhow::Result<VectorDB>,
     /// modules loaded
     pub modules: &'static [&'static Module],
     /// micor_tasks loaded

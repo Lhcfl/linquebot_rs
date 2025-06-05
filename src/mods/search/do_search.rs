@@ -48,7 +48,7 @@ fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
             return;
         }
         let vector_db = match &ctx.app.vector_db {
-            None => {
+            Err(_) => {
                 debug!("Vector DB is not initialized, skipping message searching");
                 ctx.reply("未连接到向量数据库，无法进行搜索")
                     .send()
@@ -56,7 +56,7 @@ fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
                     .await;
                 return;
             }
-            Some(db) => db,
+            Ok(db) => db,
         };
         if text.is_empty() {
             ctx.reply("搜索内容不能为空")

@@ -56,6 +56,9 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
     let db = DataStorage::new().await?;
     info!(target: "init", "Loading Vector Database...");
     let vector_db = VectorDB::new().await;
+    if let Err(e) = &vector_db {
+        warn!(target: "init", "Failed to initialize VectorDB:\n{}", e);
+    }
     info!(target: "init", "Initializing Bot...");
     let bot = Bot::from_env();
     info!(target: "init", "Checking Network...");

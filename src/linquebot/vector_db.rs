@@ -1,4 +1,3 @@
-use log::warn;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres, Row};
 
 pub struct VectorDB {
@@ -84,7 +83,7 @@ LIMIT 5;
 "#;
 
 impl VectorDB {
-    async fn init() -> anyhow::Result<Self> {
+    pub async fn new() -> anyhow::Result<Self> {
         let database_url = std::env::var("VECTOR_DATABASE_URL")
             .unwrap_or_else(|_| "postgres://localhost/linquebot".to_string());
         let pool = PgPoolOptions::new()
@@ -96,17 +95,6 @@ impl VectorDB {
             .execute(&pool)
             .await?;
         Ok(VectorDB { pool })
-    }
-
-    pub async fn new() -> Option<Self> {
-        let db = VectorDB::init().await;
-        match db {
-            Ok(db) => Some(db),
-            Err(e) => {
-                warn!("Failed to initialize VectorDB:\n{}", e);
-                None
-            }
-        }
     }
 
     pub async fn upsert(&self, data: VectorData) -> anyhow::Result<()> {
