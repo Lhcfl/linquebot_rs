@@ -3,13 +3,6 @@ pub trait Pattern {
     fn check_pattern<'a>(&mut self, input: &'a str) -> Option<(&'a str, Self::Output<'a>)>;
 }
 
-pub struct EofPat;
-impl Pattern for EofPat {
-    fn check_pattern<'a>(&mut self, input: &'a str) -> Option<(&'a str, Self::Output<'a>)> {
-        input.is_empty().then_some(("", ()))
-    }
-}
-
 impl Pattern for &str {
     fn check_pattern<'a>(&mut self, input: &'a str) -> Option<(&'a str, Self::Output<'a>)> {
         input

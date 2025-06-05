@@ -5,19 +5,10 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use teloxide_core::{prelude::Request, types::Message};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Search {
     pub search_enabled: bool,
     pub search_recording_enabled: bool,
-}
-
-impl Search {
-    pub fn default() -> Self {
-        Search {
-            search_enabled: false,
-            search_recording_enabled: false,
-        }
-    }
 }
 
 fn on_toggle_recording(ctx: &mut Context, _: &Message) -> Consumption {

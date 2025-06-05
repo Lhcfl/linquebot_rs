@@ -6,17 +6,9 @@ use crate::{
     utils::telegram::prelude::WarnOnError,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct BestapoCensor {
     pub censor_enabled: bool,
-}
-
-impl BestapoCensor {
-    pub fn default() -> Self {
-        BestapoCensor {
-            censor_enabled: false,
-        }
-    }
 }
 
 fn on_toggle(ctx: &mut Context, _: &Message) -> Consumption {
