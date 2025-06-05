@@ -25,7 +25,7 @@ pub struct VectorResult {
     pub user: Option<String>,
     pub chat: String,
     pub index: String,
-    pub distance: f32,
+    pub distance: f64,
 }
 
 const CREATE_VECTOR_DB_QUERY: &str = r#"
@@ -50,7 +50,10 @@ BEGIN IF NOT EXISTS (
         schemaname = 'public'
         AND tablename = 'vector_db'
         AND indexname = 'vector_db_vector_idx'
-) THEN CREATE INDEX vector_db_vector_idx ON vector_db USING vectors (vector vector_l2_ops);
+) THEN CREATE INDEX vector_db_vector_idx ON vector_db USING vchordrq (vector vector_l2_ops) WITH 
+(options = 'residual_quantization = true
+[build.internal]
+lists=[]');
 END IF;
 END$$;
 "#;

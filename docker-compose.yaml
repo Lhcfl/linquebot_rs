@@ -3,7 +3,7 @@ services:
     container_name: linquebot
     restart: unless-stopped
     depends_on:
-      pgvector:
+      vector_chord:
         condition: service_healthy
       ollama:
         condition: service_started
@@ -13,11 +13,11 @@ services:
     volumes:
       - ./app:/app
     environment:
-      - VECTOR_DATABASE_URL=postgres://postgres:123456@pgvector:5432/linquebot
+      - VECTOR_DATABASE_URL=postgres://postgres:123456@vector_chord:5432/linquebot
       - OLLAMA_EMBEDDING_API_URL=http://ollama:11434/api/embeddings
 
-  pgvector:
-    image: ghcr.io/tensorchord/pgvecto-rs:pg17-v0.4.0
+  vector_chord:
+    image: tensorchord/vchord-postgres:pg17-v0.4.2
     # ports:
     #   - 5433:5432 # For local development, uncomment to expose port
     environment:
@@ -26,7 +26,7 @@ services:
       POSTGRES_PASSWORD: "123456"
     volumes:
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - pgvector_data:/var/lib/postgresql/data
+      - vector_chord_data:/var/lib/postgresql/data
     healthcheck:
       test: [CMD-SHELL, pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER]
       interval: 10s
@@ -54,7 +54,7 @@ services:
         condition: service_started
 
 volumes:
-  pgvector_data:
+  vector_chord_data:
     driver: local
   ollama_data:
     driver: local
