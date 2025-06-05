@@ -24,7 +24,7 @@ fn vector_result_to_string(r: &VectorResult) -> Option<String> {
             warn!("Failed to create URL for message: {:?}", r);
             None
         }
-        Some(url) => Some(format!("{} {}", url.as_str(), distance)),
+        Some(url) => Some(format!("{} {:.4}", url.as_str(), distance)),
     }
 }
 
