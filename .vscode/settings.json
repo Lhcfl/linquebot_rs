@@ -17,5 +17,7 @@
       "database": "linquebot",
       "username": "postgres"
     }
-  ]
+  ],
+  "debug.allowBreakpointsEverywhere": true,
+  "rust-analyzer.check.command": "clippy"
 }

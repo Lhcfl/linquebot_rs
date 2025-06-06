@@ -5,6 +5,7 @@ use crate::{
 };
 use log::{debug, warn};
 use teloxide_core::types::Message;
+use unicode_segmentation::UnicodeSegmentation;
 
 fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     let ctx = ctx.task();
@@ -32,6 +33,10 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
         if !enabled {
             return;
         }
+        if text.graphemes(true).count() < 5 {
+            debug!("Message too short to record: {}", text);
+            return;
+        };
         let embedding = match text_embedding(text).await {
             Ok(embedding) => embedding,
             Err(e) => {

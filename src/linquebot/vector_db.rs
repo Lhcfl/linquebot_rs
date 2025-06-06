@@ -9,14 +9,14 @@ pub struct VectorData {
     pub index: String,
     pub user: Option<String>,
     pub chat: String,
-    pub vector: Vec<f64>,
+    pub vector: Vec<f32>,
 }
 
 #[derive(Debug)]
 pub struct VectorQuery {
     pub user: Option<String>,
     pub chat: String,
-    pub vector: Vec<f64>,
+    pub vector: Vec<f32>,
 }
 
 #[derive(Debug)]
@@ -24,7 +24,7 @@ pub struct VectorResult {
     pub user: Option<String>,
     pub chat: String,
     pub index: String,
-    pub distance: f64,
+    pub distance: f32,
 }
 
 const CREATE_VECTOR_DB_QUERY: &str = r#"
@@ -72,7 +72,7 @@ SELECT index,
     distance
 FROM (
         SELECT index,
-            vector <-> $3::vector AS distance
+            (vector <-> $3::vector)::FLOAT4 AS distance
         FROM vector_db
         WHERE chat = $1
             AND "user" IS NOT DISTINCT
