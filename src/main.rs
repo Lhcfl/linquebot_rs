@@ -75,7 +75,7 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
     });
     let app = APP.get().expect("should initialized app");
     info!(target: "init", "user name: {}", app.username);
-    info!(target: "init", "Settiing commands...");
+    info!(target: "init", "Setting commands...");
     set_my_commands(app).await?;
     info!(target: "init", "{}", "Successfully initialized bot".green());
     Ok(app)
