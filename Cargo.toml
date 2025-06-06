@@ -27,7 +27,8 @@ graphviz-rust = "0.9.3"
 dotenvy = "0.15.7"
 hf-hub = "0.4.2"
 tokenizers = { version = "0.21.1" }
-ort = { version = "=2.0.0-rc.10" }
+ort = { version = "=2.0.0-rc.9" }
+ort-sys = { version = "=2.0.0-rc.9", default-features = false }
 ndarray = "0.16.1"
 
 [features]
@@ -37,3 +38,6 @@ tarot = []
 tarot_ai = []
 explain = []
 jielong = []
+
+[workspace]
+resolver = "2"

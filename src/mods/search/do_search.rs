@@ -65,7 +65,7 @@ fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
                 .await;
             return;
         }
-        let embedding = match text_embedding(&text) {
+        let embedding = match text_embedding(&text).await {
             Ok(embedding) => embedding,
             Err(e) => {
                 warn!("Text Embedding Error with:\n{e}");
