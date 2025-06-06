@@ -33,7 +33,7 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
         if !enabled {
             return;
         }
-        if text.graphemes(true).count() < 5 {
+        if text.graphemes(true).count() <= 5 {
             debug!("Message too short to record: {}", text);
             return;
         };

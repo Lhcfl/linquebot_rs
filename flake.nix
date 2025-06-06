@@ -81,7 +81,7 @@
             # Add extra inputs here or any other derivation settings
             # doCheck = true;
             buildInputs =
-              [ ]
+              [ onnxruntime ]
               ++ lib.optionals stdenvNoCC.hostPlatform.isLinux [
                 openssl
                 pkg-config

@@ -32,3 +32,4 @@ services:
 volumes:
   vector_chord_data:
     driver: local
+    name: linquebot-vector-db
