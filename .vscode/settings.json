@@ -17,5 +17,6 @@
       "database": "linquebot",
       "username": "postgres"
     }
-  ]
+  ],
+  "debug.allowBreakpointsEverywhere": true
 }
