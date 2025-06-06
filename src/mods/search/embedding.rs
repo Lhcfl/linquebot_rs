@@ -2,7 +2,7 @@ use anyhow::{Error as E, Result};
 use hf_hub::{api::tokio::Api, Repo, RepoType};
 use ndarray::Ix1;
 use ort::{
-    session::{builder::GraphOptimizationLevel, Session},
+    session::{builder::GraphOptimizationLevel, RunOptions, Session},
     value::TensorRef,
 };
 use tokenizers::Tokenizer;
@@ -53,7 +53,10 @@ pub async fn text_embedding(text: impl Into<String>) -> Result<Vec<f32>> {
         .collect::<Vec<i64>>();
     let tokens = TensorRef::from_array_view(([1, encoding.len()], &*tokens))?;
     let attention_mask = TensorRef::from_array_view(([1, encoding.len()], &*attention_mask))?;
-    let outputs = session.run(ort::inputs![tokens, attention_mask]).unwrap();
+    let options = RunOptions::new()?;
+    let outputs = session
+        .run_async(ort::inputs![tokens, attention_mask], &options)?
+        .await?;
     let embeddings = outputs[1]
         .try_extract_array::<f32>()?
         .squeeze()

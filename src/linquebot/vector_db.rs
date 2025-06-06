@@ -72,7 +72,7 @@ SELECT index,
     distance
 FROM (
         SELECT index,
-            vector <-> $3::vector AS distance
+            (vector <-> $3::vector)::FLOAT4 AS distance
         FROM vector_db
         WHERE chat = $1
             AND "user" IS NOT DISTINCT
