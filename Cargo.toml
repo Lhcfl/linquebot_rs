@@ -30,6 +30,7 @@ tokenizers = { version = "0.21.1" }
 ort = { version = "=2.0.0-rc.9" }
 ort-sys = { version = "=2.0.0-rc.9", default-features = false }
 ndarray = "0.16.1"
+unicode-segmentation = "1.12.0"
 
 [features]
 default = ["full"]

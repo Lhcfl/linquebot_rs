@@ -1612,6 +1612,7 @@ dependencies = [
  "teloxide-core",
  "tokenizers",
  "tokio",
+ "unicode-segmentation",
  "urlencoding",
 ]
 
