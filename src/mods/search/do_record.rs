@@ -32,7 +32,7 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
         if !enabled {
             return;
         }
-        let embedding = match text_embedding(text).await {
+        let embedding = match text_embedding(text) {
             Ok(embedding) => embedding,
             Err(e) => {
                 warn!("Text Embedding Error with:\n{e}");
