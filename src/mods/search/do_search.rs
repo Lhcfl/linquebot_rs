@@ -99,6 +99,13 @@ fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
             .filter_map(vector_result_to_string)
             .collect::<Vec<String>>()
             .join("\n");
+        if links.is_empty() {
+            ctx.reply("没有找到相关内容")
+                .send()
+                .warn_on_error("search")
+                .await;
+            return;
+        };
         ctx.reply(links).send().warn_on_error("search").await;
     }
     .into()

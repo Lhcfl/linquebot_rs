@@ -1,5 +1,8 @@
 use anyhow::{Error as E, Result};
-use hf_hub::{api::sync::Api, Repo, RepoType};
+use hf_hub::{
+    api::sync::{Api, ApiBuilder},
+    Repo, RepoType,
+};
 use ndarray::{Array1, Axis, Ix1};
 use ort::session::{builder::GraphOptimizationLevel, Session};
 use std::sync::LazyLock;
@@ -10,7 +13,9 @@ static REVISION: &str = "main";
 
 fn get_tokenizer() -> Result<Tokenizer> {
     let repo = Repo::with_revision(MODEL_ID.to_string(), RepoType::Model, REVISION.to_string());
-    let api = Api::new()?;
+    let api = ApiBuilder::new()
+        .with_cache_dir("cache/huggingface".into())
+        .build()?;
     let api = api.repo(repo.to_owned());
     let tokenizer_filename = api.get("tokenizer.json")?;
     let tokenizer = Tokenizer::from_file(tokenizer_filename)
