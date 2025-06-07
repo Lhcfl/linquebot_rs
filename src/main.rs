@@ -15,6 +15,7 @@
 #![feature(extend_one)]
 #![feature(iter_next_chunk)]
 #![feature(duration_constructors_lite)]
+#![feature(test)]
 
 mod assets;
 mod linquebot;

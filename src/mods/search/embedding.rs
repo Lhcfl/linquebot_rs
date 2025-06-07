@@ -20,7 +20,7 @@ fn get_tokenizer() -> Result<Tokenizer> {
     let api = ApiBuilder::new()
         .with_cache_dir("cache/huggingface".into())
         .build()?;
-    let api = api.repo(repo.to_owned());
+    let api = api.repo(repo);
     let tokenizer_filename = api.get("tokenizer.json")?;
     let tokenizer = Tokenizer::from_file(tokenizer_filename)
         .map_err(E::msg)?
@@ -35,7 +35,7 @@ fn get_tokenizer() -> Result<Tokenizer> {
 fn get_session() -> Result<Mutex<Session>> {
     let repo = Repo::with_revision(MODEL_ID.to_string(), RepoType::Model, REVISION.to_string());
     let api = Api::new()?;
-    let api = api.repo(repo.to_owned());
+    let api = api.repo(repo);
     let onnx_filename = api.get("onnx/model_uint8.onnx")?;
     let session = Session::builder()?
         .with_optimization_level(GraphOptimizationLevel::Level3)?
@@ -72,4 +72,33 @@ pub async fn text_embedding(text: impl Into<String>) -> Result<Vec<f32>> {
         .into_dimensionality::<Ix1>()?
         .to_vec();
     Ok(embeddings)
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate test;
+    use super::*;
+
+    #[tokio::test()]
+    async fn test_text_embedding() -> Result<()> {
+        let text = "Hello, world!";
+        let embedding = text_embedding(text).await?;
+        assert_eq!(embedding.len(), 1024); // Assuming the model outputs 768-dimensional embeddings
+        let embedding_2 = text_embedding(text).await?;
+        assert_eq!(embedding, embedding_2);
+        Ok(())
+    }
+
+    #[bench]
+    fn bench_text_embedding(b: &mut test::Bencher) {
+        let text = "Hello, world!";
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        // rt.block_on(text_embedding(text)).unwrap();
+        b.iter(|| {
+            rt.block_on(text_embedding(text)).expect("Embedding failed");
+        });
+    }
 }
