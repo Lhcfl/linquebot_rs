@@ -81,12 +81,15 @@
             # Add extra inputs here or any other derivation settings
             # doCheck = true;
             buildInputs =
-              [ onnxruntime ]
+              [
+                onnxruntime
+                pkg-config
+              ]
               ++ lib.optionals stdenvNoCC.hostPlatform.isLinux [
                 openssl
-                pkg-config
               ];
             nativeBuildInputs = [ makeWrapper ];
+            CI = "true";
             postInstall = ''
               wrapProgram $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
             '';

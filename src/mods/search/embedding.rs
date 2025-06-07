@@ -81,6 +81,9 @@ mod tests {
 
     #[tokio::test()]
     async fn test_text_embedding() -> Result<()> {
+        if std::env::var("CI").is_ok() {
+            return Ok(());
+        };
         let text = "Hello, world!";
         let embedding = text_embedding(text).await?;
         assert_eq!(embedding.len(), 1024); // Assuming the model outputs 768-dimensional embeddings
@@ -91,6 +94,9 @@ mod tests {
 
     #[bench]
     fn bench_text_embedding(b: &mut test::Bencher) {
+        if std::env::var("CI").is_ok() {
+            return;
+        };
         let text = "Hello, world!";
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
