@@ -57,6 +57,22 @@ END IF;
 END$$;
 "#;
 
+const CREATE_CHAT_INDEX_QUERY: &str = r#"
+DO $$
+BEGIN IF NOT EXISTS (
+    SELECT
+        1
+    FROM
+        pg_indexes
+    WHERE
+        schemaname = 'public'
+        AND tablename = 'vector_db'
+        AND indexname = 'vector_db_chat_idx'
+) THEN CREATE INDEX vector_db_chat_idx ON vector_db (chat);
+END IF;
+END$$;
+"#;
+
 const UPSERT_VECTOR_QUERY: &str = r#"
 INSERT INTO
     vector_db (index, "user", chat, vector)
@@ -94,6 +110,7 @@ impl VectorDB {
         sqlx::query(CREATE_VECTOR_INDEX_QUERY)
             .execute(&pool)
             .await?;
+        sqlx::query(CREATE_CHAT_INDEX_QUERY).execute(&pool).await?;
         Ok(VectorDB { pool })
     }
 
