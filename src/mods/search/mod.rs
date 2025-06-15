@@ -1,6 +1,7 @@
 mod do_record;
 mod do_search;
 mod embedding;
+mod qwen3_embedding;
 mod toggle;
 
 pub use do_record::RECORDER;

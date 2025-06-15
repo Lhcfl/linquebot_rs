@@ -1,18 +1,16 @@
+use super::qwen3_embedding::{Config, Model};
 use anyhow::{Error as E, Result};
+use candle_core::{DType, Device, Tensor};
+use candle_nn::VarBuilder;
 use hf_hub::{
     api::sync::{Api, ApiBuilder},
     Repo, RepoType,
-};
-use ndarray::Ix1;
-use ort::{
-    session::{builder::GraphOptimizationLevel, Session},
-    value::TensorRef,
 };
 use std::sync::LazyLock;
 use tokenizers::Tokenizer;
 use tokio::sync::Mutex;
 
-static MODEL_ID: &str = "Snowflake/snowflake-arctic-embed-l-v2.0";
+static MODEL_ID: &str = "Qwen/Qwen3-Embedding-0.6B";
 static REVISION: &str = "main";
 
 fn get_tokenizer() -> Result<Tokenizer> {
@@ -32,46 +30,53 @@ fn get_tokenizer() -> Result<Tokenizer> {
     Ok(tokenizer)
 }
 
-fn get_session() -> Result<Mutex<Session>> {
+fn get_model() -> Result<Mutex<Model>> {
     let repo = Repo::with_revision(MODEL_ID.to_string(), RepoType::Model, REVISION.to_string());
     let api = Api::new()?;
     let api = api.repo(repo);
-    let onnx_filename = api.get("onnx/model_uint8.onnx")?;
-    let session = Session::builder()?
-        .with_optimization_level(GraphOptimizationLevel::Level3)?
-        .with_intra_threads(4)?
-        .commit_from_file(onnx_filename)?;
-    Ok(Mutex::new(session))
+    let model_filename = api.get("model.safetensors")?;
+    let config_filename = api.get("config.json")?;
+    let config: Config = serde_json::from_slice(&std::fs::read(config_filename)?)?;
+    let device = candle_core::Device::Cpu;
+    let dtype = DType::F32;
+
+    let model_safetensors = std::fs::read(model_filename)?;
+    // let filenames = vec![model_filename];
+    let vb = VarBuilder::from_slice_safetensors(&model_safetensors, dtype, &device)?;
+
+    let model = Model::new(&config, vb).unwrap();
+    Ok(Mutex::new(model))
 }
 
 static TOKENIZER: LazyLock<Result<Tokenizer>> = LazyLock::new(get_tokenizer);
-static SESSION: LazyLock<Result<Mutex<Session>>> = LazyLock::new(get_session);
+static MODEL: LazyLock<Result<Mutex<Model>>> = LazyLock::new(get_model);
 
 pub async fn text_embedding(text: impl Into<String>) -> Result<Vec<f32>> {
     let tokenizer = TOKENIZER.as_ref().map_err(E::msg)?;
-    let session_mutex = SESSION.as_ref().map_err(E::msg)?;
-    let mut session = session_mutex.lock().await;
+    let model_mutex = MODEL.as_ref().map_err(E::msg)?;
+    let mut model = model_mutex.lock().await;
     let encoding = tokenizer.encode(text.into(), true).map_err(E::msg)?;
-    let tokens = encoding
-        .get_ids()
-        .iter()
-        .map(|&t| t.into())
-        .collect::<Vec<i64>>();
-    let attention_mask = encoding
-        .get_attention_mask()
-        .iter()
-        .map(|&m| m.into())
-        .collect::<Vec<i64>>();
-    let tokens = TensorRef::from_array_view(([1, tokens.len()], tokens.as_slice()))?;
-    let attention_mask =
-        TensorRef::from_array_view(([1, attention_mask.len()], attention_mask.as_slice()))?;
-    let outputs = session.run(ort::inputs![tokens, attention_mask])?;
-    let embeddings = outputs[1]
-        .try_extract_array()?
-        .squeeze()
-        .into_dimensionality::<Ix1>()?
-        .to_vec();
-    Ok(embeddings)
+    let inputs = encoding.get_ids();
+    let tokens = Tensor::new(inputs, &Device::Cpu)?;
+    // .map(|&t| t.into())
+    // .collect::<Vec<i64>>();
+    // let attention_mask = encoding
+    //     .get_attention_mask()
+    //     .iter()
+    //     .map(|&m| m.into())
+    //     .collect::<Vec<i64>>();
+    // let tokens = TensorRef::from_array_view(([1, tokens.len()], tokens.as_slice()))?;
+    // let attention_mask =
+    //     TensorRef::from_array_view(([1, attention_mask.len()], attention_mask.as_slice()))?;
+    let outputs = model.forward(&tokens, inputs.len())?;
+    println!("Outputs: {outputs}");
+    // let embeddings = outputs.to_vec0::<bf32>();
+    // let embeddings = outputs[1]
+    //     .try_extract_array()?
+    //     .squeeze()
+    //     .into_dimensionality::<Ix1>()?
+    //     .to_vec();
+    Ok(Vec::new())
 }
 
 #[cfg(test)]
