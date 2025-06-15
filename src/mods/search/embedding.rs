@@ -7,7 +7,7 @@ use hf_hub::{
     Repo, RepoType,
 };
 use std::sync::LazyLock;
-use tokenizers::Tokenizer;
+use tokenizers::{Tokenizer, TruncationDirection, TruncationParams, TruncationStrategy};
 use tokio::sync::Mutex;
 
 static MODEL_ID: &str = "Qwen/Qwen3-Embedding-0.6B";
@@ -23,7 +23,12 @@ fn get_tokenizer() -> Result<Tokenizer> {
     let tokenizer = Tokenizer::from_file(tokenizer_filename)
         .map_err(E::msg)?
         .with_padding(None)
-        .with_truncation(None)
+        .with_truncation(Some(TruncationParams {
+            max_length: 8192,
+            strategy: TruncationStrategy::default(),
+            stride: 0,
+            direction: TruncationDirection::default(),
+        }))
         .map_err(E::msg)?
         .to_owned()
         .into();
@@ -44,7 +49,7 @@ fn get_model() -> Result<Mutex<Model>> {
     // let filenames = vec![model_filename];
     let vb = VarBuilder::from_slice_safetensors(&model_safetensors, dtype, &device)?;
 
-    let model = Model::new(&config, vb).unwrap();
+    let model = Model::new(&config, vb)?;
     Ok(Mutex::new(model))
 }
 
@@ -57,26 +62,9 @@ pub async fn text_embedding(text: impl Into<String>) -> Result<Vec<f32>> {
     let mut model = model_mutex.lock().await;
     let encoding = tokenizer.encode(text.into(), true).map_err(E::msg)?;
     let inputs = encoding.get_ids();
-    let tokens = Tensor::new(inputs, &Device::Cpu)?;
-    // .map(|&t| t.into())
-    // .collect::<Vec<i64>>();
-    // let attention_mask = encoding
-    //     .get_attention_mask()
-    //     .iter()
-    //     .map(|&m| m.into())
-    //     .collect::<Vec<i64>>();
-    // let tokens = TensorRef::from_array_view(([1, tokens.len()], tokens.as_slice()))?;
-    // let attention_mask =
-    //     TensorRef::from_array_view(([1, attention_mask.len()], attention_mask.as_slice()))?;
+    let tokens = Tensor::new(inputs, &Device::Cpu)?.reshape((inputs.len(), ()))?;
     let outputs = model.forward(&tokens, inputs.len())?;
-    println!("Outputs: {outputs}");
-    // let embeddings = outputs.to_vec0::<bf32>();
-    // let embeddings = outputs[1]
-    //     .try_extract_array()?
-    //     .squeeze()
-    //     .into_dimensionality::<Ix1>()?
-    //     .to_vec();
-    Ok(Vec::new())
+    Ok(outputs.get(inputs.len() - 1)?.get(0)?.to_vec1::<f32>()?)
 }
 
 #[cfg(test)]
@@ -90,9 +78,10 @@ mod tests {
             return Ok(());
         };
         let text = "Hello, world!";
+        let text2 = "Hello, universe!";
         let embedding = text_embedding(text).await?;
-        assert_eq!(embedding.len(), 1024); // Assuming the model outputs 768-dimensional embeddings
-        let embedding_2 = text_embedding(text).await?;
+        assert_eq!(embedding.len(), 1024); // Assuming the model outputs 1024-dimensional embeddings
+        let embedding_2 = text_embedding(text2).await?;
         assert_eq!(embedding, embedding_2);
         Ok(())
     }
