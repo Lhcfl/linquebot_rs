@@ -5,19 +5,16 @@ use std::{
     sync::Arc,
 };
 
+use duckdb::{Connection, ToSql};
 use quick_cache::sync::Cache;
 use serde::{Deserialize, Serialize};
-use sqlx::{
-    query::Query,
-    sqlite::{SqliteArguments, SqliteConnectOptions},
-    Connection, Row, Sqlite, SqliteConnection,
-};
 use teloxide_core::types::{ChatId, UserId};
 use tokio::sync::{Mutex, OwnedMappedMutexGuard, OwnedMutexGuard};
 
 pub trait DbDataDyn: Any + Send + Sync {
     fn ser_data(&self) -> String;
 }
+
 pub trait DbData: DbDataDyn {
     fn deser_data(src: &str) -> Self;
 }
@@ -46,24 +43,21 @@ impl<T: DbDataDyn + for<'a> Deserialize<'a>> DbData for T {
 #[derive(Debug)]
 pub struct DataStorage {
     cache: Cache<DataId, Arc<Mutex<dyn DbDataDyn>>>,
-    db: Mutex<SqliteConnection>,
+    db: Mutex<Connection>,
 }
 
 impl DataStorage {
     pub async fn new() -> anyhow::Result<Self> {
-        let mut db = SqliteConnection::connect_with(
-            &SqliteConnectOptions::new()
-                .filename("data.db")
-                .create_if_missing(true),
-        )
-        .await?;
-        sqlx::query(concat!(
-            "create table if not exists data",
-            "(ty text, user text, chat text, val blob, ",
-            "primary key (ty, user, chat), unique (ty, user, chat))",
-        ))
-        .execute(&mut db)
-        .await?;
+        let db = Connection::open("data.duckdb")?;
+        db.execute(
+            concat!(
+                "create table if not exists data",
+                "(ty text, user text, chat text, val blob, ",
+                "unique (ty, user, chat))",
+            ),
+            [],
+        )?;
+
         Ok(Self {
             cache: Cache::new(1000),
             db: Mutex::new(db),
@@ -132,13 +126,21 @@ impl DataStorage {
     }
 
     async fn get_from_db<T: DbData>(&'static self, id: DataId) -> Option<Arc<Mutex<T>>> {
-        let res = sqlx::query("select val from data where ty = $1 and user = $2 and chat = $3")
-            .bind_id(type_name::<T>(), id)
-            .fetch_optional(&mut *self.db.lock().await)
-            .await
-            .expect("db read error")?;
-        let res = T::deser_data(res.get::<&str, usize>(0));
-        Some(Arc::new(Mutex::new(res)))
+        let db = self.db.lock().await;
+        let mut stmt = db
+            .prepare("select val from data where ty = $1 and user = $2 and chat = $3")
+            .expect("db read error");
+        let res = stmt
+            .query_map(id.bind(type_name::<T>()), |row| {
+                let res = row.get::<usize, String>(0)?;
+                Ok(Arc::new(Mutex::new(T::deser_data(&res))))
+            })
+            .expect("db read error")
+            .map(|i| i.expect("db read error"))
+            .collect::<Vec<Arc<Mutex<T>>>>();
+        let res = res.first()?.clone();
+
+        Some(res)
     }
 
     #[allow(dead_code)]
@@ -147,41 +149,26 @@ impl DataStorage {
         self.cache.insert(id, Arc::new(Mutex::new(val)));
     }
     async fn insert_raw(&'static self, ty: &str, id: DataId, val: &str) {
-        sqlx::query(concat!(
-            "insert into data(ty, user, chat, val) values ($1, $2, $3, $4) ",
-            "on conflict(ty, user, chat) do update set val = $4"
-        ))
-        .bind_id(ty, id)
-        .bind(val)
-        .execute(&mut *self.db.lock().await)
-        .await
+        let db = self.db.lock().await;
+        db.execute(
+            concat!(
+                "insert into data(ty, user, chat, val) values ($1, $2, $3, encode($4)) ",
+                "on conflict(ty, user, chat) do update set val = encode($4)"
+            ),
+            id.bind_val(ty, val),
+        )
         .expect("db write error");
     }
 
     #[allow(dead_code)]
     pub async fn remove<T: DbData>(&'static self, id: DataId) {
         self.cache.remove(&id);
-        sqlx::query("delete from data where ty = $1 and user = $2 and chat = $3")
-            .bind_id(type_name::<T>(), id)
-            .execute(&mut *self.db.lock().await)
-            .await
-            .expect("db write error");
-    }
-}
-
-trait QueryExt<'q> {
-    fn bind_id<'a>(self, ty: &'a str, id: DataId) -> Self
-    where
-        'a: 'q;
-}
-impl<'q> QueryExt<'q> for Query<'q, Sqlite, SqliteArguments<'q>> {
-    fn bind_id<'a>(self, ty: &'a str, id: DataId) -> Self
-    where
-        'a: 'q,
-    {
-        self.bind(ty)
-            .bind(ron::to_string(&id.user.map(|u| u.0)).expect("ser u64"))
-            .bind(ron::to_string(&id.chat.map(|c| c.0)).expect("ser i64"))
+        let db = self.db.lock().await;
+        db.execute(
+            "delete from data where ty = $1 and user = $2 and chat = $3",
+            id.bind(type_name::<T>()),
+        )
+        .expect("db write error");
     }
 }
 
@@ -267,4 +254,21 @@ pub struct DataId {
     pub ty: TypeId,
     pub chat: Option<ChatId>,
     pub user: Option<UserId>,
+}
+
+impl DataId {
+    pub fn bind(&self, ty: &str) -> [Box<dyn ToSql>; 3] {
+        let ty = Box::new(ty.to_owned());
+        let user = Box::new(self.user.map(|u| u.0));
+        let chat = Box::new(self.chat.map(|c| c.0));
+        [ty, user, chat]
+    }
+
+    pub fn bind_val(&self, ty: &str, val: &str) -> [Box<dyn ToSql>; 4] {
+        let ty = Box::new(ty.to_owned());
+        let user = Box::new(self.user.map(|u| u.0));
+        let chat = Box::new(self.chat.map(|c| c.0));
+        let val = Box::new(val.to_owned());
+        [ty, user, chat, val]
+    }
 }

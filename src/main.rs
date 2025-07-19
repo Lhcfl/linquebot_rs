@@ -115,9 +115,12 @@ async fn main_loop() -> anyhow::Result<()> {
 async fn main() {
     dotenvy::dotenv().ok();
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
-    if let Err(err) = main_loop().await {
-        error!("main-loop panicked: {}", err.to_string());
-        panic!("main-loop panicked: {err}");
-    }
+    tokio::spawn(async {
+        if let Err(err) = main_loop().await {
+            error!("main-loop panicked: {}", err.to_string());
+            panic!("main-loop panicked: {err}");
+        }
+    });
+
     println!("bye bye");
 }
