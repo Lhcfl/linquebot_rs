@@ -87,7 +87,7 @@ pub fn decode_bytes(str: &str) -> Result<Vec<u8>, Base64Error> {
         resu8.pop_if(|_| c == b'=');
         resu8.pop_if(|_| d == b'=');
     }
-    if str.len() % 4 == 0 {
+    if str.len().is_multiple_of(4) {
         Ok(resu8)
     } else {
         Err(NotLongEnough(String::from_utf8_lossy(&resu8).into_owned()))
