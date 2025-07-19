@@ -130,17 +130,13 @@ impl DataStorage {
         let mut stmt = db
             .prepare("select val from data where ty = $1 and user = $2 and chat = $3")
             .expect("db read error");
-        let res = stmt
-            .query_map(id.bind(type_name::<T>()), |row| {
-                let res = row.get::<usize, String>(0)?;
-                Ok(Arc::new(Mutex::new(T::deser_data(&res))))
-            })
-            .expect("db read error")
-            .map(|i| i.expect("db read error"))
-            .collect::<Vec<Arc<Mutex<T>>>>();
-        let res = res.first()?.clone();
-
-        Some(res)
+        stmt.query_map(id.bind(type_name::<T>()), |row| {
+            let res = row.get::<usize, String>(0)?;
+            Ok(Arc::new(Mutex::new(T::deser_data(&res))))
+        })
+        .expect("db read error")
+        .map(|i| i.expect("db read error"))
+        .next()
     }
 
     #[allow(dead_code)]
