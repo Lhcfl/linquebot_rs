@@ -36,19 +36,34 @@ jobs:
           NIXPKGS_ALLOW_UNFREE=1 nix build .#dockerImage --accept-flake-config
 
       - name: docker load
-        if: github.ref == 'refs/heads/main'
         run: |
           docker load < ./result
 
       - name: docker auth
-        if: github.ref == 'refs/heads/main'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u lhcfl --password-stdin
 
-      - name: docker push
-        if: github.ref == 'refs/heads/main'
+      - name: retag to latest
+        if: github.ref_name == 'main'
+        run: |
+          docker tag ghcr.io/lhcfl/linquebot_rs:nix-built ghcr.io/lhcfl/linquebot_rs:latest
+
+      - name: docker push to latest
+        if: github.ref_name == 'main'
         run: |
           docker push ghcr.io/lhcfl/linquebot_rs:latest
+
+      - name: retag to tag
+        if: github.ref_name != 'main'
+        run: |
+          REF=${{ github.ref_name }}
+          docker tag ghcr.io/lhcfl/linquebot_rs:nix-built ghcr.io/lhcfl/linquebot_rs:${REF//\//-}
+
+      - name: docker push to tag
+        if: github.ref_name != 'main'
+        run: |
+          REF=${{ github.ref_name }}
+          docker push ghcr.io/lhcfl/linquebot_rs:${REF//\//-}
 
       # - name: Upload artifact
       #   uses: actions/upload-artifact@v4

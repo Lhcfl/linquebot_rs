@@ -84,6 +84,7 @@
               [
                 onnxruntime
                 pkg-config
+                duckdb.lib
               ]
               ++ lib.optionals stdenvNoCC.hostPlatform.isLinux [
                 openssl
@@ -124,7 +125,7 @@
           with pkgs;
           dockerTools.buildLayeredImage {
             name = "ghcr.io/lhcfl/linquebot_rs";
-            tag = "latest";
+            tag = "nix-built";
             contents = [
               # coreutils
               dockerTools.caCertificates
