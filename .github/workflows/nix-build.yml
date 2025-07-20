@@ -3,7 +3,6 @@ name: Build with Nix
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
 
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}
@@ -37,14 +36,17 @@ jobs:
           NIXPKGS_ALLOW_UNFREE=1 nix build .#dockerImage --accept-flake-config
 
       - name: docker load
+        if: github.ref == 'refs/heads/main'
         run: |
           docker load < ./result
 
       - name: docker auth
+        if: github.ref == 'refs/heads/main'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u lhcfl --password-stdin
 
       - name: docker push
+        if: github.ref == 'refs/heads/main'
         run: |
           docker push ghcr.io/lhcfl/linquebot_rs:latest
 
