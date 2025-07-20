@@ -100,7 +100,7 @@ async fn main_loop(cancel_token: CancellationToken) -> anyhow::Result<()> {
 
         let res = tokio::select! {
             _ = cancel_token.cancelled() => {
-                app.db.close().await;
+                db::DB_CONNECTION.close().await;
                 break Ok(());
             }
             res = pms => res

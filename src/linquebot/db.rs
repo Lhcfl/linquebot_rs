@@ -2,7 +2,7 @@ use std::{
     any::{type_name, Any, TypeId},
     marker::PhantomData,
     ops::{Deref, DerefMut},
-    sync::Arc,
+    sync::{Arc, LazyLock},
 };
 
 use duckdb::{Connection, ToSql};
@@ -30,6 +30,35 @@ impl<T: DbDataDyn + for<'a> Deserialize<'a>> DbData for T {
     }
 }
 
+pub struct DbConnection {
+    connection: Mutex<Option<Connection>>,
+}
+
+impl DbConnection {
+    pub fn new() -> Self {
+        Self {
+            connection: Mutex::new(Some(
+                Connection::open("data.duckdb").expect("Failed to open database"),
+            )),
+        }
+    }
+
+    pub async fn get(&self) -> tokio::sync::MappedMutexGuard<'_, duckdb::Connection> {
+        MutexGuard::map(self.connection.lock().await, |db| {
+            db.as_mut().expect("Database connection is not exist")
+        })
+    }
+
+    pub async fn close(&self) {
+        let mut conn = self.connection.lock().await;
+        if let Some(db) = conn.take() {
+            db.close().expect("Failed to close database connection");
+        }
+    }
+}
+
+pub static DB_CONNECTION: LazyLock<DbConnection> = LazyLock::new(DbConnection::new);
+
 /// 数据库
 ///
 /// 使用方式：
@@ -44,12 +73,11 @@ impl<T: DbDataDyn + for<'a> Deserialize<'a>> DbData for T {
 #[derive(Debug)]
 pub struct DataStorage {
     cache: Cache<DataId, Arc<Mutex<dyn DbDataDyn>>>,
-    db: Mutex<Option<Connection>>,
 }
 
 impl DataStorage {
     pub async fn new() -> anyhow::Result<Self> {
-        let db = Connection::open("data.duckdb")?;
+        let db = DB_CONNECTION.get().await;
         db.execute_batch(concat!(
             "begin;",
             "install vss;",
@@ -58,7 +86,7 @@ impl DataStorage {
             "begin;",
             "create table if not exists data",
             "(ty text, user text, chat text, val blob, ",
-            "unique (ty, user, chat));",
+            "primary key (ty, user, chat), unique (ty, user, chat));",
             "commit;",
         ))?;
         if std::fs::exists("data.db")? {
@@ -77,13 +105,6 @@ impl DataStorage {
 
         Ok(Self {
             cache: Cache::new(1000),
-            db: Mutex::new(Some(db)),
-        })
-    }
-
-    async fn get_db(&self) -> tokio::sync::MappedMutexGuard<'_, duckdb::Connection> {
-        MutexGuard::map(self.db.lock().await, |db| {
-            db.as_mut().expect("Database connection is not initialized")
         })
     }
 
@@ -149,9 +170,9 @@ impl DataStorage {
     }
 
     async fn get_from_db<T: DbData>(&'static self, id: DataId) -> Option<Arc<Mutex<T>>> {
-        let db = self.get_db().await;
+        let db = DB_CONNECTION.get().await;
         let mut stmt = db
-            .prepare("select val from data where ty = $1 and user = $2 and chat = $3")
+            .prepare("select decode(val) from data where ty = $1 and user = $2 and chat = $3")
             .expect("db read error");
         stmt.query_map(id.bind(type_name::<T>()), |row| {
             let res = row.get::<usize, String>(0)?;
@@ -168,7 +189,7 @@ impl DataStorage {
         self.cache.insert(id, Arc::new(Mutex::new(val)));
     }
     async fn insert_raw(&'static self, ty: &str, id: DataId, val: &str) {
-        let db = self.get_db().await;
+        let db = DB_CONNECTION.get().await;
         db.execute(
             concat!(
                 "insert into data(ty, user, chat, val) values ($1, $2, $3, encode($4)) ",
@@ -182,19 +203,12 @@ impl DataStorage {
     #[allow(dead_code)]
     pub async fn remove<T: DbData>(&'static self, id: DataId) {
         self.cache.remove(&id);
-        let db = self.get_db().await;
+        let db = DB_CONNECTION.get().await;
         db.execute(
             "delete from data where ty = $1 and user = $2 and chat = $3",
             id.bind(type_name::<T>()),
         )
         .expect("db write error");
-    }
-
-    pub async fn close(&self) {
-        let mut db = self.db.lock().await;
-        if let Some(db) = db.take() {
-            db.close().expect("Failed to close database connection");
-        }
     }
 }
 
@@ -285,15 +299,15 @@ pub struct DataId {
 impl DataId {
     pub fn bind(&self, ty: &str) -> [Box<dyn ToSql>; 3] {
         let ty = Box::new(ty.to_owned());
-        let user = Box::new(self.user.map(|u| u.0));
-        let chat = Box::new(self.chat.map(|c| c.0));
+        let user = Box::new(ron::to_string(&self.user.map(|u| u.0)).expect("ser u64"));
+        let chat = Box::new(ron::to_string(&self.chat.map(|c| c.0)).expect("ser u64"));
         [ty, user, chat]
     }
 
     pub fn bind_val(&self, ty: &str, val: &str) -> [Box<dyn ToSql>; 4] {
         let ty = Box::new(ty.to_owned());
-        let user = Box::new(self.user.map(|u| u.0));
-        let chat = Box::new(self.chat.map(|c| c.0));
+        let user = Box::new(ron::to_string(&self.user.map(|u| u.0)).expect("ser u64"));
+        let chat = Box::new(ron::to_string(&self.chat.map(|c| c.0)).expect("ser u64"));
         let val = Box::new(val.to_owned());
         [ty, user, chat, val]
     }
