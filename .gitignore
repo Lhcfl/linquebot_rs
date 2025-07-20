@@ -1,6 +1,7 @@
 /target
 *.db
 *.duckdb*
+*.bak
 /result
 .env
 cache

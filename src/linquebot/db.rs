@@ -6,10 +6,11 @@ use std::{
 };
 
 use duckdb::{Connection, ToSql};
+use log::info;
 use quick_cache::sync::Cache;
 use serde::{Deserialize, Serialize};
 use teloxide_core::types::{ChatId, UserId};
-use tokio::sync::{Mutex, OwnedMappedMutexGuard, OwnedMutexGuard};
+use tokio::sync::{Mutex, MutexGuard, OwnedMappedMutexGuard, OwnedMutexGuard};
 
 pub trait DbDataDyn: Any + Send + Sync {
     fn ser_data(&self) -> String;
@@ -43,24 +44,46 @@ impl<T: DbDataDyn + for<'a> Deserialize<'a>> DbData for T {
 #[derive(Debug)]
 pub struct DataStorage {
     cache: Cache<DataId, Arc<Mutex<dyn DbDataDyn>>>,
-    db: Mutex<Connection>,
+    db: Mutex<Option<Connection>>,
 }
 
 impl DataStorage {
     pub async fn new() -> anyhow::Result<Self> {
         let db = Connection::open("data.duckdb")?;
-        db.execute(
-            concat!(
-                "create table if not exists data",
-                "(ty text, user text, chat text, val blob, ",
-                "unique (ty, user, chat))",
-            ),
-            [],
-        )?;
+        db.execute_batch(concat!(
+            "begin;",
+            "install vss;",
+            "load vss;",
+            "commit;",
+            "begin;",
+            "create table if not exists data",
+            "(ty text, user text, chat text, val blob, ",
+            "unique (ty, user, chat));",
+            "commit;",
+        ))?;
+        if std::fs::exists("data.db")? {
+            info!("Migrating old database...");
+            db.execute_batch(concat!(
+                "begin;",
+                "install sqlite;",
+                "load sqlite;",
+                "attach 'data.db' as data_sqlite (type sqlite);",
+                "insert into data.data select * from data_sqlite.\"data\";",
+                "commit;"
+            ))?;
+            info!("Migration complete, backing up old database file...");
+            std::fs::rename("data.db", "data.db.bak")?;
+        }
 
         Ok(Self {
             cache: Cache::new(1000),
-            db: Mutex::new(db),
+            db: Mutex::new(Some(db)),
+        })
+    }
+
+    async fn get_db(&self) -> tokio::sync::MappedMutexGuard<'_, duckdb::Connection> {
+        MutexGuard::map(self.db.lock().await, |db| {
+            db.as_mut().expect("Database connection is not initialized")
         })
     }
 
@@ -126,7 +149,7 @@ impl DataStorage {
     }
 
     async fn get_from_db<T: DbData>(&'static self, id: DataId) -> Option<Arc<Mutex<T>>> {
-        let db = self.db.lock().await;
+        let db = self.get_db().await;
         let mut stmt = db
             .prepare("select val from data where ty = $1 and user = $2 and chat = $3")
             .expect("db read error");
@@ -145,7 +168,7 @@ impl DataStorage {
         self.cache.insert(id, Arc::new(Mutex::new(val)));
     }
     async fn insert_raw(&'static self, ty: &str, id: DataId, val: &str) {
-        let db = self.db.lock().await;
+        let db = self.get_db().await;
         db.execute(
             concat!(
                 "insert into data(ty, user, chat, val) values ($1, $2, $3, encode($4)) ",
@@ -159,12 +182,19 @@ impl DataStorage {
     #[allow(dead_code)]
     pub async fn remove<T: DbData>(&'static self, id: DataId) {
         self.cache.remove(&id);
-        let db = self.db.lock().await;
+        let db = self.get_db().await;
         db.execute(
             "delete from data where ty = $1 and user = $2 and chat = $3",
             id.bind(type_name::<T>()),
         )
         .expect("db write error");
+    }
+
+    pub async fn close(&self) {
+        let mut db = self.db.lock().await;
+        if let Some(db) = db.take() {
+            db.close().expect("Failed to close database connection");
+        }
     }
 }
 
