@@ -53,6 +53,7 @@
           with pkgs;
           mkShell {
             buildInputs = [
+              duckdb.lib
               openssl
               graphviz
               (rust-bin.selectLatestNightlyWith (
@@ -80,15 +81,14 @@
             };
             # Add extra inputs here or any other derivation settings
             # doCheck = true;
-            buildInputs =
-              [
-                onnxruntime
-                pkg-config
-                duckdb.lib
-              ]
-              ++ lib.optionals stdenvNoCC.hostPlatform.isLinux [
-                openssl
-              ];
+            buildInputs = [
+              onnxruntime
+              pkg-config
+              duckdb.lib
+            ]
+            ++ lib.optionals stdenvNoCC.hostPlatform.isLinux [
+              openssl
+            ];
             nativeBuildInputs = [ makeWrapper ];
             CI = "true";
             postInstall = ''

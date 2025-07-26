@@ -97,7 +97,8 @@ impl DataStorage {
                 "load sqlite;",
                 "attach 'data.db' as data_sqlite (type sqlite);",
                 "insert into data.data select * from data_sqlite.\"data\";",
-                "commit;"
+                "commit;",
+                "detach data_sqlite;",
             ))?;
             info!("Migration complete, backing up old database file...");
             std::fs::rename("data.db", "data.db.bak")?;

@@ -16,10 +16,9 @@ use teloxide_core::{
 
 fn vector_result_to_string(r: &VectorResult) -> Option<String> {
     let message_id = MessageId(r.index.parse().ok()?);
-    let chat_id = ChatId(r.chat.parse().ok()?);
-    let user_id = r.user.as_deref();
+    let chat_id = ChatId(r.scope.parse().ok()?);
     let distance = r.distance;
-    match Message::url_of(chat_id, user_id, message_id) {
+    match Message::url_of(chat_id, None, message_id) {
         None => {
             warn!("Failed to create URL for message: {:?}", r);
             None
@@ -78,8 +77,7 @@ fn on_search(ctx: &mut Context, _: &Message) -> Consumption {
         };
         let results = match vector_db
             .get(VectorQuery {
-                chat: ctx.chat_id.to_string(),
-                user: None,
+                scope: ctx.chat_id.to_string(),
                 vector: embedding,
             })
             .await
