@@ -234,10 +234,6 @@ impl Qwen3Attention {
             .reshape((b, l, self.hidden_size))?
             .apply(&self.o_proj)
     }
-
-    pub(crate) fn clear_kv_cache(&mut self) {
-        self.kv_cache.reset();
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -274,10 +270,6 @@ impl DecoderLayer {
         let h2 = h2.apply(&self.mlp)?;
         x + h2
     }
-
-    fn clear_kv_cache(&mut self) {
-        self.self_attn.clear_kv_cache();
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -306,12 +298,6 @@ impl Model {
             device: vb.device().clone(),
             dtype: vb.dtype(),
         })
-    }
-
-    fn clear_kv_cache(&mut self) {
-        for l in &mut self.layers {
-            l.clear_kv_cache();
-        }
     }
 
     fn causal_mask(
@@ -355,35 +341,5 @@ impl Model {
             h = layer.forward(&h, causal.as_ref(), offset)?;
         }
         self.norm.forward(&h)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ModelForCausalLM {
-    base: Model,
-    lm_head: Linear,
-}
-
-impl ModelForCausalLM {
-    pub fn new(cfg: &Config, vb: VarBuilder) -> Result<Self> {
-        let base = Model::new(cfg, vb.clone())?;
-        let lm_head = if cfg.tie_word_embeddings {
-            Linear::from_weights(base.embed_tokens.embeddings().clone(), None)
-        } else {
-            linear_no_bias(cfg.hidden_size, cfg.vocab_size, vb.pp("lm_head"))?
-        };
-        Ok(Self { base, lm_head })
-    }
-
-    pub fn forward(&mut self, input: &Tensor, offset: usize) -> Result<Tensor> {
-        let (_, l) = input.dims2()?;
-        self.base
-            .forward(input, offset)?
-            .narrow(1, l - 1, 1)?
-            .apply(&self.lm_head)
-    }
-
-    pub fn clear_kv_cache(&mut self) {
-        self.base.clear_kv_cache();
     }
 }
