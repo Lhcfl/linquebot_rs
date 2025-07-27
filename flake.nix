@@ -139,6 +139,7 @@
                 "${lib.meta.getExe packages.default}"
               ];
               WorkingDir = "/app";
+              StopSignal = "SIGINT";
             };
             created = "now";
           };
