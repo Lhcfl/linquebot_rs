@@ -37,6 +37,8 @@ use teloxide_core::prelude::*;
 use teloxide_core::types::BotCommand;
 use teloxide_core::types::True;
 use teloxide_core::RequestError;
+use tokio::signal;
+use tokio_util::sync::CancellationToken;
 
 static APP: OnceLock<App> = OnceLock::new();
 
@@ -82,21 +84,28 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
     Ok(app)
 }
 
-async fn main_loop() -> anyhow::Result<()> {
+async fn main_loop(cancel_token: CancellationToken) -> anyhow::Result<()> {
     let app = init_app().await?;
     let bot = &app.bot;
 
     let mut offset: i32 = 0;
 
     loop {
-        match bot
+        let pms = bot
             .get_updates()
             .offset(offset)
             .timeout(10)
             .allowed_updates(ALLOWED_UPDATES.to_vec())
-            .send()
-            .await
-        {
+            .send();
+
+        let res = tokio::select! {
+            _ = cancel_token.cancelled() => {
+                db::DB_CONNECTION.close().await;
+                break Ok(());
+            }
+            res = pms => res
+        };
+        match res {
             Ok(updates) => {
                 offset = updates.last().map(|u| u.id.0 as i32 + 1).unwrap_or(offset);
 
@@ -111,13 +120,25 @@ async fn main_loop() -> anyhow::Result<()> {
     }
 }
 
+async fn wait_for_ctrlc(cancel_token: CancellationToken) {
+    signal::ctrl_c().await.expect("Failed to listen for Ctrl-C");
+    println!(); // Print a newline to separate the Ctrl-C message from the previous output
+    info!("Ctrl-C received, shutting down...");
+    cancel_token.cancel();
+}
+
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
-    if let Err(err) = main_loop().await {
+    env_logger::Builder::from_env(Env::default().default_filter_or("info"))
+        .target(env_logger::Target::Stdout)
+        .init();
+    let cancel_token = CancellationToken::new();
+    tokio::spawn(wait_for_ctrlc(cancel_token.clone()));
+    if let Err(err) = main_loop(cancel_token.clone()).await {
         error!("main-loop panicked: {}", err.to_string());
         panic!("main-loop panicked: {err}");
-    }
-    println!("bye bye");
+    };
+
+    info!("bye bye");
 }

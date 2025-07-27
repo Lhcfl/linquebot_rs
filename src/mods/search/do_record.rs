@@ -46,9 +46,8 @@ fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
         };
         let res = vector_db
             .upsert(VectorData {
-                chat: ctx.chat_id.to_string(),
+                scope: ctx.chat_id.to_string(),
                 index: ctx.message_id.to_string(),
-                user: None,
                 vector: embedding,
             })
             .await;
