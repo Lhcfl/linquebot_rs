@@ -2,34 +2,6 @@ services:
   linquebot:
     container_name: linquebot
     restart: unless-stopped
-    depends_on:
-      vector_chord:
-        condition: service_healthy
     image: ghcr.io/lhcfl/linquebot_rs
     volumes:
       - ./app:/app
-    environment:
-      - VECTOR_DATABASE_URL=postgres://postgres:123456@vector_chord:5432/linquebot
-
-  vector_chord:
-    image: tensorchord/vchord-postgres:pg17-v0.4.2
-    # ports:
-    #   - 5433:5432 # For local development, uncomment to expose port
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_DB: linquebot
-      POSTGRES_PASSWORD: "123456"
-    volumes:
-      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - vector_chord_data:/var/lib/postgresql/data
-    healthcheck:
-      test: [CMD-SHELL, pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-volumes:
-  vector_chord_data:
-    driver: local
-    name: linquebot-vector-db

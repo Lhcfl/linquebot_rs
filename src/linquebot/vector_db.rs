@@ -142,6 +142,7 @@ impl VectorDB {
             )?;
             tx.execute_batch(MIGRATE_VECTOR_DB_QUERY)?;
             tx.commit()?;
+            info!("Migration completed successfully.");
         }
         Ok(Self {})
     }
