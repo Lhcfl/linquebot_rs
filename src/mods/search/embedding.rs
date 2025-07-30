@@ -1,70 +1,77 @@
-use super::qwen3_embedding::{Config, Model};
 use anyhow::{Error as E, Result};
-use candle_core::{DType, Device, Tensor};
-use candle_nn::VarBuilder;
-use hf_hub::{
-    api::sync::{Api, ApiBuilder},
-    Repo, RepoType,
+use hf_hub::{api::sync::Api, Repo, RepoType};
+use llama_cpp_2::{
+    context::params::{LlamaContextParams, LlamaPoolingType},
+    llama_backend::LlamaBackend,
+    llama_batch::LlamaBatch,
+    model::{AddBos, LlamaModel},
+    send_logs_to_tracing, LogOptions,
 };
 use std::sync::LazyLock;
-use tokenizers::{Tokenizer, TruncationDirection, TruncationParams, TruncationStrategy};
-use tokio::sync::Mutex;
 
-static MODEL_ID: &str = "Qwen/Qwen3-Embedding-0.6B";
+static MODEL_ID: &str = "Qwen/Qwen3-Embedding-0.6B-GGUF";
 static REVISION: &str = "main";
 
-fn get_tokenizer() -> Result<Tokenizer> {
-    let repo = Repo::with_revision(MODEL_ID.to_string(), RepoType::Model, REVISION.to_string());
-    let api = ApiBuilder::new()
-        .with_cache_dir("cache/huggingface".into())
-        .build()?;
-    let api = api.repo(repo);
-    let tokenizer_filename = api.get("tokenizer.json")?;
-    let tokenizer = Tokenizer::from_file(tokenizer_filename)
-        .map_err(E::msg)?
-        .with_padding(None)
-        .with_truncation(Some(TruncationParams {
-            max_length: 8192,
-            strategy: TruncationStrategy::default(),
-            stride: 0,
-            direction: TruncationDirection::default(),
-        }))
-        .map_err(E::msg)?
-        .to_owned()
-        .into();
-    Ok(tokenizer)
-}
-
-fn get_model() -> Result<Mutex<Model>> {
+fn get_model() -> Result<LlamaModel> {
+    send_logs_to_tracing(LogOptions::default().with_logs_enabled(false));
+    let backend = BACKEND.as_ref().map_err(E::msg)?;
     let repo = Repo::with_revision(MODEL_ID.to_string(), RepoType::Model, REVISION.to_string());
     let api = Api::new()?;
     let api = api.repo(repo);
-    let model_filename = api.get("model.safetensors")?;
-    let config_filename = api.get("config.json")?;
-    let config: Config = serde_json::from_slice(&std::fs::read(config_filename)?)?;
-    let device = candle_core::Device::Cpu;
-    let dtype = DType::F32;
-
-    let model_safetensors = std::fs::read(model_filename)?;
-    // let filenames = vec![model_filename];
-    let vb = VarBuilder::from_slice_safetensors(&model_safetensors, dtype, &device)?;
-
-    let model = Model::new(&config, vb)?;
-    Ok(Mutex::new(model))
+    let model_filename = api.get("Qwen3-Embedding-0.6B-Q8_0.gguf")?;
+    let model = LlamaModel::load_from_file(backend, model_filename, &Default::default())?;
+    Ok(model)
 }
 
-static TOKENIZER: LazyLock<Result<Tokenizer>> = LazyLock::new(get_tokenizer);
-static MODEL: LazyLock<Result<Mutex<Model>>> = LazyLock::new(get_model);
+fn get_backend() -> Result<LlamaBackend> {
+    LlamaBackend::init().map_err(E::msg)
+}
+
+// fn get_ctx() -> Result<Mutex<LlamaContext<'static>>> {
+//     let model = MODEL.as_ref().map_err(E::msg)?;
+//     let backend = BACKEND.as_ref().map_err(E::msg)?;
+//     let ctx = model.new_context(
+//         backend,
+//         LlamaContextParams::default()
+//             .with_flash_attention(true)
+//             .with_pooling_type(LlamaPoolingType::Last)
+//             .with_embeddings(true),
+//     )?;
+//     Ok(Mutex::new(ctx))
+// }
+
+static MODEL: LazyLock<Result<LlamaModel>> = LazyLock::new(get_model);
+static BACKEND: LazyLock<Result<LlamaBackend>> = LazyLock::new(get_backend);
+// static CONTEXT: LazyLock<Result<Mutex<LlamaContext<'static>>>> = LazyLock::new(get_ctx);
+
+fn normalize(input: &[f32]) -> Vec<f32> {
+    let magnitude = input
+        .iter()
+        .fold(0.0, |acc, &val| val.mul_add(val, acc))
+        .sqrt();
+
+    input.iter().map(|&val| val / magnitude).collect()
+}
 
 pub async fn text_embedding(text: impl Into<String>) -> Result<Vec<f32>> {
-    let tokenizer = TOKENIZER.as_ref().map_err(E::msg)?;
-    let model_mutex = MODEL.as_ref().map_err(E::msg)?;
-    let mut model = model_mutex.lock().await;
-    let encoding = tokenizer.encode(text.into(), true).map_err(E::msg)?;
-    let inputs = encoding.get_ids();
-    let tokens = Tensor::new(inputs, &Device::Cpu)?.reshape((inputs.len(), ()))?;
-    let outputs = model.forward(&tokens, inputs.len())?;
-    Ok(outputs.get(inputs.len() - 1)?.get(0)?.to_vec1::<f32>()?)
+    let model = MODEL.as_ref().map_err(E::msg)?;
+    let backend = BACKEND.as_ref().map_err(E::msg)?;
+
+    let mut ctx = model.new_context(
+        backend,
+        LlamaContextParams::default()
+            .with_flash_attention(true)
+            .with_pooling_type(LlamaPoolingType::Last)
+            .with_embeddings(true),
+    )?;
+    let n_ctx = ctx.n_ctx() as usize;
+    let mut batch = LlamaBatch::new(n_ctx, 1);
+    let tokens = model.str_to_token(&text.into(), AddBos::Always)?;
+
+    batch.add_sequence(&tokens, 0, false)?;
+    ctx.decode(&mut batch)?;
+    let embedding = ctx.embeddings_seq_ith(0)?;
+    Ok(normalize(embedding))
 }
 
 #[cfg(test)]
@@ -80,9 +87,12 @@ mod tests {
         let text = "Hello, world!";
         let text2 = "Hello, universe!";
         let embedding = text_embedding(text).await?;
+        let embedding_again = text_embedding(text).await?;
+        assert_eq!(embedding, embedding_again);
+        println!("Embedding: {:?}", embedding);
         assert_eq!(embedding.len(), 1024); // Assuming the model outputs 1024-dimensional embeddings
         let embedding_2 = text_embedding(text2).await?;
-        assert_eq!(embedding, embedding_2);
+        assert!(embedding != embedding_2);
         Ok(())
     }
 

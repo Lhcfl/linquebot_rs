@@ -53,6 +53,7 @@
           with pkgs;
           mkShell {
             buildInputs = [
+              cmake
               duckdb.lib
               openssl
               graphviz
@@ -85,6 +86,7 @@
               onnxruntime
               pkg-config
               duckdb.lib
+              cmake
             ]
             ++ lib.optionals stdenvNoCC.hostPlatform.isLinux [
               openssl
