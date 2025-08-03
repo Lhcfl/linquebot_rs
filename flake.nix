@@ -83,7 +83,6 @@
             # Add extra inputs here or any other derivation settings
             # doCheck = true;
             buildInputs = [
-              onnxruntime
               pkg-config
               duckdb.lib
               cmake
