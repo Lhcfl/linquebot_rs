@@ -1,77 +1,136 @@
 use anyhow::{Error as E, Result};
-use hf_hub::{
-    api::sync::{Api, ApiBuilder},
-    Repo, RepoType,
-};
-use ndarray::Ix1;
-use ort::{
-    session::{builder::GraphOptimizationLevel, Session},
-    value::TensorRef,
+use hf_hub::{api::sync::Api, Repo, RepoType};
+use llama_cpp_2::{
+    context::params::{LlamaContextParams, LlamaPoolingType},
+    llama_backend::LlamaBackend,
+    llama_batch::LlamaBatch,
+    model::{AddBos, LlamaModel},
+    send_logs_to_tracing, LogOptions,
 };
 use std::sync::LazyLock;
-use tokenizers::Tokenizer;
-use tokio::sync::Mutex;
+use tokio::sync::oneshot;
 
-static MODEL_ID: &str = "Snowflake/snowflake-arctic-embed-l-v2.0";
+static MODEL_ID: &str = "Qwen/Qwen3-Embedding-0.6B-GGUF";
 static REVISION: &str = "main";
 
-fn get_tokenizer() -> Result<Tokenizer> {
-    let repo = Repo::with_revision(MODEL_ID.to_string(), RepoType::Model, REVISION.to_string());
-    let api = ApiBuilder::new()
-        .with_cache_dir("cache/huggingface".into())
-        .build()?;
-    let api = api.repo(repo);
-    let tokenizer_filename = api.get("tokenizer.json")?;
-    let tokenizer = Tokenizer::from_file(tokenizer_filename)
-        .map_err(E::msg)?
-        .with_padding(None)
-        .with_truncation(None)
-        .map_err(E::msg)?
-        .to_owned()
-        .into();
-    Ok(tokenizer)
-}
-
-fn get_session() -> Result<Mutex<Session>> {
+fn get_model(backend: &LlamaBackend) -> Result<LlamaModel> {
+    send_logs_to_tracing(LogOptions::default().with_logs_enabled(false));
     let repo = Repo::with_revision(MODEL_ID.to_string(), RepoType::Model, REVISION.to_string());
     let api = Api::new()?;
     let api = api.repo(repo);
-    let onnx_filename = api.get("onnx/model_uint8.onnx")?;
-    let session = Session::builder()?
-        .with_optimization_level(GraphOptimizationLevel::Level3)?
-        .with_intra_threads(4)?
-        .commit_from_file(onnx_filename)?;
-    Ok(Mutex::new(session))
+    let model_filename = api.get("Qwen3-Embedding-0.6B-Q8_0.gguf")?;
+    let model = LlamaModel::load_from_file(backend, model_filename, &Default::default())?;
+    Ok(model)
 }
 
-static TOKENIZER: LazyLock<Result<Tokenizer>> = LazyLock::new(get_tokenizer);
-static SESSION: LazyLock<Result<Mutex<Session>>> = LazyLock::new(get_session);
+fn get_backend() -> Result<LlamaBackend> {
+    LlamaBackend::init().map_err(E::msg)
+}
+
+fn normalize(input: &[f32]) -> Vec<f32> {
+    let magnitude = input
+        .iter()
+        .fold(0.0, |acc, &val| val.mul_add(val, acc))
+        .sqrt();
+
+    input.iter().map(|&val| val / magnitude).collect()
+}
+
+#[derive(Debug)]
+enum WorkerCommand {
+    Text {
+        text: String,
+        response: oneshot::Sender<Result<Vec<f32>>>,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub struct EmbeddingWorkerHandle {
+    command_sender: tokio::sync::mpsc::Sender<WorkerCommand>,
+}
+
+pub struct EmbeddingWorker {
+    model: LlamaModel,
+    backend: LlamaBackend,
+    command_receiver: tokio::sync::mpsc::Receiver<WorkerCommand>,
+}
+
+impl EmbeddingWorker {
+    pub fn new() -> Result<(Self, EmbeddingWorkerHandle)> {
+        let backend = get_backend()?;
+        let model = get_model(&backend)?;
+
+        let (command_sender, command_receiver) = tokio::sync::mpsc::channel(32);
+        let handle = EmbeddingWorkerHandle { command_sender };
+        Ok((
+            Self {
+                model,
+                backend,
+                command_receiver,
+            },
+            handle,
+        ))
+    }
+
+    fn do_embedding(
+        &self,
+        context: &mut llama_cpp_2::context::LlamaContext<'_>,
+        text: &str,
+    ) -> Result<Vec<f32>> {
+        context.clear_kv_cache();
+        let n_ctx = context.n_ctx() as usize;
+        let mut batch = LlamaBatch::new(n_ctx, 1);
+        let tokens = self.model.str_to_token(text, AddBos::Always)?;
+        batch.add_sequence(&tokens, 0, false)?;
+        context.decode(&mut batch)?;
+        let embedding = context.embeddings_seq_ith(0)?;
+        // batch.clear();
+        Ok(normalize(embedding))
+    }
+
+    pub fn run(mut self) {
+        let mut context = self
+            .model
+            .new_context(
+                &self.backend,
+                LlamaContextParams::default()
+                    .with_flash_attention(true)
+                    .with_pooling_type(LlamaPoolingType::Last)
+                    .with_embeddings(true),
+            )
+            .expect("Failed to create context");
+
+        while let Some(command) = self.command_receiver.blocking_recv() {
+            match command {
+                WorkerCommand::Text { text, response } => {
+                    let result = self.do_embedding(&mut context, &text);
+                    response.send(result).ok();
+                }
+            }
+        }
+    }
+}
+
+static WORKER: LazyLock<Result<EmbeddingWorkerHandle>> = LazyLock::new(|| {
+    let (worker, handle) = EmbeddingWorker::new()?;
+    std::thread::spawn(|| {
+        worker.run();
+    });
+    Ok(handle)
+});
 
 pub async fn text_embedding(text: impl Into<String>) -> Result<Vec<f32>> {
-    let tokenizer = TOKENIZER.as_ref().map_err(E::msg)?;
-    let session_mutex = SESSION.as_ref().map_err(E::msg)?;
-    let mut session = session_mutex.lock().await;
-    let encoding = tokenizer.encode(text.into(), true).map_err(E::msg)?;
-    let tokens = encoding
-        .get_ids()
-        .iter()
-        .map(|&t| t.into())
-        .collect::<Vec<i64>>();
-    let attention_mask = encoding
-        .get_attention_mask()
-        .iter()
-        .map(|&m| m.into())
-        .collect::<Vec<i64>>();
-    let tokens = TensorRef::from_array_view(([1, tokens.len()], tokens.as_slice()))?;
-    let attention_mask =
-        TensorRef::from_array_view(([1, attention_mask.len()], attention_mask.as_slice()))?;
-    let outputs = session.run(ort::inputs![tokens, attention_mask])?;
-    let embeddings = outputs[1]
-        .try_extract_array()?
-        .squeeze()
-        .into_dimensionality::<Ix1>()?
-        .to_vec();
-    Ok(embeddings)
+    let worker = WORKER.as_ref().map_err(E::msg)?;
+    let (tx, rx) = oneshot::channel();
+    worker
+        .command_sender
+        .send(WorkerCommand::Text {
+            text: text.into(),
+            response: tx,
+        })
+        .await?;
+    let res = rx.await??;
+    Ok(res)
 }
 
 #[cfg(test)]
@@ -85,10 +144,14 @@ mod tests {
             return Ok(());
         };
         let text = "Hello, world!";
+        let text2 = "Hello, universe!";
         let embedding = text_embedding(text).await?;
-        assert_eq!(embedding.len(), 1024); // Assuming the model outputs 768-dimensional embeddings
-        let embedding_2 = text_embedding(text).await?;
-        assert_eq!(embedding, embedding_2);
+        let embedding_again = text_embedding(text).await?;
+        assert_eq!(embedding, embedding_again);
+        println!("Embedding: {:?}", embedding);
+        assert_eq!(embedding.len(), 1024); // Assuming the model outputs 1024-dimensional embeddings
+        let embedding_2 = text_embedding(text2).await?;
+        assert!(embedding != embedding_2);
         Ok(())
     }
 

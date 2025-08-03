@@ -1,3 +1,5 @@
+use core::f32;
+
 use super::db::DB_CONNECTION;
 use duckdb::{params, types::ToSqlOutput};
 use log::info;
@@ -87,16 +89,17 @@ SET
     vector = $3::float[1024];
 "#;
 
+// When the length of the vector is 1, inner product is equivalent to the cosine similarity.
 const SELECT_VECTOR_QUERY: &str = r#"
 SELECT index,
     distance
 FROM (
         SELECT index,
-            array_distance(vector, $2::float[1024]) AS distance
+            array_inner_product(vector, $2::float[1024]) AS distance
         FROM vector_db
         WHERE scope = $1
     ) AS sub
-ORDER BY distance
+ORDER BY distance DESC
 LIMIT 5;
 "#;
 
@@ -166,7 +169,7 @@ impl VectorDB {
                 Ok(VectorResult {
                     index: row.get(0)?,
                     scope: data.scope.clone(),
-                    distance: row.get(1)?,
+                    distance: f32::acos(row.get(1)?) / f32::consts::PI * 180f32,
                 })
             })?
             .map(|i| i.expect("Failed to map row"))
