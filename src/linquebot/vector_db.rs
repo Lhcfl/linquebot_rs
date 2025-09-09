@@ -1,3 +1,4 @@
+use core::f32;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres, Row};
 
 pub struct VectorDB {
@@ -83,18 +84,19 @@ SET
     vector = $4::vector;
 "#;
 
+// When the length of the vector is 1, inner product is equivalent to the cosine similarity.
 const SELECT_VECTOR_QUERY: &str = r#"
 SELECT index,
     distance
 FROM (
         SELECT index,
-            (vector <-> $3::vector)::FLOAT4 AS distance
+            (vector <=> $3::vector)::FLOAT4 AS distance
         FROM vector_db
         WHERE chat = $1
             AND "user" IS NOT DISTINCT
         FROM $2
     ) AS sub
-ORDER BY distance
+ORDER BY distance DESC
 LIMIT 5;
 "#;
 
@@ -138,7 +140,7 @@ impl VectorDB {
                 index: row.get(0),
                 user: data.user.clone(),
                 chat: data.chat.clone(),
-                distance: row.get(1),
+                distance: f32::acos(row.get(1)) / f32::consts::PI * 180f32,
             });
         }
         Ok(result)

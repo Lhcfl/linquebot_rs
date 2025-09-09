@@ -53,6 +53,7 @@
           with pkgs;
           mkShell {
             buildInputs = [
+              cmake
               openssl
               graphviz
               (rust-bin.selectLatestNightlyWith (
@@ -80,16 +81,17 @@
             };
             # Add extra inputs here or any other derivation settings
             # doCheck = true;
-            buildInputs =
-              [
-                onnxruntime
-                pkg-config
-              ]
-              ++ lib.optionals stdenvNoCC.hostPlatform.isLinux [
-                openssl
-              ];
+            buildInputs = [
+              pkg-config
+              cmake
+            ]
+            ++ lib.optionals stdenvNoCC.hostPlatform.isLinux [
+              openssl
+            ];
             nativeBuildInputs = [ makeWrapper ];
             CI = "true";
+            stdenv = p: p.clangStdenv;
+            LIBCLANG_PATH = "${libclang.lib}/lib";
             postInstall = ''
               wrapProgram $out/bin/linquebot_rs --prefix PATH : ${lib.makeBinPath [ graphviz ]}
             '';
