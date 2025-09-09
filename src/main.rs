@@ -14,7 +14,6 @@
 #![feature(iter_from_coroutine)]
 #![feature(extend_one)]
 #![feature(iter_next_chunk)]
-#![feature(duration_constructors_lite)]
 #![feature(test)]
 
 mod assets;
@@ -105,7 +104,7 @@ async fn main_loop() -> anyhow::Result<()> {
                 }
             }
             Err(err) => {
-                warn!(target: "main-loop", "GetUpdate Error: {}", err.to_string());
+                warn!(target: "main-loop", "GetUpdate Error: {}", err);
             }
         }
     }
@@ -116,7 +115,7 @@ async fn main() {
     dotenvy::dotenv().ok();
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     if let Err(err) = main_loop().await {
-        error!("main-loop panicked: {}", err.to_string());
+        error!("main-loop panicked: {}", err);
         panic!("main-loop panicked: {err}");
     }
     println!("bye bye");

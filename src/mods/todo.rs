@@ -70,7 +70,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
             .send()
             .await
         {
-            warn!("Failed to send reply: {}", err.to_string());
+            warn!("Failed to send reply: {}", err);
             return;
         }
 
@@ -89,7 +89,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
                 warn!(
                     "(retry {} times) Failed to send reply: {}",
                     retries,
-                    err.to_string()
+                    err
                 );
             } else {
                 return;

@@ -67,7 +67,7 @@ fn send_explain(ctx: &mut Context, _: &Message) -> Consumption {
 
         match get_from_wikipedia(&query).await {
             Ok((src, explain)) => answers.push(src + &explain),
-            Err(err) => warn!("failed to fetch wikipedia: {}", err.to_string()),
+            Err(err) => warn!("failed to fetch wikipedia: {}", err),
         }
 
         let ans = answers.join("\n\n");

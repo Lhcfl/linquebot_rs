@@ -24,7 +24,7 @@ async fn send_raw_rand(ctx: TaskContext, from: User, text_body: String) {
         }
     );
     if let Err(err) = ctx.reply_html(&msg).send().await {
-        warn!("Failed to send reply: {}", err.to_string());
+        warn!("Failed to send reply: {}", err);
     }
 }
 
@@ -44,7 +44,7 @@ async fn send_selective_rand(ctx: TaskContext, text_body: String, spliter: &str)
         .send()
         .await
     {
-        warn!("Failed to send reply: {}", err.to_string());
+        warn!("Failed to send reply: {}", err);
     }
 }
 

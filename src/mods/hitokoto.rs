@@ -30,7 +30,7 @@ async fn get_hitokoto(args: &str) -> Hitokoto {
             res
         }
         Err(err) => {
-            warn!("Failed to fetch hitokoto: {}", err.to_string());
+            warn!("Failed to fetch hitokoto: {}", err);
             Hitokoto {
                 hitokoto: "网络错误".to_string(),
                 from: "琳酱".to_string(),
@@ -53,7 +53,7 @@ fn send_hitokoto(ctx: &mut Context, _message: &Message) -> Consumption {
             .await;
 
         if let Err(err) = res {
-            warn!("Failed to send reply: {}", err.to_string());
+            warn!("Failed to send reply: {}", err);
         }
     }
     .into()

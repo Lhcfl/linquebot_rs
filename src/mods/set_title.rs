@@ -17,7 +17,7 @@ async fn reply_info(bot: &Bot, message: Message, info: &str) {
         .send()
         .await
     {
-        warn!("Failed to send reply: {}", err.to_string());
+        warn!("Failed to send reply: {}", err);
     }
 }
 

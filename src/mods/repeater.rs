@@ -93,7 +93,7 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     let mut manager = LAST_MSG.write().map_err(|err| {
         log::error!(
             "Error get history lock. This is not expected. {}",
-            err.to_string()
+            err
         );
     })?;
 
@@ -122,7 +122,7 @@ pub fn toggle_repeat(ctx: &mut Context, _: &Message) -> Consumption {
     let mut manager = LAST_MSG.write().map_err(|err| {
         log::error!(
             "Error get history lock. This is not expected. {}",
-            err.to_string()
+            err
         );
     })?;
     let history = manager.entry(ctx.chat_id).or_default();

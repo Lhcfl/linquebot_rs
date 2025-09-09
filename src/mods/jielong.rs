@@ -261,7 +261,7 @@ fn on_jielong_command(ctx: &mut Context, message: &Message) -> Consumption {
         "show" => show_jielong_status(ctx),
         "" => async move {
             if let Err(err) = ctx.reply_html(HELP_MESSAGE).send().await {
-                warn!("Failed to send reply: {}", err.to_string());
+                warn!("Failed to send reply: {}", err);
             }
         }
         .into(),

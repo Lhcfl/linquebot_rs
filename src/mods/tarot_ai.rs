@@ -104,7 +104,7 @@ fn send_tarot(ctx: &mut Context, _message: &Message) -> Consumption {
         let placeholder = match ctx.reply("少女祈祷中…").send().await {
             Ok(msg) => msg,
             Err(err) => {
-                warn!("Failed to send reply: {}", err.to_string());
+                warn!("Failed to send reply: {}", err);
                 return;
             }
         };
@@ -129,7 +129,7 @@ fn send_tarot(ctx: &mut Context, _message: &Message) -> Consumption {
                 ctx.reply(&answer).send().warn_on_error("tarot-ai").await;
             }
             Err(err) => {
-                warn!("get-tarot error: {}", err.to_string());
+                warn!("get-tarot error: {}", err);
                 ctx.app
                     .bot
                     .edit_message_text(

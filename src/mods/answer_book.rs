@@ -17,7 +17,7 @@ fn on_message(ctx: &mut Context, _message: &Message) -> Consumption {
             .expect("not empty");
         let res = ctx.reply(*chosen).send().await;
         if let Err(err) = res {
-            warn!("Failed to send reply: {}", err.to_string());
+            warn!("Failed to send reply: {}", err);
         }
     }
     .into()

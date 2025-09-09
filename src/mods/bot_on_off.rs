@@ -27,14 +27,14 @@ fn on_bot_on_message(ctx: &mut Context, _: &Message) -> Consumption {
     if record.remove(&ctx.chat_id).is_some() {
         async move {
             if let Err(err) = ctx.reply("琳酱已开机").send().await {
-                warn!("Failed to send reply: {}", err.to_string());
+                warn!("Failed to send reply: {}", err);
             }
         }
         .into()
     } else {
         async move {
             if let Err(err) = ctx.reply("琳酱处于开机状态").send().await {
-                warn!("Failed to send reply: {}", err.to_string());
+                warn!("Failed to send reply: {}", err);
             }
         }
         .into()
@@ -50,14 +50,14 @@ fn on_bot_off_message(ctx: &mut Context, _: &Message) -> Consumption {
     if let Some(false) = record.insert(ctx.chat_id, false) {
         async move {
             if let Err(err) = ctx.reply("琳酱处于关机状态").send().await {
-                warn!("Failed to send reply: {}", err.to_string());
+                warn!("Failed to send reply: {}", err);
             }
         }
         .into()
     } else {
         async move {
             if let Err(err) = ctx.reply("琳酱已关机").send().await {
-                warn!("Failed to send reply: {}", err.to_string());
+                warn!("Failed to send reply: {}", err);
             }
         }
         .into()
