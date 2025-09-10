@@ -96,7 +96,7 @@ FROM (
             AND "user" IS NOT DISTINCT
         FROM $2
     ) AS sub
-ORDER BY distance DESC
+ORDER BY distance
 LIMIT 5;
 "#;
 
@@ -140,7 +140,7 @@ impl VectorDB {
                 index: row.get(0),
                 user: data.user.clone(),
                 chat: data.chat.clone(),
-                distance: f32::acos(row.get(1)) / f32::consts::PI * 180f32,
+                distance: f32::acos(1f32 - row.get::<f32, usize>(1)) / f32::consts::PI * 180f32,
             });
         }
         Ok(result)
