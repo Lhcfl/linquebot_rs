@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 futures = "0.3.31"
-tokio = { version = "1.8", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1.8", features = ["rt-multi-thread", "macros", "signal"] }
 teloxide-core = "0.10.1"
 chrono = "0.4.39"
 colored = "2.2.0"

@@ -13,7 +13,7 @@ use sqlx::{
     Connection, Row, Sqlite, SqliteConnection,
 };
 use teloxide_core::types::{ChatId, UserId};
-use tokio::sync::{Mutex, OwnedMappedMutexGuard, OwnedMutexGuard};
+use tokio::sync::{Mutex, MutexGuard, OwnedMappedMutexGuard, OwnedMutexGuard};
 
 pub trait DbDataDyn: Any + Send + Sync {
     fn ser_data(&self) -> String;
@@ -46,7 +46,7 @@ impl<T: DbDataDyn + for<'a> Deserialize<'a>> DbData for T {
 #[derive(Debug)]
 pub struct DataStorage {
     cache: Cache<DataId, Arc<Mutex<dyn DbDataDyn>>>,
-    db: Mutex<SqliteConnection>,
+    db: Mutex<Option<SqliteConnection>>,
 }
 
 impl DataStorage {
@@ -66,7 +66,13 @@ impl DataStorage {
         .await?;
         Ok(Self {
             cache: Cache::new(1000),
-            db: Mutex::new(db),
+            db: Mutex::new(Some(db)),
+        })
+    }
+
+    async fn get_db(&self) -> tokio::sync::MappedMutexGuard<'_, SqliteConnection> {
+        MutexGuard::map(self.db.lock().await, |db| {
+            db.as_mut().expect("Database connection is not initialized")
         })
     }
 
@@ -134,7 +140,7 @@ impl DataStorage {
     async fn get_from_db<T: DbData>(&'static self, id: DataId) -> Option<Arc<Mutex<T>>> {
         let res = sqlx::query("select val from data where ty = $1 and user = $2 and chat = $3")
             .bind_id(type_name::<T>(), id)
-            .fetch_optional(&mut *self.db.lock().await)
+            .fetch_optional(&mut *self.get_db().await)
             .await
             .expect("db read error")?;
         let res = T::deser_data(res.get::<&str, usize>(0));
@@ -153,7 +159,7 @@ impl DataStorage {
         ))
         .bind_id(ty, id)
         .bind(val)
-        .execute(&mut *self.db.lock().await)
+        .execute(&mut *self.get_db().await)
         .await
         .expect("db write error");
     }
@@ -163,9 +169,18 @@ impl DataStorage {
         self.cache.remove(&id);
         sqlx::query("delete from data where ty = $1 and user = $2 and chat = $3")
             .bind_id(type_name::<T>(), id)
-            .execute(&mut *self.db.lock().await)
+            .execute(&mut *self.get_db().await)
             .await
             .expect("db write error");
+    }
+
+    pub async fn close(&self) {
+        let mut db = self.db.lock().await;
+        if let Some(db) = db.take() {
+            db.close()
+                .await
+                .expect("Failed to close database connection");
+        }
     }
 }
 

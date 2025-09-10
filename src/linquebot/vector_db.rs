@@ -102,8 +102,11 @@ LIMIT 5;
 
 impl VectorDB {
     pub async fn new() -> anyhow::Result<Self> {
-        let database_url = std::env::var("VECTOR_DATABASE_URL")
-            .unwrap_or_else(|_| "postgres://localhost/linquebot".to_string());
+        let database_url = std::env::var("VECTOR_DATABASE_URL");
+        if database_url.is_err() {
+            anyhow::bail!("VECTOR_DATABASE_URL is not set");
+        }
+        let database_url = database_url.unwrap();
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
