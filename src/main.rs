@@ -23,6 +23,7 @@ mod resolvers;
 mod test_utils;
 mod utils;
 
+use crate::config::Config;
 use crate::db::DataStorage;
 use crate::linquebot::types::*;
 use crate::linquebot::*;
@@ -54,6 +55,14 @@ async fn set_my_commands(app: &'static App) -> Result<True, RequestError> {
 }
 
 async fn init_app() -> anyhow::Result<&'static linquebot::App> {
+    info!(target: "init", "Loading Config File...");
+    let config = match Config::new().await {
+        Err(err) => {
+            error!("Couldn't load config file:\n{}", err);
+            panic!("Couldn't load config file:\n{err}");
+        }
+        Ok(config) => config,
+    };
     info!(target: "init", "Loading Database...");
     let db = DataStorage::new().await?;
     info!(target: "init", "Loading Vector Database...");
@@ -62,7 +71,7 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
         warn!(target: "init", "Failed to initialize VectorDB:\n{}", e);
     }
     info!(target: "init", "Initializing Bot...");
-    let bot = Bot::from_env();
+    let bot = Bot::new(&config.tg.bot.token);
     info!(target: "init", "Checking Network...");
     let me = bot.get_me().await?;
     info!(target: "init", "user id: {}", me.id);
@@ -70,6 +79,7 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
         bot_id: me.id,
         username: format!("@{}", me.username()),
         bot,
+        config,
         db,
         vector_db,
         modules: mods::MODULES,
