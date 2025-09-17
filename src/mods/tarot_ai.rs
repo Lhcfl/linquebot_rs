@@ -3,7 +3,7 @@
 use log::trace;
 use log::warn;
 use msg_context::Context;
-use regex::Regex;
+use serde::Deserialize;
 use serde::Serialize;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
@@ -14,15 +14,17 @@ use crate::linquebot::*;
 use crate::utils::telegram::prelude::WarnOnError;
 use crate::Consumption;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 enum AiRole {
     #[serde(rename = "system")]
     System,
+    #[serde(rename = "assistant")]
+    Assistant,
     #[serde(rename = "user")]
     User,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct AiMessage {
     role: AiRole,
     content: String,
@@ -34,37 +36,14 @@ struct AiRequestBody<'a> {
     messages: [AiMessage; 2],
 }
 
-/// 它太脏了，但我没办法
-fn parse_answer(str: &str) -> String {
-    let regex = Regex::new(r"\n(\d+):([^\n]+)").unwrap();
+#[derive(Debug, Deserialize)]
+struct AiResponseBody {
+    choices: [AiResponseChoice; 1],
+}
 
-    let mut res_arr = Vec::<String>::new();
-
-    for caps in regex.captures_iter(str) {
-        let Some(json_str) = caps.get(2) else {
-            continue;
-        };
-        let json_str = json_str.as_str();
-        let Ok(parsed_json) = serde_json::from_str::<serde_json::Value>(json_str) else {
-            continue;
-        };
-        let temp_json = match parsed_json.get("diff") {
-            Some(diff) if diff.is_array() && diff.get(1).is_some() => diff[1].as_str(),
-            _ => parsed_json
-                .get("curr")
-                .map(|v| v.as_str())
-                .unwrap_or_default(),
-        };
-        let Some(temp_json) = temp_json else {
-            continue;
-        };
-
-        if !temp_json.is_empty() {
-            res_arr.push(temp_json.to_string());
-        }
-    }
-
-    res_arr.join("")
+#[derive(Debug, Deserialize)]
+struct AiResponseChoice {
+    message: AiMessage,
 }
 
 async fn get_tarot(question: &str, config_ai_api: &ConfigAiApi) -> anyhow::Result<String> {
@@ -111,12 +90,17 @@ async fn get_tarot(question: &str, config_ai_api: &ConfigAiApi) -> anyhow::Resul
         .await?
         .text()
         .await?;
+    let res_json = serde_json::from_str::<AiResponseBody>(&res);
 
-    trace!("Get Tarot Response: {res}");
+    trace!("Get Tarot Response: {:#?}", res);
 
-    let parsed = parse_answer(&res);
-
-    Ok(if parsed.is_empty() { res } else { parsed })
+    match res_json {
+        Err(err) => {
+            warn!("Couldn't parse tarot ai response:\n{err}");
+            Ok(res)
+        }
+        Ok(json) => Ok(json.choices[0].message.content.clone()),
+    }
 }
 
 fn send_tarot(ctx: &mut Context, _message: &Message) -> Consumption {
