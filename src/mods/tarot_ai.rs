@@ -4,21 +4,34 @@ use log::trace;
 use log::warn;
 use msg_context::Context;
 use regex::Regex;
-use serde::Deserialize;
 use serde::Serialize;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
 use crate::assets::tarot;
+use crate::linquebot::config::ConfigAiApi;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::WarnOnError;
 use crate::Consumption;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct TarotRequestItem {
-    no: u8,
-    #[serde(rename = "isReversed")]
-    is_reversed: bool,
+#[derive(Serialize)]
+enum AiRole {
+    #[serde(rename = "system")]
+    System,
+    #[serde(rename = "user")]
+    User,
+}
+
+#[derive(Serialize)]
+struct AiMessage {
+    role: AiRole,
+    content: String,
+}
+
+#[derive(Serialize)]
+struct AiRequestBody<'a> {
+    model: &'a String,
+    messages: [AiMessage; 2],
 }
 
 /// 它太脏了，但我没办法
@@ -54,27 +67,45 @@ fn parse_answer(str: &str) -> String {
     res_arr.join("")
 }
 
-async fn get_tarot(question: &str) -> anyhow::Result<String> {
-    let body = format!("接下来的回答请使用中文。我的问题是：{question}");
+async fn get_tarot(question: &str, config_ai_api: &ConfigAiApi) -> anyhow::Result<String> {
     let client = reqwest::Client::new();
 
     let tarots = tarot::n_random_majors(3)
         .into_iter()
-        .map(|t| TarotRequestItem {
-            no: t.id,
-            is_reversed: t.is_reverse,
+        .map(|t| {
+            format!(
+                "序号：{}，是否反转：{}",
+                t.id,
+                if t.is_reverse { "是" } else { "否" }
+            )
         })
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>()
+        .join("\n");
 
-    let body = format!("[\"{body}\", {}]", serde_json::to_string(&tarots)?);
+    let body = format!("我的问题：\n```\n{question}\n```");
+    let body = format!("{body}\n我抽取到的塔罗牌：\n```\n{tarots}\n```");
+    let body: [AiMessage; 2] = [
+        AiMessage {
+            role: AiRole::System,
+            content: "请在接下来根据我的问题和我抽取到的塔罗牌进行回答。".to_string(),
+        },
+        AiMessage {
+            role: AiRole::User,
+            content: body,
+        },
+    ];
+    let body = AiRequestBody {
+        model: &config_ai_api.model,
+        messages: body,
+    };
+
+    let body = serde_json::to_string(&body)?;
     trace!("Body: {body}");
 
     let res = client
-        .post("https://yesnotarot.org/")
-        .header("Accept", "text/x-component")
-        .header("Next-Action", "1d9b84497857784d00b4511601b1ca97cc82c9ac")
-        .header("Next-Router-State-Tree", "%5B%22%22%2C%7B%22children%22%3A%5B%5B%22locale%22%2C%22en%22%2C%22d%22%5D%2C%7B%22children%22%3A%5B%22__PAGE__%3F%7B%5C%22locale%5C%22%3A%5C%22en%5C%22%7D%22%2C%7B%7D%5D%7D%5D%7D%2Cnull%2Cnull%2Ctrue%5D")
-        .header("Referer", "https://yesnotarot.org/")
+        .post(&config_ai_api.url)
+        .header("Authorization", format!("Bearer {}", &config_ai_api.token))
+        .header("Content-Type", "application/json")
         .body(body)
         .send()
         .await?
@@ -116,7 +147,7 @@ fn send_tarot(ctx: &mut Context, _message: &Message) -> Consumption {
             .warn_on_error("tarot-ai")
             .await;
 
-        match get_tarot(&question).await {
+        match get_tarot(&question, &ctx.app.config.ai.api).await {
             Ok(answer) => {
                 tokio::spawn(
                     ctx.app
