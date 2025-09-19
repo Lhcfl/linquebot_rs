@@ -1,4 +1,3 @@
-pub mod config;
 pub mod db;
 pub mod msg_context;
 pub mod vector_db;
@@ -11,7 +10,6 @@ use teloxide_core::{
     types::{CallbackQuery, ChatMemberUpdated, Message},
 };
 
-use crate::Config;
 use crate::DataStorage;
 use crate::VectorDB;
 
@@ -143,8 +141,6 @@ pub struct App {
     pub username: String,
     /// teloxide bot instance
     pub bot: Bot,
-    /// config file
-    pub config: Config,
     /// database
     pub db: DataStorage,
     /// vector database for searching

@@ -23,7 +23,6 @@ mod resolvers;
 mod test_utils;
 mod utils;
 
-use crate::config::Config;
 use crate::db::DataStorage;
 use crate::linquebot::types::*;
 use crate::linquebot::*;
@@ -32,6 +31,7 @@ use colored::Colorize;
 use env_logger::Env;
 use log::{error, info, warn};
 use resolvers::update::ALLOWED_UPDATES;
+use std::env;
 use std::sync::OnceLock;
 use teloxide_core::prelude::*;
 use teloxide_core::types::BotCommand;
@@ -55,14 +55,6 @@ async fn set_my_commands(app: &'static App) -> Result<True, RequestError> {
 }
 
 async fn init_app() -> anyhow::Result<&'static linquebot::App> {
-    info!(target: "init", "Loading Config File...");
-    let config = match Config::new().await {
-        Err(err) => {
-            error!("Couldn't load config file:\n{}", err);
-            panic!("Couldn't load config file:\n{err}");
-        }
-        Ok(config) => config,
-    };
     info!(target: "init", "Loading Database...");
     let db = DataStorage::new().await?;
     info!(target: "init", "Loading Vector Database...");
@@ -71,7 +63,8 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
         warn!(target: "init", "Failed to initialize VectorDB:\n{}", e);
     }
     info!(target: "init", "Initializing Bot...");
-    let bot = Bot::new(&config.tg.bot.token);
+    let bot_token = get_bot_token().await?;
+    let bot = Bot::new(bot_token);
     info!(target: "init", "Checking Network...");
     let me = bot.get_me().await?;
     info!(target: "init", "user id: {}", me.id);
@@ -79,7 +72,6 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
         bot_id: me.id,
         username: format!("@{}", me.username()),
         bot,
-        config,
         db,
         vector_db,
         modules: mods::MODULES,
@@ -134,6 +126,22 @@ async fn wait_for_ctrlc(cancel_token: CancellationToken) {
     println!(); // Print a newline to separate the Ctrl-C message from the previous output
     info!("Ctrl-C received, shutting down...");
     cancel_token.cancel();
+}
+
+async fn get_bot_token() -> anyhow::Result<String> {
+    match env::var("TG_BOT_TOKEN") {
+        Ok(val) => Ok(val),
+        Err(_) => match env::var("TELOXIDE_TOKEN") {
+            Ok(val) => Ok(val),
+            Err(err) => {
+                error!(
+                    "Couldn't load Telegram bot token from environment variables!\n\
+                    specify either TG_BOT_TOKEN or TELOXIDE_TOKEN!\n{err}"
+                );
+                Err(err.into())
+            }
+        },
+    }
 }
 
 #[tokio::main]
