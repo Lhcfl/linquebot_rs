@@ -1,5 +1,4 @@
 /target
-config.toml
 *.db
 /result
 .env
