@@ -9,7 +9,7 @@ use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
 use crate::assets::tarot;
-use crate::linquebot::config::ConfigAiApi;
+use crate::linquebot::config::Config;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::WarnOnError;
 use crate::Consumption;
@@ -31,8 +31,8 @@ struct AiMessage {
 }
 
 #[derive(Serialize)]
-struct AiRequestBody<'a> {
-    model: &'a String,
+struct AiRequestBody {
+    model: String,
     messages: [AiMessage; 2],
 }
 
@@ -46,7 +46,7 @@ struct AiResponseChoice {
     message: AiMessage,
 }
 
-async fn get_tarot(question: &str, config_ai_api: &ConfigAiApi) -> anyhow::Result<String> {
+async fn get_tarot(question: &str, config: &Config) -> anyhow::Result<String> {
     let client = reqwest::Client::new();
 
     let tarots = tarot::n_random_majors(3)
@@ -66,7 +66,7 @@ async fn get_tarot(question: &str, config_ai_api: &ConfigAiApi) -> anyhow::Resul
     let body: [AiMessage; 2] = [
         AiMessage {
             role: AiRole::System,
-            content: "请在接下来根据我的问题和我抽取到的塔罗牌进行回答。".to_string(),
+            content: config.tarot.ai.prompt.clone(),
         },
         AiMessage {
             role: AiRole::User,
@@ -74,7 +74,7 @@ async fn get_tarot(question: &str, config_ai_api: &ConfigAiApi) -> anyhow::Resul
         },
     ];
     let body = AiRequestBody {
-        model: &config_ai_api.model,
+        model: config.ai.api.model.clone(),
         messages: body,
     };
 
@@ -82,8 +82,8 @@ async fn get_tarot(question: &str, config_ai_api: &ConfigAiApi) -> anyhow::Resul
     trace!("Body: {body}");
 
     let res = client
-        .post(&config_ai_api.url)
-        .header("Authorization", format!("Bearer {}", &config_ai_api.token))
+        .post(&config.ai.api.url)
+        .header("Authorization", format!("Bearer {}", &config.ai.api.token))
         .header("Content-Type", "application/json")
         .body(body)
         .send()
@@ -131,7 +131,7 @@ fn send_tarot(ctx: &mut Context, _message: &Message) -> Consumption {
             .warn_on_error("tarot-ai")
             .await;
 
-        match get_tarot(&question, &ctx.app.config.ai.api).await {
+        match get_tarot(&question, &ctx.app.config).await {
             Ok(answer) => {
                 tokio::spawn(
                     ctx.app
