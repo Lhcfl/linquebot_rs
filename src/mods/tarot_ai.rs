@@ -5,11 +5,11 @@ use log::warn;
 use msg_context::Context;
 use serde::Deserialize;
 use serde::Serialize;
+use std::env;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
 use crate::assets::tarot;
-use crate::linquebot::config::Config;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::WarnOnError;
 use crate::Consumption;
@@ -46,7 +46,17 @@ struct AiResponseChoice {
     message: AiMessage,
 }
 
-async fn get_tarot(question: &str, config: &Config) -> anyhow::Result<String> {
+async fn get_env_var(key: &str) -> anyhow::Result<String> {
+    match env::var(key) {
+        Ok(val) => Ok(val),
+        Err(err) => {
+            warn!("get-env-var-error, please specify {key}:\n{err}");
+            Err(err.into())
+        }
+    }
+}
+
+async fn get_tarot(question: &str) -> anyhow::Result<String> {
     let client = reqwest::Client::new();
 
     let tarots = tarot::n_random_majors(3)
@@ -61,12 +71,27 @@ async fn get_tarot(question: &str, config: &Config) -> anyhow::Result<String> {
         .collect::<Vec<_>>()
         .join("\n");
 
+    let url = get_env_var("AI_API_URL").await;
+    let token = get_env_var("AI_API_TOKEN").await;
+    let model = get_env_var("AI_API_MODEL").await;
+
+    // 这样写是为了让一个环境变量未找到时，也尝试查找剩余的几个。
+    // 让报错更全面，避免反复重启看报错。
+    let url = url?;
+    let token = token?;
+    let model = model?;
+
+    let prompt = match env::var("TAROT_AI_PROMPT") {
+        Ok(val) => val,
+        Err(_) => "请在接下来使用中文根据我的问题和我抽取到的塔罗牌进行回答。".to_string(),
+    };
+
     let body = format!("我的问题：\n```\n{question}\n```");
     let body = format!("{body}\n我抽取到的塔罗牌：\n```\n{tarots}\n```");
     let body: [AiMessage; 2] = [
         AiMessage {
             role: AiRole::System,
-            content: config.tarot.ai.prompt.clone(),
+            content: prompt,
         },
         AiMessage {
             role: AiRole::User,
@@ -74,7 +99,7 @@ async fn get_tarot(question: &str, config: &Config) -> anyhow::Result<String> {
         },
     ];
     let body = AiRequestBody {
-        model: config.ai.api.model.clone(),
+        model,
         messages: body,
     };
 
@@ -82,8 +107,8 @@ async fn get_tarot(question: &str, config: &Config) -> anyhow::Result<String> {
     trace!("Body: {body}");
 
     let res = client
-        .post(&config.ai.api.url)
-        .header("Authorization", format!("Bearer {}", &config.ai.api.token))
+        .post(url)
+        .header("Authorization", format!("Bearer {}", token))
         .header("Content-Type", "application/json")
         .body(body)
         .send()
@@ -131,7 +156,7 @@ fn send_tarot(ctx: &mut Context, _message: &Message) -> Consumption {
             .warn_on_error("tarot-ai")
             .await;
 
-        match get_tarot(&question, &ctx.app.config).await {
+        match get_tarot(&question).await {
             Ok(answer) => {
                 tokio::spawn(
                     ctx.app

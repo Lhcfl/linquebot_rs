@@ -15,32 +15,40 @@ sudo apt install -y --force-yes --no-install-recommends fonts-noto fonts-noto-cj
 
 ## Config
 
-1. Copy `config.example.toml` to `config.toml`.
+Specify environment variables by these steps or any other way you like.
+
+1. Copy `.env.example` to `.env`.
 
   ```shell
-  cp config.example.toml config.toml
+  cp .env.example .env
   ```
 
-1. Fill `tg.bot.token`.
+1. Fill `TG_BOT_TOKEN`.
 
-  ```toml
-  [tg.bot]
-  token = "1234567890:ABCDEFGHIJKLMNOPQ-RSTUVWXYZabcdefgh"
+  ```shell
+  # Telegram bot token
+  TG_BOT_TOKEN="1234567890:ABCDEFGHIJKLMNOPQ-RSTUVWXYZabcdefgh"
   ```
 
-1. (Optional) Fill `ai.api` fields if you want to use `tarot_ai`.
+1. (Optional) Fill `AI_API_*` fields if you want to use `tarot_ai`.
 
-  ```toml
-  [ai.api]
-  url = "https://api.siliconflow.cn/v1/chat/completions"
-  token = "sk-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv"
-  model = "deepseek-ai/DeepSeek-V3"
+  ```shell
+  # AI related settings, fill these if you want to use tarot ai.
+  AI_API_URL="https://openrouter.ai/api/v1/chat/completions"
+  AI_API_TOKEN="sk-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv"
+  AI_API_MODEL="deepseek-ai/DeepSeek-V3"
   ```
 
 ## Run
 
 ```shell
 ./start.fish
+```
+
+or
+
+```shell
+cargo run
 ```
 
 ## How to add a new module
