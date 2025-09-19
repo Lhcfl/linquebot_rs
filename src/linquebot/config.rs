@@ -5,6 +5,7 @@ use std::fs;
 pub struct Config {
     pub tg: ConfigTg,
     pub ai: ConfigAi,
+    pub tarot: ConfigTarot,
 }
 
 #[derive(Deserialize)]
@@ -27,6 +28,16 @@ pub struct ConfigAiApi {
     pub model: String,
     pub url: String,
     pub token: String,
+}
+
+#[derive(Deserialize)]
+pub struct ConfigTarot {
+    pub ai: ConfigTarotAi,
+}
+
+#[derive(Deserialize)]
+pub struct ConfigTarotAi {
+    pub prompt: String,
 }
 
 impl Config {

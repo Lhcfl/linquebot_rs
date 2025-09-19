@@ -13,14 +13,34 @@ sudo apt install graphviz -y
 sudo apt install -y --force-yes --no-install-recommends fonts-noto fonts-noto-cjk fonts-noto-cjk-extra fonts-noto-color-emoji ttf-ancient-fonts
 ```
 
+## Config
+
+1. Copy `config.example.toml` to `config.toml`.
+
+  ```shell
+  cp config.example.toml config.toml
+  ```
+
+1. Fill `tg.bot.token`.
+
+  ```toml
+  [tg.bot]
+  token = "1234567890:ABCDEFGHIJKLMNOPQ-RSTUVWXYZabcdefgh"
+  ```
+
+1. (Optional) Fill `ai.api` fields if you want to use `tarot_ai`.
+
+  ```toml
+  [ai.api]
+  url = "https://api.siliconflow.cn/v1/chat/completions"
+  token = "sk-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv"
+  model = "deepseek-ai/DeepSeek-V3"
+  ```
+
 ## Run
 
-```powershell
-$env:TELOXIDE_TOKEN="1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" && cargo run
-```
-
-```bash
-TELOXIDE_TOKEN="1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" cargo run
+```shell
+./start.fish
 ```
 
 ## How to add a new module
