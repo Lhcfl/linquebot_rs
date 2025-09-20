@@ -63,8 +63,7 @@ async fn init_app() -> anyhow::Result<&'static linquebot::App> {
         warn!(target: "init", "Failed to initialize VectorDB:\n{}", e);
     }
     info!(target: "init", "Initializing Bot...");
-    let bot_token = get_bot_token().await?;
-    let bot = Bot::new(bot_token);
+    let bot = Bot::from_env();
     info!(target: "init", "Checking Network...");
     let me = bot.get_me().await?;
     info!(target: "init", "user id: {}", me.id);
@@ -126,22 +125,6 @@ async fn wait_for_ctrlc(cancel_token: CancellationToken) {
     println!(); // Print a newline to separate the Ctrl-C message from the previous output
     info!("Ctrl-C received, shutting down...");
     cancel_token.cancel();
-}
-
-async fn get_bot_token() -> anyhow::Result<String> {
-    match env::var("TG_BOT_TOKEN") {
-        Ok(val) => Ok(val),
-        Err(_) => match env::var("TELOXIDE_TOKEN") {
-            Ok(val) => Ok(val),
-            Err(err) => {
-                error!(
-                    "Couldn't load Telegram bot token from environment variables!\n\
-                    specify either TG_BOT_TOKEN or TELOXIDE_TOKEN!\n{err}"
-                );
-                Err(err.into())
-            }
-        },
-    }
 }
 
 #[tokio::main]

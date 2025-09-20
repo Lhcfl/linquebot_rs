@@ -27,7 +27,7 @@ Specify environment variables by these steps or any other way you like.
 
   ```shell
   # Telegram bot token
-  TG_BOT_TOKEN="1234567890:ABCDEFGHIJKLMNOPQ-RSTUVWXYZabcdefgh"
+  TELOXIDE_TOKEN="1234567890:ABCDEFGHIJKLMNOPQ-RSTUVWXYZabcdefgh"
   ```
 
 1. (Optional) Fill `AI_API_*` fields if you want to use `tarot_ai`.
