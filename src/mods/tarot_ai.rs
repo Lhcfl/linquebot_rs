@@ -71,7 +71,7 @@ async fn get_tarot(question: &str) -> anyhow::Result<String> {
     let prompt = match env::var("TAROT_AI_PROMPT") {
         Ok(val) => val,
         Err(_) => {
-            "请在接下来使用中文，根据我的问题和我抽取到的塔罗牌，使用html格式进行回答。".to_string()
+            "请在接下来使用中文，根据我的问题和我抽取到的塔罗牌进行回答。\n注意请使用html格式进行回答，不要使用markdown格式以及任何markdown语法。".to_string()
         }
     };
 
