@@ -71,7 +71,7 @@ async fn get_tarot(question: &str) -> anyhow::Result<String> {
     let prompt = match env::var("TAROT_AI_PROMPT") {
         Ok(val) => val,
         Err(_) => {
-            "请在接下来使用中文，根据我的问题和我抽取到的塔罗牌进行回答。\n注意请使用html格式进行回答，不要使用markdown格式以及任何markdown语法。".to_string()
+            "请在接下来使用中文，根据我的问题和我抽取到的塔罗牌进行回答。\n注意请使用html格式进行回答，不要使用markdown格式以及任何markdown语法。\n也请注意无需使用空行，不同段落写在不同的p标签内即可，你所在的聊天软件会处理段落之间的间隙。\n如果段落有小标题，小标题应该单独成行，但小标题与内容之间也没有额外空行。".to_string()
         }
     };
 
