@@ -31,7 +31,6 @@ use colored::Colorize;
 use env_logger::Env;
 use log::{error, info, warn};
 use resolvers::update::ALLOWED_UPDATES;
-use std::env;
 use std::sync::OnceLock;
 use teloxide_core::prelude::*;
 use teloxide_core::types::BotCommand;
