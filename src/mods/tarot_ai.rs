@@ -12,6 +12,7 @@ use teloxide_core::types::*;
 use crate::assets::tarot;
 use crate::linquebot::*;
 use crate::utils::partition_results;
+use crate::utils::sanitize_html;
 use crate::utils::telegram::prelude::WarnOnError;
 use crate::Consumption;
 
@@ -69,7 +70,9 @@ async fn get_tarot(question: &str) -> anyhow::Result<String> {
 
     let prompt = match env::var("TAROT_AI_PROMPT") {
         Ok(val) => val,
-        Err(_) => "请在接下来使用中文根据我的问题和我抽取到的塔罗牌进行回答。".to_string(),
+        Err(_) => {
+            "请在接下来使用中文，根据我的问题和我抽取到的塔罗牌，使用html格式进行回答。".to_string()
+        }
     };
 
     let body = format!("我的问题：\n```\n{question}\n```");
@@ -110,7 +113,10 @@ async fn get_tarot(question: &str) -> anyhow::Result<String> {
             warn!("Couldn't parse tarot ai response:\n{err}");
             Ok(res)
         }
-        Ok(json) => Ok(json.choices[0].message.content.clone()),
+        Ok(json) => {
+            let [json] = json.choices;
+            Ok(sanitize_html(&json.message.content))
+        }
     }
 }
 
@@ -152,7 +158,7 @@ fn send_tarot(ctx: &mut Context, _message: &Message) -> Consumption {
                         .warn_on_error("tarot-ai"),
                 );
 
-                if let Err(e) = ctx.reply_markdown(&answer).send().await {
+                if let Err(e) = ctx.reply_html(&answer).send().await {
                     warn!(target: "tarot-ai", "Error: {}", e);
                     ctx.reply(&answer).send().warn_on_error("tarot-ai").await;
                 }
