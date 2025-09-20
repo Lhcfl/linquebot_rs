@@ -74,6 +74,23 @@ pub fn split_args<const N: usize>(src: &str) -> [&str; N] {
     res
 }
 
+pub fn partition_results<const N: usize, T, E>(input: [Result<T, E>; N]) -> Result<[T; N], Vec<E>> {
+    let mut oks: [Option<T>; N] = [(); N].map(|_| None);
+    let mut errs: Vec<E> = Vec::new();
+    for (i, item) in input.into_iter().enumerate() {
+        match item {
+            Ok(v) => oks[i] = Some(v),
+            Err(e) => errs.push(e),
+        }
+    }
+    if errs.is_empty() {
+        // SAFETY: we have ensured all elements in `oks` are `Some`
+        Ok(oks.map(|o| o.unwrap()))
+    } else {
+        Err(errs)
+    }
+}
+
 pub mod telegram {
     pub mod prelude {
         use std::future::Future;

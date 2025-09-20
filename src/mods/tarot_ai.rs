@@ -11,6 +11,7 @@ use teloxide_core::types::*;
 
 use crate::assets::tarot;
 use crate::linquebot::*;
+use crate::utils::partition_results;
 use crate::utils::telegram::prelude::WarnOnError;
 use crate::Consumption;
 
@@ -46,14 +47,8 @@ struct AiResponseChoice {
     message: AiMessage,
 }
 
-async fn get_env_var(key: &str) -> anyhow::Result<String> {
-    match env::var(key) {
-        Ok(val) => Ok(val),
-        Err(err) => {
-            warn!("get-env-var-error, please specify {key}:\n{err}");
-            Err(err.into())
-        }
-    }
+fn get_env_var(key: &str) -> Result<String, String> {
+    env::var(key).map_err(|err| format!("{key}: {err}"))
 }
 
 async fn get_tarot(question: &str) -> anyhow::Result<String> {
@@ -61,25 +56,16 @@ async fn get_tarot(question: &str) -> anyhow::Result<String> {
 
     let tarots = tarot::n_random_majors(3)
         .into_iter()
-        .map(|t| {
-            format!(
-                "序号：{}，是否反转：{}",
-                t.id,
-                if t.is_reverse { "是" } else { "否" }
-            )
-        })
+        .map(|t| t.to_string())
         .collect::<Vec<_>>()
         .join("\n");
 
-    let url = get_env_var("AI_API_URL").await;
-    let token = get_env_var("AI_API_TOKEN").await;
-    let model = get_env_var("AI_API_MODEL").await;
-
-    // 这样写是为了让一个环境变量未找到时，也尝试查找剩余的几个。
-    // 让报错更全面，避免反复重启看报错。
-    let url = url?;
-    let token = token?;
-    let model = model?;
+    let [url, token, model] = partition_results([
+        get_env_var("AI_API_URL"),
+        get_env_var("AI_API_TOKEN"),
+        get_env_var("AI_API_MODEL"),
+    ])
+    .map_err(|errs| anyhow::anyhow!(errs.join("\n")))?;
 
     let prompt = match env::var("TAROT_AI_PROMPT") {
         Ok(val) => val,
