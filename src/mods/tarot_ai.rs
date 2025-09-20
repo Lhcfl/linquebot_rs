@@ -152,7 +152,10 @@ fn send_tarot(ctx: &mut Context, _message: &Message) -> Consumption {
                         .warn_on_error("tarot-ai"),
                 );
 
-                ctx.reply(&answer).send().warn_on_error("tarot-ai").await;
+                if let Err(e) = ctx.reply_markdown(&answer).send().await {
+                    warn!(target: "tarot-ai", "Error: {}", e);
+                    ctx.reply(&answer).send().warn_on_error("tarot-ai").await;
+                }
             }
             Err(err) => {
                 warn!("get-tarot error: {}", err);
