@@ -7,6 +7,7 @@ pub struct MajorArcana {
     pub trans: &'static str,
 }
 
+#[allow(unused)]
 pub struct TarotChoosen {
     pub id: u8,
     pub is_reverse: bool,
