@@ -11,11 +11,10 @@ pub fn resolve(app: &'static App, message: Message) {
     }
     let mut context = app.create_message_context(&message);
     for module in app.modules {
-        if let ModuleKind::Command(desc) = &module.kind {
-            if !context.matches_command(desc) {
+        if let ModuleKind::Command(desc) = &module.kind
+            && !context.matches_command(desc) {
                 continue;
             }
-        }
         let task_result = (module.task)(&mut context, &message);
         if let Some(task) = task_result.task {
             tokio::spawn(async move {

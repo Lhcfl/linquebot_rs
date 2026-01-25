@@ -11,15 +11,14 @@ use log::error;
 use log::warn;
 use msg_context::Context;
 use msg_context::TaskContext;
-use rand::thread_rng;
-use rand::Rng;
+use rand::random;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::Consumption;
 use crate::assets::idiom::*;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::WarnOnError;
-use crate::Consumption;
 
 /// 接龙用户
 struct JielongUser {
@@ -50,7 +49,7 @@ struct Jielong {
 impl Jielong {
     fn new_with(ctx: TaskContext, idiom: &'static Idiom) -> Jielong {
         Jielong {
-            nonce: thread_rng().gen(),
+            nonce: random(),
             idiom,
             counted: HashSet::new(),
             last_jielong_user: UserId(0),
@@ -117,11 +116,10 @@ fn stop_jielong(chat_id: ChatId, nonce: u64) {
         error!("Failed to read CHAT_JIELONG_STATUS");
         return;
     };
-    if let Some(jielong) = status.get(&chat_id) {
-        if jielong.nonce != nonce {
+    if let Some(jielong) = status.get(&chat_id)
+        && jielong.nonce != nonce {
             return;
         }
-    }
     if let Some(jielong) = status.remove(&chat_id) {
         tokio::spawn(async move {
             let _ = jielong

@@ -61,10 +61,10 @@ impl Context<'_> {
         let Some(cmd) = &self.cmd else {
             return false;
         };
-        if let Some(username) = cmd.username {
-            if username != self.app.username {
-                return false;
-            }
+        if let Some(username) = cmd.username
+            && username != self.app.username
+        {
+            return false;
         }
         cmd.cmd == desc.name
     }

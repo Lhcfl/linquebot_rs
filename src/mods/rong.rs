@@ -52,11 +52,10 @@ impl RongUser {
 
 pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     let text = message.text()?;
-    if let Some(username) = ctx.cmd.and_then(|cmd| cmd.username) {
-        if username != ctx.app.username {
+    if let Some(username) = ctx.cmd.and_then(|cmd| cmd.username)
+        && username != ctx.app.username {
             return Consumption::just_next();
         }
-    }
 
     let mut actee = message.reply_to_message().and_then(|msg| match &msg.from {
         Some(user) if !user.is_telegram() => Some(RongUser::from_user(user)),

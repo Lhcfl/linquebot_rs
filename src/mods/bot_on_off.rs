@@ -9,11 +9,11 @@ use std::sync::RwLock;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
-use crate::msg_context::Context;
 use crate::Consumption;
 use crate::Module;
 use crate::ModuleDescription;
 use crate::ModuleKind;
+use crate::msg_context::Context;
 
 static BOT_ON: LazyLock<RwLock<HashMap<ChatId, bool>>> = LazyLock::new(Default::default);
 
@@ -65,10 +65,10 @@ fn on_bot_off_message(ctx: &mut Context, _: &Message) -> Consumption {
 }
 
 fn stop_when_bot_off(ctx: &mut Context, _: &Message) -> Consumption {
-    if let Ok(record) = BOT_ON.read() {
-        if let Some(false) = record.get(&ctx.chat_id) {
-            return Consumption::just_stop();
-        }
+    if let Ok(record) = BOT_ON.read()
+        && let Some(false) = record.get(&ctx.chat_id)
+    {
+        return Consumption::just_stop();
     }
     Consumption::just_next()
 }

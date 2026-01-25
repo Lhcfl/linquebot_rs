@@ -100,7 +100,7 @@ pub fn decode(str: &str) -> Result<String, Base64Error> {
 
 #[cfg(test)]
 mod base64_test {
-    use rand::{thread_rng, Rng};
+    use rand::random;
 
     use super::*;
 
@@ -136,10 +136,10 @@ mod base64_test {
     #[test]
     fn encode_should_eq_decode_test() {
         for _ in 0..10000 {
-            let str_len: u8 = thread_rng().gen();
+            let str_len: u8 = random();
             let mut u8str = Vec::<u8>::new();
             for _ in 1..str_len {
-                u8str.push(thread_rng().gen());
+                u8str.push(random());
             }
             let str = String::from_utf8_lossy(&u8str).into_owned();
             assert_eq!(str, decode(&encode(&str)).unwrap());
@@ -149,10 +149,10 @@ mod base64_test {
     #[test]
     fn encode_vec_should_eq_decode_vec_test() {
         for _ in 0..10000 {
-            let str_len: u8 = thread_rng().gen();
+            let str_len: u8 = random();
             let mut u8vec = Vec::<u8>::new();
             for _ in 1..str_len {
-                u8vec.push(thread_rng().gen());
+                u8vec.push(random());
             }
             assert_eq!(u8vec, decode_bytes(&encode_bytes(u8vec.iter())).unwrap());
         }

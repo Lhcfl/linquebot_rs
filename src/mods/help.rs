@@ -42,19 +42,15 @@ fn gen_help_message(app: &App) -> (String, InlineKeyboardMarkup) {
         }
     }
 
-    let mut keyboards_iter = detailed_modules
-        .into_iter()
-        .map(|module_name| {
-            InlineKeyboardButton::callback(module_name, format!("help {module_name}"))
+    let keyboard = detailed_modules
+        .chunks(3)
+        .map(|chunk| {
+            chunk
+                .iter()
+                .map(|name| InlineKeyboardButton::callback(*name, format!("help {name}")))
+                .collect()
         })
-        .array_chunks::<3>();
-
-    let mut keyboards: Vec<Vec<InlineKeyboardButton>> = Vec::new();
-
-    for x in keyboards_iter.by_ref() {
-        keyboards.push(x.into_iter().collect());
-    }
-    keyboards.push(keyboards_iter.into_remainder().collect());
+        .collect::<Vec<Vec<_>>>();
 
     let message = format!(
         "{HELP_HEAD}
@@ -74,33 +70,37 @@ fn gen_help_message(app: &App) -> (String, InlineKeyboardMarkup) {
         general_texts.join("\n")
     );
 
-    (message, InlineKeyboardMarkup::new(keyboards))
+    (message, InlineKeyboardMarkup::new(keyboard))
 }
 
 fn gen_partial_help_message(
     app: &App,
     module_name: &str,
 ) -> Option<(String, InlineKeyboardMarkup)> {
-    for module in app.modules {
-        let Some(desc) = read_description(&module.kind) else {
-            continue;
+    app.modules.iter().find_map(|module| {
+        let desc = read_description(&module.kind)?;
+
+        let ModuleDescription {
+            name,
+            description_detailed: Some(details),
+            description,
+        } = desc
+        else {
+            return None;
         };
-        if desc.name == module_name && desc.description_detailed.is_some() {
+
+        if module_name == *name {
             return Some((
-                format!(
-                    "{HELP_HEAD}\n\n<b>{}</b>: {}\n\n{}",
-                    desc.name,
-                    desc.description,
-                    desc.description_detailed.expect("上面检查了 is_some")
-                ),
+                format!("{HELP_HEAD}\n\n<b>{name}</b>: {description}\n\n{details}"),
                 InlineKeyboardMarkup::new(vec![vec![InlineKeyboardButton::callback(
                     "返回",
                     "help {default}",
                 )]]),
             ));
         }
-    }
-    None
+
+        None
+    })
 }
 
 fn disabled_link_preview() -> LinkPreviewOptions {

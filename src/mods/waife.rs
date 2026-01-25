@@ -355,15 +355,14 @@ async fn check_and_add(
         })
         .await;
 
-    if let Some(cache) = user_cache.chats.get(&ctx.chat_id) {
-        if !cache.invalid() {
+    if let Some(cache) = user_cache.chats.get(&ctx.chat_id)
+        && !cache.invalid() {
             // we still need update user info
             if cache.joined {
                 users.insert(user.id, user);
             }
             return cache.joined;
         }
-    }
 
     let membership = match ctx
         .app
