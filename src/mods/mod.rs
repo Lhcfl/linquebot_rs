@@ -42,6 +42,7 @@ pub static MODULES: &[&Module] = &[
     &todo::MODULE,
     &hitokoto::MODULE,
     &answer_book::MODULE,
+    &answer_book::MODULE_BAD,
     &say::MODULE,
     &repeater::TOGGLE,
     &markov::TOGGLE,

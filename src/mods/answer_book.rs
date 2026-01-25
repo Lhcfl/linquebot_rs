@@ -6,6 +6,7 @@ use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
 use crate::assets::answer_book;
+use crate::assets::bad_answer_book;
 use crate::linquebot::*;
 use crate::Consumption;
 
@@ -13,6 +14,20 @@ fn on_message(ctx: &mut Context, _message: &Message) -> Consumption {
     let ctx = ctx.task();
     async move {
         let chosen = answer_book::ANSWERS
+            .choose(&mut rand::thread_rng())
+            .expect("not empty");
+        let res = ctx.reply(*chosen).send().await;
+        if let Err(err) = res {
+            warn!("Failed to send reply: {}", err);
+        }
+    }
+    .into()
+}
+
+fn on_bad_answer_message(ctx: &mut Context, _message: &Message) -> Consumption {
+    let ctx = ctx.task();
+    async move {
+        let chosen = bad_answer_book::ANSWERS
             .choose(&mut rand::thread_rng())
             .expect("not empty");
         let res = ctx.reply(*chosen).send().await;
@@ -33,4 +48,16 @@ pub static MODULE: Module = Module {
         )),
     }),
     task: on_message,
+};
+
+pub static MODULE_BAD: Module = Module {
+    kind: ModuleKind::Command(ModuleDescription {
+        name: "bad_answer",
+        description: "抽象之书",
+        description_detailed: Some(concat!(
+            "该命令不需要参数。\n",
+            "怪东西。"
+        )),
+    }),
+    task: on_bad_answer_message,
 };

@@ -51,16 +51,10 @@ fn gen_help_message(app: &App) -> (String, InlineKeyboardMarkup) {
 
     let mut keyboards: Vec<Vec<InlineKeyboardButton>> = Vec::new();
 
-    loop {
-        if let Some(x) = keyboards_iter.next() {
-            keyboards.push(x.into_iter().collect::<Vec<_>>());
-        } else {
-            if let Some(x) = keyboards_iter.into_remainder() {
-                keyboards.push(x.collect::<Vec<_>>());
-            }
-            break;
-        }
+    for x in keyboards_iter.by_ref() {
+        keyboards.push(x.into_iter().collect());
     }
+    keyboards.push(keyboards_iter.into_remainder().collect());
 
     let message = format!(
         "{HELP_HEAD}
