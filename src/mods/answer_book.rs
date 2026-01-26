@@ -29,7 +29,7 @@ fn on_bad_answer_message(ctx: &mut Context, _message: &Message) -> Consumption {
     let ctx = ctx.task();
     async move {
         let chosen = bad_answer_book::ANSWERS
-            .choose(&mut rand::thread_rng())
+            .choose(&mut rand::rng())
             .expect("not empty");
         let res = ctx.reply(*chosen).send().await;
         if let Err(err) = res {

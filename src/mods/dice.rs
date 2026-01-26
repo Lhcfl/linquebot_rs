@@ -5,9 +5,9 @@ use rand::Rng;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::Consumption;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::WarnOnError;
-use crate::Consumption;
 
 pub fn dice(ctx: &mut Context, message: &Message) -> Consumption {
     use crate::utils::pattern::*;
@@ -68,7 +68,7 @@ pub fn dice(ctx: &mut Context, message: &Message) -> Consumption {
 
     async move {
         let results = (0..x)
-            .map(|_| rand::thread_rng().gen_range(1..=y as u64))
+            .map(|_| rand::rng().random_range(1..=y as u64))
             .collect::<Vec<_>>();
 
         // x 个 u32 的和肯定不会超过 u64，可以放心不会 panic

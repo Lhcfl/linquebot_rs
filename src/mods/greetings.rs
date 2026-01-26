@@ -1,7 +1,7 @@
 use std::{collections::HashMap, time::SystemTime};
 
 use crate::{
-    linquebot::{msg_context::Context, types::Consumption, Module, ModuleDescription, ModuleKind},
+    linquebot::{Module, ModuleDescription, ModuleKind, msg_context::Context, types::Consumption},
     utils::telegram::prelude::WarnOnError,
 };
 use rand::seq::IteratorRandom;
@@ -48,7 +48,7 @@ fn toggle_greeting(ctx: &mut Context, _msg: &Message) -> Consumption {
 
 mod morning {
     use crate::{
-        linquebot::{msg_context::TaskContext, TaskResult},
+        linquebot::{TaskResult, msg_context::TaskContext},
         utils::telegram::prelude::*,
     };
     use teloxide_core::{prelude::*, types::User};
@@ -131,10 +131,9 @@ fn say_greeting(ctx: &mut Context, msg: &Message) -> Consumption {
                         .is_ok_and(|dur| dur.as_secs() > 3600))
                     || force
                 {
-                    tokio::spawn(morning::MORNING
-                        .iter()
-                        .choose(&mut rand::thread_rng())
-                        .unwrap()(ctx, user));
+                    tokio::spawn(morning::MORNING.iter().choose(&mut rand::rng()).unwrap()(
+                        ctx, user,
+                    ));
                 }
             }
             GreetingKind::Night => {

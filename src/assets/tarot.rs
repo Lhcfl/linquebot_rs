@@ -1,4 +1,4 @@
-use rand::{random, seq::index, thread_rng};
+use rand::{random, seq::index, rng};
 use std::fmt;
 
 pub struct MajorArcana {
@@ -27,7 +27,7 @@ impl fmt::Display for TarotChoosen {
 
 pub fn n_random_majors(n: usize) -> Vec<TarotChoosen> {
     assert!(n <= 22);
-    index::sample(&mut thread_rng(), 21, n)
+    index::sample(&mut rng(), 21, n)
         .into_iter()
         .map(|id| {
             let rev: bool = random();

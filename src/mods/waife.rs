@@ -7,7 +7,7 @@ use log::info;
 use log::warn;
 use msg_context::Context;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::rng;
 use serde::Deserialize;
 use serde::Serialize;
 use std::cmp::min;
@@ -299,7 +299,7 @@ fn get_waife(ctx: &mut Context, msg: &Message) -> Consumption {
                 .await;
         }
 
-        available_waifes.shuffle(&mut thread_rng());
+        available_waifes.shuffle(&mut rng());
 
         let mut waife_names = String::new();
 

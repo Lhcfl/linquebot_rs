@@ -1,4 +1,4 @@
-use rand::{seq::IteratorRandom, thread_rng};
+use rand::{rng, seq::IteratorRandom};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::LazyLock};
 
@@ -41,7 +41,7 @@ static IDIOM_MAP: LazyLock<HashMap<String, &'static Idiom>> = LazyLock::new(|| {
 });
 
 pub fn random_idiom() -> &'static Idiom {
-    IDIOMS.iter().choose(&mut thread_rng()).unwrap()
+    IDIOMS.iter().choose(&mut rng()).unwrap()
 }
 
 pub fn get_idiom(word: &str) -> Option<&'static Idiom> {

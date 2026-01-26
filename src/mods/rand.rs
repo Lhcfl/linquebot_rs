@@ -2,18 +2,18 @@
 use log::warn;
 use msg_context::Context;
 use msg_context::TaskContext;
-use rand::seq::SliceRandom;
 use rand::Rng;
+use rand::seq::SliceRandom;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::Consumption;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::*;
 use crate::utils::*;
-use crate::Consumption;
 
 async fn send_raw_rand(ctx: TaskContext, from: User, text_body: String) {
-    let result = rand::thread_rng().gen_range(0..=100);
+    let result = rand::rng().random_range(0..=100);
     let msg = format!(
         "{} {}",
         from.html_link(),
@@ -35,7 +35,7 @@ async fn send_selective_rand(ctx: TaskContext, text_body: String, spliter: &str)
         .filter(|str| !str.is_empty())
         .collect::<Vec<_>>();
 
-    result.shuffle(&mut rand::thread_rng());
+    result.shuffle(&mut rand::rng());
 
     let result = result.first().unwrap_or(&spliter);
 
