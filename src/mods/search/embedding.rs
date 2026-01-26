@@ -1,11 +1,12 @@
 use anyhow::{Error as E, Result};
-use hf_hub::{api::sync::Api, Repo, RepoType};
+use hf_hub::{Repo, RepoType, api::sync::Api};
 use llama_cpp_2::{
+    LogOptions,
     context::params::{LlamaContextParams, LlamaPoolingType},
     llama_backend::LlamaBackend,
     llama_batch::LlamaBatch,
     model::{AddBos, LlamaModel},
-    send_logs_to_tracing, LogOptions,
+    send_logs_to_tracing,
 };
 use std::sync::LazyLock;
 use tokio::sync::oneshot;
@@ -94,7 +95,7 @@ impl EmbeddingWorker {
             .new_context(
                 &self.backend,
                 LlamaContextParams::default()
-                    .with_flash_attention(true)
+                    .with_flash_attention_policy(-1) // auto
                     .with_pooling_type(LlamaPoolingType::Last)
                     .with_embeddings(true),
             )

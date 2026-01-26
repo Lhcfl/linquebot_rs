@@ -1,21 +1,22 @@
 /// 答案之书命令
 use log::warn;
 use msg_context::Context;
-use rand::seq::SliceRandom;
+use rand::rng;
+use rand::seq::IndexedRandom;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::Consumption;
 use crate::assets::answer_book;
 use crate::assets::bad_answer_book;
 use crate::linquebot::*;
-use crate::Consumption;
 
 fn on_message(ctx: &mut Context, _message: &Message) -> Consumption {
     let ctx = ctx.task();
     async move {
         let chosen = answer_book::ANSWERS
-            .choose(&mut rand::thread_rng())
-            .expect("not empty");
+            .choose(&mut rng())
+            .expect("answers will never be empty");
         let res = ctx.reply(*chosen).send().await;
         if let Err(err) = res {
             warn!("Failed to send reply: {}", err);
@@ -54,10 +55,7 @@ pub static MODULE_BAD: Module = Module {
     kind: ModuleKind::Command(ModuleDescription {
         name: "bad_answer",
         description: "抽象之书",
-        description_detailed: Some(concat!(
-            "该命令不需要参数。\n",
-            "怪东西。"
-        )),
+        description_detailed: Some(concat!("该命令不需要参数。\n", "怪东西。")),
     }),
     task: on_bad_answer_message,
 };

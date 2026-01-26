@@ -23,6 +23,11 @@ fn update_name(upd: &UpdateKind) -> &'static str {
         UpdateKind::ChatJoinRequest(_) => "ChatJoinRequest",
         UpdateKind::ChatBoost(_) => "ChatBoost",
         UpdateKind::RemovedChatBoost(_) => "RemovedChatBoost",
+        UpdateKind::BusinessConnection(_) => "BusinessConnection",
+        UpdateKind::BusinessMessage(_) => "BusinessMessage",
+        UpdateKind::EditedBusinessMessage(_) => "EditedBusinessMessage",
+        UpdateKind::DeletedBusinessMessages(_) => "DeletedBusinessMessages",
+        UpdateKind::PurchasedPaidMedia(_) => "PurchasedPaidMedia",
         UpdateKind::Error(_) => "Error (ParseError)",
     }
 }

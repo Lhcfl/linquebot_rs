@@ -1,8 +1,8 @@
 //! 复读机
+use crate::Consumption;
 use crate::linquebot::msg_context::TaskContext;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::*;
-use crate::Consumption;
 use msg_context::Context;
 use std::collections::HashMap;
 use std::sync::LazyLock;
@@ -12,7 +12,7 @@ use teloxide_core::types::*;
 
 #[derive(PartialEq, Clone)]
 enum MsgKind {
-    Sticker(String),
+    Sticker(FileId),
     Text(String),
     Other,
 }
@@ -64,7 +64,7 @@ impl MessageHistory {
             MsgKind::Sticker(sticker) => {
                 ctx.app
                     .bot
-                    .send_sticker_by_file_id(ctx.chat_id, &sticker)
+                    .send_sticker_by_file_id(ctx.chat_id, &sticker.0)
                     .warn_on_error("repeater")
                     .await;
             }
@@ -91,10 +91,7 @@ static LAST_MSG: LazyLock<RwLock<HashMap<ChatId, MessageHistory>>> =
 pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     let kind = MsgKind::from_msg(msg);
     let mut manager = LAST_MSG.write().map_err(|err| {
-        log::error!(
-            "Error get history lock. This is not expected. {}",
-            err
-        );
+        log::error!("Error get history lock. This is not expected. {}", err);
     })?;
 
     let Some(history) = manager.get_mut(&ctx.chat_id) else {
@@ -120,10 +117,7 @@ pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
 
 pub fn toggle_repeat(ctx: &mut Context, _: &Message) -> Consumption {
     let mut manager = LAST_MSG.write().map_err(|err| {
-        log::error!(
-            "Error get history lock. This is not expected. {}",
-            err
-        );
+        log::error!("Error get history lock. This is not expected. {}", err);
     })?;
     let history = manager.entry(ctx.chat_id).or_default();
     *history = MessageHistory {

@@ -1,7 +1,7 @@
 /// 基于 Markov Chain 的简单 AI 模块
 use std::collections::HashMap;
 
-use rand::{rngs::SmallRng, seq::SliceRandom, thread_rng, SeedableRng};
+use rand::{SeedableRng, rngs::SmallRng, seq::IndexedRandom};
 use serde::{Deserialize, Serialize};
 use teloxide_core::{
     prelude::{Request, Requester},
@@ -9,10 +9,10 @@ use teloxide_core::{
 };
 
 use crate::{
-    linquebot::{msg_context::TaskContext, ModuleDescription, ModuleKind},
+    Consumption, Module,
+    linquebot::{ModuleDescription, ModuleKind, msg_context::TaskContext},
     msg_context::Context,
     utils::telegram::prelude::WarnOnError,
-    Consumption, Module,
 };
 
 #[derive(
@@ -76,7 +76,7 @@ async fn get_said(text: String, ctx: &TaskContext) -> String {
     }
     let mut pre = Gram(pre);
     let mut res = "".to_string();
-    let mut rng = SmallRng::from_rng(&mut thread_rng()).expect("gen rng");
+    let mut rng = SmallRng::from_rng(&mut rand::rng());
     loop {
         let mut sel = vec![];
         let mut pw = None;

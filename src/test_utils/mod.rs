@@ -8,26 +8,8 @@ pub mod fabricator {
             id: ChatId(5678),
             kind: ChatKind::Public(ChatPublic {
                 title: Some("fake chat".to_string()),
-                kind: PublicChatKind::Group(PublicChatGroup { permissions: None }),
-                description: Some("fake chat description".to_string()),
-                invite_link: None,
-                has_protected_content: None,
+                kind: PublicChatKind::Group,
             }),
-            photo: None,
-            available_reactions: None,
-            pinned_message: None,
-            message_auto_delete_time: None,
-            has_hidden_members: false,
-            has_aggressive_anti_spam_enabled: false,
-            chat_full_info: ChatFullInfo {
-                accent_color_id: None,
-                background_custom_emoji_id: None,
-                profile_accent_color_id: None,
-                profile_background_custom_emoji_id: None,
-                emoji_status_custom_emoji_id: None,
-                emoji_status_expiration_date: None,
-                has_visible_history: false,
-            },
         }
     }
 
@@ -41,6 +23,7 @@ pub mod fabricator {
             chat: fab_chat(),
             is_topic_message: false,
             via_bot: None,
+            sender_business_bot: None,
             kind: MessageKind::Common(MessageCommon {
                 author_signature: None,
                 forward_origin: None,
@@ -56,6 +39,12 @@ pub mod fabricator {
                 reply_markup: None,
                 is_automatic_forward: false,
                 has_protected_content: false,
+                paid_star_count: None,
+                business_connection_id: None,
+                effect_id: None,
+                is_from_offline: false,
+                reply_to_story: None,
+                sender_boost_count: None,
             }),
         }
     }
