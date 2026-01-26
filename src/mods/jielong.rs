@@ -84,7 +84,7 @@ impl Jielong {
     }
     fn pretty_result(&self) -> String {
         let mut users = self.users.values().collect::<Vec<_>>();
-        users.sort_by(|a, b| b.score.cmp(&a.score));
+        users.sort_by_key(|user| std::cmp::Reverse(user.score));
         users
             .into_iter()
             .enumerate()
@@ -117,9 +117,10 @@ fn stop_jielong(chat_id: ChatId, nonce: u64) {
         return;
     };
     if let Some(jielong) = status.get(&chat_id)
-        && jielong.nonce != nonce {
-            return;
-        }
+        && jielong.nonce != nonce
+    {
+        return;
+    }
     if let Some(jielong) = status.remove(&chat_id) {
         tokio::spawn(async move {
             let _ = jielong
