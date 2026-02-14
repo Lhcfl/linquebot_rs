@@ -1,0 +1,9 @@
+[package]
+name = "lm"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.101"
+burn = { version = "0.20.1", features = ["candle", "train", "std"] }
+tokenizers = { version = "0.22.2" }

@@ -3,6 +3,9 @@ name = "linquebot_rs"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+exclude = ["lm"]
+
 [dependencies]
 futures = "0.3.31"
 tokio = { version = "1.49", features = ["rt-multi-thread", "macros", "signal"] }
@@ -29,11 +32,13 @@ hf-hub = "0.4.3"
 unicode-segmentation = "1.12.0"
 tokio-util = "0.7.18"
 llama-cpp-2 = { version = "0.1.132", features = [] }
+lm = { path = "./lm", optional = true }
 
 [features]
 default = ["full"]
-full = ["tarot", "tarot_ai", "explain", "jielong"]
+full = ["tarot", "tarot_ai", "explain", "jielong", "lm"]
 tarot = []
 tarot_ai = []
 explain = []
 jielong = []
+lm = ["dep:lm"]

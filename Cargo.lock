@@ -1652,6 +1652,7 @@ dependencies = [
  "graphviz-rust",
  "hf-hub",
  "llama-cpp-2",
+ "lm",
  "log",
  "quick_cache",
  "rand 0.9.2",
@@ -1706,6 +1707,10 @@ dependencies = [
  "glob",
  "walkdir",
 ]
+
+[[package]]
+name = "lm"
+version = "0.1.0"
 
 [[package]]
 name = "lock_api"
