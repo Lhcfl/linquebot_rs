@@ -1,4 +1,6 @@
 /target
+/data
+/lm/data
 *.db
 /result
 .env

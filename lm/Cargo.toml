@@ -4,6 +4,19 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0.101"
-burn = { version = "0.20.1", features = ["candle", "train", "std"] }
+anyhow = { version = "1.0.101", features = ["backtrace"] }
+burn = { version = "0.20.1", features = ["ndarray", "tch", "train", "std"] }
 tokenizers = { version = "0.22.2" }
+
+serde_json = { version = "1.0.149" }
+rand = "0.10.0"
+memmap2 = "0.5"
+num-traits = "0.2.19"
+color-backtrace = "0.7.2"
+log = "0.4.29"
+
+[[bin]]
+name = "train_tokenizer"
+
+[[bin]]
+name = "run_inference"

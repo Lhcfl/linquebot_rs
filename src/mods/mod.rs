@@ -12,6 +12,8 @@ pub mod help;
 pub mod hitokoto;
 #[cfg(feature = "jielong")]
 pub mod jielong;
+#[cfg(feature = "lm")]
+pub mod lm;
 pub mod markov;
 pub mod rand;
 pub mod repeater;
