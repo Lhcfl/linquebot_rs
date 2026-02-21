@@ -189,7 +189,7 @@ trait QueryExt<'q> {
     where
         'a: 'q;
 }
-impl<'q> QueryExt<'q> for Query<'q, Sqlite, SqliteArguments<'q>> {
+impl<'q> QueryExt<'q> for Query<'q, Sqlite, SqliteArguments> {
     fn bind_id<'a>(self, ty: &'a str, id: DataId) -> Self
     where
         'a: 'q,

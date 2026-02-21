@@ -20,3 +20,4 @@ name = "train_tokenizer"
 
 [[bin]]
 name = "run_inference"
+path = "src/bin/infer.rs"
