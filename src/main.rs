@@ -1,3 +1,8 @@
+// Allow unused features in situations other than cargo test.
+// Otherwise, the cargo clippy will fail.
+// Since it won't compile test code and then thinks this feature is unused.
+#![cfg_attr(not(test), allow(unused_features))]
+#![feature(test)]
 #![feature(str_split_remainder)]
 // #![feature(duration_constructors)]
 #![feature(try_blocks)]
@@ -14,7 +19,6 @@
 #![feature(iter_from_coroutine)]
 // #![feature(extend_one)]
 #![feature(iter_next_chunk)]
-#![feature(test)]
 
 mod assets;
 mod linquebot;
