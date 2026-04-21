@@ -6,8 +6,8 @@ use log::error;
 use log::info;
 use log::warn;
 use msg_context::Context;
-use rand::seq::SliceRandom;
 use rand::rng;
+use rand::seq::SliceRandom;
 use serde::Deserialize;
 use serde::Serialize;
 use std::cmp::min;
@@ -18,11 +18,11 @@ use std::time::SystemTime;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::Consumption;
 use crate::linquebot::msg_context::TaskContext;
 use crate::linquebot::*;
 use crate::utils::escape_html;
 use crate::utils::telegram::prelude::*;
-use crate::Consumption;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct WaifeUser {
@@ -356,13 +356,14 @@ async fn check_and_add(
         .await;
 
     if let Some(cache) = user_cache.chats.get(&ctx.chat_id)
-        && !cache.invalid() {
-            // we still need update user info
-            if cache.joined {
-                users.insert(user.id, user);
-            }
-            return cache.joined;
+        && !cache.invalid()
+    {
+        // we still need update user info
+        if cache.joined {
+            users.insert(user.id, user);
         }
+        return cache.joined;
+    }
 
     let membership = match ctx
         .app
@@ -498,10 +499,8 @@ async fn generate_waife_graph(
                 perfer = WaifeGraphGenerator::Dot;
             }
         }
-        WaifeGraphGenerator::Neato => {
-            if used_userids.len() > 100 {
-                perfer = WaifeGraphGenerator::Fdp;
-            }
+        WaifeGraphGenerator::Neato if used_userids.len() > 100 => {
+            perfer = WaifeGraphGenerator::Fdp;
         }
         _ => {}
     };
@@ -620,7 +619,7 @@ fn set_waife_limit(ctx: &mut Context, msg: &Message) -> Consumption {
                 false
             }
         };
-        
+
         if !has_admin_right {
             ctx.reply_markdown("~You are not in the sudoers file. This incident will be reported.~ 只有管理员才能执行该命令哦。").send().warn_on_error("set-waife-limit").await;
             return;
@@ -642,7 +641,7 @@ fn set_waife_limit(ctx: &mut Context, msg: &Message) -> Consumption {
             Ok(new_limit) => {
                 let mut waife_storage = ctx.app.db.of::<WaifeStatus>().chat(ctx.chat_id).get_or_insert(Default::default).await;
                 waife_storage.waife_limit = new_limit;
-                
+
                 let text = match new_limit {
                     None => "无限制".to_string(),
                     Some(x) => x.to_string()
@@ -688,9 +687,8 @@ pub static WAIFE_GRAPH: Module = Module {
         description_detailed: Some(concat!(
             "使用 Graphviz 绘制老婆关系图。\n",
             "注：你可以选择绘制方式，当前可选有: <code>dot</code>, <code>neato</code>, <code>fdp</code>, <code>circo</code>。\n",
-            "默认会智能选择最合适的。",  
-        )
-        ),
+            "默认会智能选择最合适的。",
+        )),
     }),
     task: on_waife_graph,
 };

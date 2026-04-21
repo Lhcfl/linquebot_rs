@@ -3,11 +3,11 @@ use msg_context::Context;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::Consumption;
 use crate::linquebot::*;
 use crate::utils::base64;
 use crate::utils::split_args;
 use crate::utils::telegram::prelude::WarnOnError;
-use crate::Consumption;
 
 const TOOLS_HELP: &str = concat!(
     "必选参数：工具名\n",

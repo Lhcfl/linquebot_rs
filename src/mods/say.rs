@@ -4,9 +4,9 @@ use msg_context::Context;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::Consumption;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::*;
-use crate::Consumption;
 
 pub fn on_message(ctx: &mut Context, msg: &Message) -> Consumption {
     let text = ctx.cmd?.content;

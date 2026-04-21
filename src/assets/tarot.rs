@@ -1,4 +1,4 @@
-use rand::{random, seq::index, rng};
+use rand::{random, rng, seq::index};
 use std::fmt;
 
 pub struct MajorArcana {

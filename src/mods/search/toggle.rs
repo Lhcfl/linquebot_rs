@@ -1,5 +1,5 @@
 use crate::{
-    linquebot::{msg_context::Context, types::Consumption, Module, ModuleDescription, ModuleKind},
+    linquebot::{Module, ModuleDescription, ModuleKind, msg_context::Context, types::Consumption},
     utils::telegram::prelude::WarnOnError,
 };
 use serde::{Deserialize, Serialize};

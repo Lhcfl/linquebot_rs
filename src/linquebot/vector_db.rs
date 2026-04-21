@@ -1,5 +1,5 @@
 use core::f32;
-use sqlx::{postgres::PgPoolOptions, Pool, Postgres, Row};
+use sqlx::{Pool, Postgres, Row, postgres::PgPoolOptions};
 
 pub struct VectorDB {
     pool: Pool<Postgres>,

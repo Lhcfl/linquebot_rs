@@ -114,8 +114,8 @@ pub mod telegram {
         }
         use reqwest::Response;
         use teloxide_core::{
-            types::{ChatId, Message, User},
             Bot,
+            types::{ChatId, Message, User},
         };
 
         pub trait UserExtension {

@@ -1,6 +1,6 @@
 use super::toggle::BestapoCensor;
 use super::utils::{is_contains_url, is_zero_width_char};
-use crate::linquebot::{msg_context::Context, types::Consumption, Module};
+use crate::linquebot::{Module, msg_context::Context, types::Consumption};
 use crate::utils::telegram::prelude::{MessageExtension, WarnOnError};
 use log::{debug, warn};
 use std::time::Duration;

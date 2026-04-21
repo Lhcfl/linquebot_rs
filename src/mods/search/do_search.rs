@@ -1,10 +1,10 @@
 use super::{embedding::text_embedding, toggle::Search};
 use crate::{
     linquebot::{
+        Module, ModuleDescription, ModuleKind,
         msg_context::Context,
         types::Consumption,
         vector_db::{VectorQuery, VectorResult},
-        Module, ModuleDescription, ModuleKind,
     },
     utils::telegram::prelude::WarnOnError,
 };

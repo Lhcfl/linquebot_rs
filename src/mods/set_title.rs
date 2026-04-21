@@ -1,13 +1,13 @@
 /// 设置头衔
 use log::warn;
-use teloxide_core::prelude::*;
-use teloxide_core::types::*;
 use teloxide_core::ApiError;
 use teloxide_core::RequestError;
+use teloxide_core::prelude::*;
+use teloxide_core::types::*;
 
+use crate::Consumption;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::WarnOnError;
-use crate::Consumption;
 use msg_context::Context;
 
 async fn reply_info(bot: &Bot, message: Message, info: &str) {

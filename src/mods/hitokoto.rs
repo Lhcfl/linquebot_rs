@@ -7,8 +7,8 @@ use serde::Deserialize;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
-use crate::linquebot::*;
 use crate::Consumption;
+use crate::linquebot::*;
 
 #[derive(Deserialize, Debug)]
 struct Hitokoto {

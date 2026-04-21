@@ -10,10 +10,10 @@ use std::time::Duration;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::Consumption;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::*;
 use crate::utils::*;
-use crate::Consumption;
 
 pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
     let args = ctx.cmd?.content;
@@ -86,11 +86,7 @@ pub fn on_message(ctx: &mut Context, message: &Message) -> Consumption {
                 .send()
                 .await
             {
-                warn!(
-                    "(retry {} times) Failed to send reply: {}",
-                    retries,
-                    err
-                );
+                warn!("(retry {} times) Failed to send reply: {}", retries, err);
             } else {
                 return;
             }

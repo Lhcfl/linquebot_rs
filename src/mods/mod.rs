@@ -1,4 +1,4 @@
-use crate::{linquebot::Module, MicroTask};
+use crate::{MicroTask, linquebot::Module};
 
 pub mod answer_book;
 pub mod bestapo;

@@ -33,7 +33,7 @@ impl<'a> CmdParts<'a> {
         }
         Some(CmdParts {
             cmd,
-            username: username.and_then(|name| if name.is_empty() { None } else { Some(name) }),
+            username: username.filter(|&name| !name.is_empty()),
             content: content.trim(),
         })
     }

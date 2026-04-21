@@ -7,11 +7,11 @@ use serde::Deserialize;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::Consumption;
 use crate::assets::idiom::get_idiom;
 use crate::linquebot::*;
 use crate::utils::sanitize_html;
 use crate::utils::telegram::prelude::WarnOnError;
-use crate::Consumption;
 
 #[derive(Deserialize, Debug)]
 struct WikiResponse {

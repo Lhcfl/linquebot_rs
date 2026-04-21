@@ -5,13 +5,13 @@ use std::sync::LazyLock;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
-use crate::msg_context::Context;
-use crate::utils::telegram::prelude::*;
-use crate::utils::*;
 use crate::Consumption;
 use crate::Module;
 use crate::ModuleDescription;
 use crate::ModuleKind;
+use crate::msg_context::Context;
+use crate::utils::telegram::prelude::*;
+use crate::utils::*;
 
 // 常见其它 bot 的命令名单，防止意外回复
 static RONG_BLACKLIST: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
@@ -53,9 +53,10 @@ impl RongUser {
 pub fn rong(ctx: &mut Context, message: &Message) -> Consumption {
     let text = message.text()?;
     if let Some(username) = ctx.cmd.and_then(|cmd| cmd.username)
-        && username != ctx.app.username {
-            return Consumption::just_next();
-        }
+        && username != ctx.app.username
+    {
+        return Consumption::just_next();
+    }
 
     let mut actee = message.reply_to_message().and_then(|msg| match &msg.from {
         Some(user) if !user.is_telegram() => Some(RongUser::from_user(user)),
@@ -115,7 +116,9 @@ pub static MODULE: Module = Module {
     kind: ModuleKind::General(Some(ModuleDescription {
         name: "rong",
         description: "Rong一下人",
-        description_detailed: Some("对于没有在模块记录内的命令，如果你对某个人回复 <code>/动作 短语</code>，会回复“你 动作 某个人 短语！”"),
+        description_detailed: Some(
+            "对于没有在模块记录内的命令，如果你对某个人回复 <code>/动作 短语</code>，会回复“你 动作 某个人 短语！”",
+        ),
     })),
     task: rong,
 };

@@ -1,6 +1,6 @@
 use super::toggle::Search;
 use crate::{
-    linquebot::{msg_context::Context, types::Consumption, vector_db::VectorData, Module},
+    linquebot::{Module, msg_context::Context, types::Consumption, vector_db::VectorData},
     mods::search::embedding::text_embedding,
 };
 use log::{debug, warn};

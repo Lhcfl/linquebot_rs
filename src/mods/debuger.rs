@@ -1,6 +1,6 @@
+use crate::Consumption;
 use crate::linquebot::*;
 use crate::utils::telegram::prelude::*;
-use crate::Consumption;
 /// 随机选择器
 use msg_context::Context;
 use teloxide_core::prelude::*;

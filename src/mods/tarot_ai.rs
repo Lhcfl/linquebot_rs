@@ -9,12 +9,12 @@ use std::env;
 use teloxide_core::prelude::*;
 use teloxide_core::types::*;
 
+use crate::Consumption;
 use crate::assets::tarot;
 use crate::linquebot::*;
 use crate::utils::partition_results;
 use crate::utils::sanitize_html;
 use crate::utils::telegram::prelude::WarnOnError;
-use crate::Consumption;
 
 #[derive(Debug, Serialize, Deserialize)]
 enum AiRole {

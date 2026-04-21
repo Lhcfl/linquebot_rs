@@ -32,10 +32,10 @@ use env_logger::Env;
 use log::{error, info, warn};
 use resolvers::update::ALLOWED_UPDATES;
 use std::sync::OnceLock;
+use teloxide_core::RequestError;
 use teloxide_core::prelude::*;
 use teloxide_core::types::BotCommand;
 use teloxide_core::types::True;
-use teloxide_core::RequestError;
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
 

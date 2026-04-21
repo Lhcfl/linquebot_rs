@@ -1,5 +1,5 @@
 use std::{
-    any::{type_name, Any, TypeId},
+    any::{Any, TypeId, type_name},
     marker::PhantomData,
     ops::{Deref, DerefMut},
     sync::Arc,
@@ -8,9 +8,9 @@ use std::{
 use quick_cache::sync::Cache;
 use serde::{Deserialize, Serialize};
 use sqlx::{
+    Connection, Row, Sqlite, SqliteConnection,
     query::Query,
     sqlite::{SqliteArguments, SqliteConnectOptions},
-    Connection, Row, Sqlite, SqliteConnection,
 };
 use teloxide_core::types::{ChatId, UserId};
 use tokio::sync::{Mutex, MutexGuard, OwnedMappedMutexGuard, OwnedMutexGuard};
