@@ -36,7 +36,7 @@ lm = { path = "./lm", optional = true }
 
 [features]
 default = ["full"]
-full = ["tarot", "tarot_ai", "explain", "jielong", "lm"]
+full = ["tarot", "tarot_ai", "explain", "jielong"]
 tarot = []
 tarot_ai = []
 explain = []
