@@ -51,9 +51,15 @@ pub struct DataStorage {
 
 impl DataStorage {
     pub async fn new() -> anyhow::Result<Self> {
+        let filename = std::env::var("DATABASE_PATH").unwrap_or_else(|_| "data.db".to_string());
+        if let Some(parent) = std::path::Path::new(&filename).parent()
+            && !parent.as_os_str().is_empty()
+        {
+            std::fs::create_dir_all(parent)?;
+        }
         let mut db = SqliteConnection::connect_with(
             &SqliteConnectOptions::new()
-                .filename("data.db")
+                .filename(&filename)
                 .create_if_missing(true),
         )
         .await?;

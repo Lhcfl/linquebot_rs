@@ -30,6 +30,14 @@ Specify environment variables by these steps or any other way you like.
   TELOXIDE_TOKEN="1234567890:ABCDEFGHIJKLMNOPQ-RSTUVWXYZabcdefgh"
   ```
 
+1. (Optional) Fill `DATABASE_PATH` to customize where the SQLite database is stored.
+
+  ```shell
+  # Path to the SQLite database file.
+  # Defaults to "data.db" in the current working directory.
+  DATABASE_PATH="/var/lib/linquebot/data.db"
+  ```
+
 1. (Optional) Fill `AI_API_*` fields if you want to use `tarot_ai`.
 
   ```shell
