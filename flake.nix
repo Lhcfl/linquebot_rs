@@ -67,9 +67,12 @@
               linquebot_rs_lm = self'.packages.linquebot_rs.override { lm = true; };
               linquebot_rs =
                 let
-                  craneLib = (inputs.crane.mkLib pkgs).overrideToolchain (
-                    p: p.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal)
-                  );
+                  craneLib =
+                    ((inputs.crane.mkLib pkgs).overrideScope (_final: _prev: {
+                      stdenvSelector = p: p.clangStdenv;
+                    })).overrideToolchain (
+                      p: p.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal)
+                    );
                 in
                 lib.makeOverridable (
                   {
@@ -93,7 +96,6 @@
                     ++ lib.optional pkgs.stdenvNoCC.hostPlatform.isLinux pkgs.openssl;
                     nativeBuildInputs = [ pkgs.makeWrapper ];
                     CI = "true";
-                    stdenv = p: p.clangStdenv;
                     LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
                     cargoExtraArgs = lib.optionalString lm "--features lm";
                     postInstall = ''
