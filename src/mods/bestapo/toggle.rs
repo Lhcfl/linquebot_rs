@@ -39,10 +39,10 @@ fn on_toggle(ctx: &mut Context, _: &Message) -> Consumption {
 pub static TOGGLE: Module = Module {
     kind: ModuleKind::Command(ModuleDescription {
         name: "toggle_bestapo",
-        description: "打开/关闭<b>北世太保</b>模块的频道回复审查功能",
+        description: "打开/关闭<b>北世太保</b>模块的消息审查功能",
         description_detailed: Some(concat!(
             "该命令不需要参数。\n",
-            "打开/关闭<b>北世太保</b>模块的频道回复审查功能。\n",
+            "打开/关闭<b>北世太保</b>模块的消息审查功能。\n",
             "北世太保会帮助你管理群组：审查伪人的信息，并把他们送去见主席。"
         )),
     }),

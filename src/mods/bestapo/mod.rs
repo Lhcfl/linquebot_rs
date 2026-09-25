@@ -1,6 +1,7 @@
 //! 北世太保，有持久化
 
 mod message_handler;
+mod rules;
 mod toggle;
 mod utils;
 
